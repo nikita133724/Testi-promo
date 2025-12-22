@@ -10,6 +10,22 @@ from telegram_bot import RAM_DATA, ACTIVE_NOMINALS, send_summary, chat_ids
 from config import API_URL_PROMO_ACTIVATE, API_URL_BET
 
 print("PROMO reads RAM_DATA id:", id(RAM_DATA))
+def log_promo_stats(chat_id, promo, nominal, sleep_time=None, activate_time=None, bet_time=None):
+    # Создаём словарь пользователя, если его нет
+    user_data = RAM_DATA.setdefault(chat_id, {})
+    
+    # Создаём список текущего поста, если его нет
+    if "current_post_stats" not in user_data:
+        user_data["current_post_stats"] = []
+    
+    # Добавляем запись о промо
+    user_data["current_post_stats"].append({
+        "nominal": float(nominal),
+        "promo_code": promo,
+        "sleep_time": sleep_time,
+        "activate_time": activate_time,
+        "bet_time": bet_time
+    })
 
 PROMO_DELAY_BY_NOMINAL = {
     Decimal("20"): (0.3, 0.4),
@@ -149,6 +165,9 @@ async def account_container(chat_id, promo_items, post_time):
         return resp_bet.get("error") == "" and resp_bet.get("payload") == {}
 
     i = 0
+    # Инициализация списка для текущего поста
+    RAM_DATA.setdefault(chat_id, {})["current_post_stats"] = []
+
     while i < len(enabled_promos):
         item = enabled_promos[i]
         promo = item["promo_code"]
@@ -156,7 +175,7 @@ async def account_container(chat_id, promo_items, post_time):
         
         if promo not in used_promos:
             delay = calc_delay_by_nominal(nominal)
-            print(f"[{chat_id}] sleep {delay:.2f}s before {promo} ({nominal}$)")
+            log_promo_stats(chat_id, promo, nominal, sleep_time=delay)
             await asyncio.sleep(delay)
             used_promos.add(promo)
         # -------------------------
@@ -165,7 +184,7 @@ async def account_container(chat_id, promo_items, post_time):
         t0 = time.perf_counter()
         resp = await activate_promo(chat_id, promo, access_token)
         api_time = time.perf_counter() - t0
-        print(f"[{chat_id}] activate_promo {promo} took {api_time:.3f}s")
+        log_promo_stats(chat_id, promo, nominal, sleep_time=delay, activate_time=activate_time)
         status = format_promo_status(resp)
         
         # 🔴 Новый блок: проверка на отсутствие ответа от API
@@ -212,7 +231,7 @@ async def account_container(chat_id, promo_items, post_time):
             t1 = time.perf_counter()
             resp_bet = await make_bet(chat_id, promo, access_token, bet_amount)
             bet_time = time.perf_counter() - t1
-            print(f"[{chat_id}] make_bet for {promo} took {bet_time:.3f}s")
+            log_promo_stats(chat_id, promo, nominal, sleep_time=delay, activate_time=activate_time, bet_time=bet_time)
     
             if no_money_on_bet(resp_bet):
                 user_summary.append({
@@ -294,7 +313,20 @@ async def handle_new_post(message, media=None):
 
     tasks = [asyncio.create_task(account_container(chat_id, promo_items, post_time)) for chat_id in active_chat_ids]
     await asyncio.gather(*tasks)
-
+    # Собираем stats для /stats
+    RAM_DATA["last_post_stats"] = []
+    for chat_id in chat_ids:
+        user_data = RAM_DATA.get(chat_id)
+        if user_data and "current_post_stats" in user_data:
+            RAM_DATA["last_post_stats"].append({
+                "chat_id": chat_id,
+                "username": user_data.get("username", f"user_{chat_id}"),
+                "logs": user_data["current_post_stats"],
+                "total_time": time.time() - post_time
+            })
+            # очищаем временные данные
+            user_data.pop("current_post_stats", None)
+    
 # -------------------------
 # Асинхронный HTTP запрос активации промокода
 # -------------------------
