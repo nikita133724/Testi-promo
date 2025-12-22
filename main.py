@@ -1,58 +1,59 @@
 import asyncio
-import importlib
-import subprocess
-import sys
 import os
 import random
 
+from fastapi import FastAPI, Request
+from fastapi.responses import HTMLResponse
+from fastapi.templating import Jinja2Templates
+import uvicorn
+from aiohttp import ClientSession
+
 # -----------------------
-# Импорты после установки пакетов
+# Импорты Telegram и RAM_DATA
 # -----------------------
-from aiohttp import web, ClientSession
 from telegram_client import client
-from telegram_bot import app, bot, load_chatids, build_reply_keyboard
+from telegram_bot import app, bot, load_chatids, build_reply_keyboard, RAM_DATA
 from refresh_tokens import token_refresher_loop
 from access_control import subscription_watcher
 
 # -----------------------
-# HTTP-сервер (для Render)
+# Настройка FastAPI и Jinja2
 # -----------------------
-async def start_web_server():
-    web_app = web.Application()
-
-    async def healthcheck(request):
-        return web.Response(text="OK")
-
-    web_app.router.add_get("/", healthcheck)
-    web_app.router.add_get("/healthz", healthcheck)
-
-    port = int(os.environ.get("PORT", 8080))
-    runner = web.AppRunner(web_app)
-    await runner.setup()
-    site = web.TCPSite(runner, "0.0.0.0", port)
-    await site.start()
-    print(f"HTTP-сервер запущен на порту {port}")
+app_fastapi = FastAPI()
+templates = Jinja2Templates(directory="templates")  # папка с stats.html
 
 # -----------------------
-# Keep-alive для Render
+# Маршруты
 # -----------------------
-SELF_URL = "https://promo-zq59.onrender.com"
+@app_fastapi.get("/", response_class=HTMLResponse)
+async def root():
+    return HTMLResponse("<h2>Сервер работает</h2>")
 
+@app_fastapi.get("/healthz", response_class=HTMLResponse)
+async def healthcheck():
+    return HTMLResponse("OK")
+
+@app_fastapi.get("/stats", response_class=HTMLResponse)
+async def get_post_stats(request: Request):
+    stats = RAM_DATA.get("last_post_stats")
+    if not stats:
+        return HTMLResponse("<h2>Данных нет</h2>", status_code=404)
+    return templates.TemplateResponse("stats.html", {"request": request, "stats": stats})
+
+# -----------------------
+# Keep-alive (для Render)
+# -----------------------
+SELF_URL = os.environ.get("SELF_URL", "")
 async def keep_alive():
     if not SELF_URL:
         print("SELF_URL не задан, keep-alive не будет работать")
         return
-
     while True:
         delay = 240 + random.random() * 120
         await asyncio.sleep(delay)
-
         try:
             async with ClientSession() as session:
-                async with session.get(f"{SELF_URL}/healthz", headers={
-                    "User-Agent": "Python/KeepAlive",
-                    "X-Keep-Alive": str(random.random())
-                }) as resp:
+                async with session.get(f"{SELF_URL}/healthz") as resp:
                     if resp.status == 200:
                         print("Keep-alive ping OK")
                     else:
@@ -61,20 +62,14 @@ async def keep_alive():
             print(f"Keep-alive error: {e}")
 
 # -----------------------
-# Загрузка ChatID
+# Функции для Telegram
 # -----------------------
 chat_ids = load_chatids()
 
-# -----------------------
-# Фоновый таймер токенов
-# -----------------------
 async def run_token_refresher():
     asyncio.create_task(token_refresher_loop())
     print("Фоновый таймер обновления токенов запущен.")
 
-# -----------------------
-# Функция для отправки сообщений всем пользователям
-# -----------------------
 async def send_message_to_all(text, keyboard=False):
     for chat_id in chat_ids:
         try:
@@ -84,14 +79,20 @@ async def send_message_to_all(text, keyboard=False):
             print(f"Ошибка отправки сообщения {chat_id}: {e}")
 
 # -----------------------
-# Основная логика
+# Запуск FastAPI сервера (uvicorn)
 # -----------------------
+async def start_fastapi():
+    port = int(os.environ.get("PORT", 8000))
+    config = uvicorn.Config(app_fastapi, host="0.0.0.0", port=port, log_level="info")
+    server = uvicorn.Server(config)
+    await server.serve()
+
 # -----------------------
 # Основная логика
 # -----------------------
 async def main():
-    # 🔹 HTTP-сервер и keep-alive
-    asyncio.create_task(start_web_server())
+    # 🔹 FastAPI сервер
+    asyncio.create_task(start_fastapi())
     asyncio.create_task(keep_alive())
 
     # 🔹 Таймер токенов
@@ -112,11 +113,10 @@ async def main():
     # 🔹 Ожидание работы бота и Telethon
     try:
         await asyncio.gather(
-            app.updater.start_polling(),  # правильно для async запуска
+            app.updater.start_polling(),
             client.run_until_disconnected()
         )
     finally:
-        # graceful shutdown
         await app.updater.stop()
         await app.stop()
         await app.shutdown()
