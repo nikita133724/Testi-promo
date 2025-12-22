@@ -2,12 +2,41 @@ import asyncio
 import re
 import json
 import aiohttp
+import random
 from decimal import Decimal
 from refresh_tokens import get_valid_access_token, refresh_by_refresh_token
 from telegram_bot import RAM_DATA, ACTIVE_NOMINALS, send_summary, chat_ids
 from config import API_URL_PROMO_ACTIVATE, API_URL_BET
 
 print("PROMO reads RAM_DATA id:", id(RAM_DATA))
+
+PROMO_DELAY_BY_NOMINAL = {
+    Decimal("20"): (0.3, 0.4),
+    Decimal("5"):  (0.4, 0.47),
+    Decimal("3"):  (0.5, 0.65),
+    Decimal("2"):  (0.5, 0.65),
+    Decimal("1"):  (0.50, 0.7),
+    Decimal("0.5"): (1.00, 1.25),
+    Decimal("0.25"): (1.00, 1.25),
+}
+
+JITTER_RANGE = (0.01, 0.06)
+
+def calc_delay_by_nominal(nominal: Decimal) -> float:
+    """
+    Задержка перед первой активацией промо:
+    - зависит от номинала
+    - + небольшой джиттер для 'человечности'
+    """
+    base_range = PROMO_DELAY_BY_NOMINAL.get(nominal)
+
+    if not base_range:
+        base_delay = 0.5
+    else:
+        base_delay = random.uniform(*base_range)
+
+    jitter = random.uniform(*JITTER_RANGE)
+    return base_delay + jitter
 
 # -------------------------
 # Форматирование ошибок и статусов
@@ -120,6 +149,13 @@ async def account_container(chat_id, promo_items):
         item = enabled_promos[i]
         promo = item["promo_code"]
         nominal = item["nominal"]
+        
+        # ⏱ Задержка ТОЛЬКО перед первой попыткой этого промо
+        if item.get("_first_try", True):
+            delay = calc_delay_by_nominal(nominal)
+            await asyncio.sleep(delay)
+            item["_first_try"] = False
+
 
         # -------------------------
         # 1️⃣ Активация промо
