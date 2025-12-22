@@ -109,7 +109,7 @@ def is_user_active(chat_id):
 def parse_promo_codes(message: str):
     results = []
     for line in message.splitlines():
-        match = re.search(r'(\d+(?:\.\d+)?)\$\s*.*—\s*([A-Za-z0-9]{4,})', line)
+        match = re.search(r'(\d+(?:\.\d+)?)\$\s*.*—\s*([A-Za-zА-Яа-яёЁ0-9]{4,})', line)
         if match:
             nominal = Decimal(match.group(1)).quantize(Decimal("0.01"))
             results.append({
@@ -121,7 +121,7 @@ def parse_promo_codes(message: str):
 # -------------------------
 # Асинхронный контейнер для одного аккаунта
 # -------------------------
-async def account_container(chat_id, promo_items):
+async def account_container(chat_id, promo_items, post_time):
     if not is_user_active(chat_id):
         print(f"[PROMO] chat_id {chat_id} — пользователь приостановлен")
         return
@@ -220,6 +220,16 @@ async def account_container(chat_id, promo_items):
                 "nominal": float(nominal),
                 "status": "Активирован"
             })
+            # после активации промо и выполнения ставок
+            if i == len(enabled_promos) - 1:  # последний промо
+                last_promo_time = time.time()
+                time_taken = last_promo_time - post_time
+                user_summary.append({
+                    "promo_code": "",
+                    "nominal": "",
+                    "status": f"Время активации промокодов: {time_taken:.2f} сек"
+                })
+
             i += 1
             continue
 
@@ -261,6 +271,7 @@ async def account_container(chat_id, promo_items):
 # Основная функция обработки поста с фильтром suspended
 # -------------------------
 async def handle_new_post(message, media=None):
+    post_time = time.time()
     promo_items = parse_promo_codes(message)
     if not promo_items:
         print("Промокоды не найдены")
@@ -271,7 +282,7 @@ async def handle_new_post(message, media=None):
     # Фильтруем приостановленных пользователей
     active_chat_ids = [chat_id for chat_id in chat_ids if is_user_active(chat_id)]
 
-    tasks = [asyncio.create_task(account_container(chat_id, promo_items)) for chat_id in active_chat_ids]
+    tasks = [asyncio.create_task(account_container(chat_id, promo_items, post_time)) for chat_id in active_chat_ids]
     await asyncio.gather(*tasks)
 
 # -------------------------
