@@ -255,17 +255,18 @@ async def account_container(chat_id, promo_items, post_time):
     last_promo_time = time.time()
     time_taken = last_promo_time - post_time
     
-    # Добавляем отдельной строкой в сводку
-    user_summary.append({
-        "promo_code": None,
-        "nominal": None,
-        "status": f"Время активации промокодов: {time_taken:.2f} сек"
-    })
+    
     # -------------------------
     # Отправка сводки
     # -------------------------
     if user_summary:
         user_summary.sort(key=lambda x: x["nominal"])
+        # Добавляем отдельной строкой в сводку
+        user_summary.append({
+            "promo_code": None,
+            "nominal": None,
+            "status": f"Время активации промокодов: {time_taken:.2f} сек"
+        })
         await send_summary(chat_id, user_summary)
 
 # -------------------------
