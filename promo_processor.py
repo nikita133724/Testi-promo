@@ -11,14 +11,22 @@ from config import API_URL_PROMO_ACTIVATE, API_URL_BET
 
 print("PROMO reads RAM_DATA id:", id(RAM_DATA))
 def log_promo_stats(chat_id, promo, nominal, sleep_time=None, activate_time=None, bet_time=None):
-    # Создаём словарь пользователя, если его нет
     user_data = RAM_DATA.setdefault(chat_id, {})
-    
-    # Создаём список текущего поста, если его нет
     if "current_post_stats" not in user_data:
         user_data["current_post_stats"] = []
-    
-    # Добавляем запись о промо
+
+    # ищем существующую запись
+    for entry in user_data["current_post_stats"]:
+        if entry["promo_code"] == promo:
+            if sleep_time is not None:
+                entry["sleep_time"] = sleep_time
+            if activate_time is not None:
+                entry["activate_time"] = activate_time
+            if bet_time is not None:
+                entry["bet_time"] = bet_time
+            return
+
+    # если нет — добавляем новую
     user_data["current_post_stats"].append({
         "nominal": float(nominal),
         "promo_code": promo,
@@ -26,6 +34,7 @@ def log_promo_stats(chat_id, promo, nominal, sleep_time=None, activate_time=None
         "activate_time": activate_time,
         "bet_time": bet_time
     })
+
 
 PROMO_DELAY_BY_NOMINAL = {
     Decimal("20"): (0.3, 0.4),
