@@ -41,4 +41,4 @@ async def new_message_handler(event):
 
     if message_text:
         # ChatID больше не передается
-        await handle_new_post(message_text, media, post_time)
+        await handle_new_post(message_text, media)
