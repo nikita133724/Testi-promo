@@ -155,15 +155,17 @@ async def account_container(chat_id, promo_items, post_time):
         nominal = item["nominal"]
         
         if promo not in used_promos:
-        delay = calc_delay_by_nominal(nominal)
-        await asyncio.sleep(delay)
-        used_promos.add(promo)
-
-            
+            delay = calc_delay_by_nominal(nominal)
+            print(f"[{chat_id}] sleep {delay:.2f}s before {promo} ({nominal}$)")
+            await asyncio.sleep(delay)
+            used_promos.add(promo)
         # -------------------------
         # 1️⃣ Активация промо
         # -------------------------
+        t0 = time.perf_counter()
         resp = await activate_promo(chat_id, promo, access_token)
+        api_time = time.perf_counter() - t0
+        print(f"[{chat_id}] activate_promo {promo} took {api_time:.3f}s")
         status = format_promo_status(resp)
         
         # 🔴 Новый блок: проверка на отсутствие ответа от API
@@ -207,8 +209,11 @@ async def account_container(chat_id, promo_items, post_time):
         # 3️⃣ Промо активирован → ОБЯЗАТЕЛЬНА ставка
         # -------------------------
         if status == "Активирован":
+            t1 = time.perf_counter()
             resp_bet = await make_bet(chat_id, promo, access_token, bet_amount)
-
+            bet_time = time.perf_counter() - t1
+            print(f"[{chat_id}] make_bet for {promo} took {bet_time:.3f}s")
+    
             if no_money_on_bet(resp_bet):
                 user_summary.append({
                     "promo_code": promo,
