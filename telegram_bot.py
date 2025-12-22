@@ -23,8 +23,8 @@ from yourun_module import (
     handle_yourun_file
 )
 load_keys_from_redis()
-CHATID_KEY = "promo_bot_chatids"
-ADMIN_CHAT_ID = 754274025  # <- замени на свой Telegram ID
+CHATID_KEY = "promo"
+ADMIN_CHAT_ID = 8455743587  # <- замени на свой Telegram ID
 # -----------------------
 # RAM-память для всех данных
 # -----------------------
