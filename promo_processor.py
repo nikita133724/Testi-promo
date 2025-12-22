@@ -327,14 +327,22 @@ async def handle_new_post(message, media=None):
     for chat_id in chat_ids:
         user_data = RAM_DATA.get(chat_id)
         if user_data and "current_post_stats" in user_data:
+            # Считаем суммарное время активации всех промо
+            total_time = 0
+            for log in user_data["current_post_stats"]:
+                total_time += (log.get("sleep_time") or 0)
+                total_time += (log.get("activate_time") or 0)
+                total_time += (log.get("bet_time") or 0)
+    
             RAM_DATA["last_post_stats"].append({
                 "chat_id": chat_id,
                 "username": user_data.get("username", f"user_{chat_id}"),
                 "logs": user_data["current_post_stats"],
-                "total_time": time.time() - post_time
+                "total_time": total_time
             })
             # очищаем временные данные
             user_data.pop("current_post_stats", None)
+    
     
 # -------------------------
 # Асинхронный HTTP запрос активации промокода
