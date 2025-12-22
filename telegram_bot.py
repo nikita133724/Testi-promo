@@ -751,9 +751,13 @@ async def send_summary(chat_id: int, summary: list):
     title = "🔕 Сводка по посту:\n" if silent else "Сводка по посту:\n"
     message_text = title
     for item in summary:
-        message_text += f"{item['nominal']}$ | {item['promo_code']} | {item['status']}\n"
+        if item["promo_code"] is not None:
+            message_text += f"{item['nominal']}$ | {item['promo_code']} | {item['status']}\n"
+        else:
+            message_text += f"\n{item['status']}\n"  # отдельная строка для времени активации
+
     try:
         markup = build_reply_keyboard(chat_id)
-        await bot.send_message(chat_id=chat_id, text=message_text, reply_markup=markup,disable_notification=silent)
+        await bot.send_message(chat_id=chat_id, text=message_text, reply_markup=markup, disable_notification=silent)
     except Exception as e:
         print(f"Ошибка отправки сводки {chat_id}: {e}")
