@@ -123,7 +123,10 @@ def parse_promo_codes(message: str):
 # Асинхронный контейнер для одного аккаунта
 # -------------------------
 async def account_container(chat_id, promo_items, post_time):
+    used_promos = set()
+
     if not is_user_active(chat_id):
+        
         print(f"[PROMO] chat_id {chat_id} — пользователь приостановлен")
         return
     last_promo_time = None
@@ -151,11 +154,11 @@ async def account_container(chat_id, promo_items, post_time):
         promo = item["promo_code"]
         nominal = item["nominal"]
         
-        # ⏱ Задержка ТОЛЬКО перед первой попыткой этого промо
-        if item.get("_first_try", True):
-            delay = calc_delay_by_nominal(nominal)
-            await asyncio.sleep(delay)
-            item["_first_try"] = False
+        if promo not in used_promos:
+        delay = calc_delay_by_nominal(nominal)
+        await asyncio.sleep(delay)
+        used_promos.add(promo)
+
             
         # -------------------------
         # 1️⃣ Активация промо
