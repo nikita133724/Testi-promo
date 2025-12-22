@@ -8,18 +8,18 @@ API_URL_REFRESH = "https://cs2run.app/auth/refresh-token"
 # =========================
 # Telegram Bot
 # =========================
-TELEGRAM_BOT_TOKEN = "8545761476:AAG8WVL0EAD3wczvIHW0z5CpoBWj8PIcQxM"
+TELEGRAM_BOT_TOKEN = "8061115919:AAE58otKx5hOyYA2rbCpU-jbfFnGl0aixO4"
 REDIS_URL = "rediss://:AVplAAIncDJjZDA0YTNmNTE1ZmI0MDdhOTk1MTkxMWI2YzdmMWQ1ZXAyMjMxNDE@massive-scorpion-23141.upstash.io:6379"
 
 # =========================
 # Telegram Client для чтения каналов
 # =========================
 TELEGRAM_SESSION_FILE = "session.session"  # файл сессии аккаунта
-TELEGRAM_API_ID = 32239812                  # твой API ID
-TELEGRAM_API_HASH = "c3d44d0e49d0c637d7a6476eed4294a9"
+TELEGRAM_API_ID = 37747270                  # твой API ID
+TELEGRAM_API_HASH = "ed1f2f4080055b445818d6235c12d4fc"
 
-CHANNEL_ORDINARY = "@SpeshkaCodes"
-CHANNEL_SPECIAL = "@sikakamsmsm" #"@SpeshkaCodes"
+CHANNEL_ORDINARY = "@jcivipvvuov"
+CHANNEL_SPECIAL = "@run_case" #"@SpeshkaCodes"
 
 # =========================
 # Логика работы
