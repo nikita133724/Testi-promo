@@ -125,7 +125,7 @@ async def account_container(chat_id, promo_items, post_time):
     if not is_user_active(chat_id):
         print(f"[PROMO] chat_id {chat_id} — пользователь приостановлен")
         return
-
+    last_promo_time = None
     user_nominals = get_user_nominals(chat_id)
     enabled_promos = [
         item for item in promo_items
@@ -155,8 +155,7 @@ async def account_container(chat_id, promo_items, post_time):
             delay = calc_delay_by_nominal(nominal)
             await asyncio.sleep(delay)
             item["_first_try"] = False
-
-
+            
         # -------------------------
         # 1️⃣ Активация промо
         # -------------------------
@@ -220,16 +219,7 @@ async def account_container(chat_id, promo_items, post_time):
                 "nominal": float(nominal),
                 "status": "Активирован"
             })
-            # после активации промо и выполнения ставок
-            if i == len(enabled_promos) - 1:  # последний промо
-                last_promo_time = time.time()
-                time_taken = last_promo_time - post_time
-                user_summary.append({
-                    "promo_code": "",
-                    "nominal": "",
-                    "status": f"Время активации промокодов: {time_taken:.2f} сек"
-                })
-
+            
             i += 1
             continue
 
@@ -260,6 +250,16 @@ async def account_container(chat_id, promo_items, post_time):
         })
         i += 1
 
+    # Фиксируем время после последнего промокода
+    last_promo_time = time.time()
+    time_taken = last_promo_time - post_time
+    
+    # Добавляем отдельной строкой в сводку
+    user_summary.append({
+        "promo_code": None,
+        "nominal": None,
+        "status": f"Время активации промокодов: {time_taken:.2f} сек"
+    })
     # -------------------------
     # Отправка сводки
     # -------------------------
