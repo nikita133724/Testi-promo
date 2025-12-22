@@ -21,7 +21,7 @@ PROMO_DELAY_BY_NOMINAL = {
     Decimal("0.25"): (1.00, 1.25),
 }
 
-JITTER_RANGE = (0.03, 0.1)
+JITTER_RANGE = (0.1, 0.2)
 
 def calc_delay_by_nominal(nominal: Decimal) -> float:
     """
