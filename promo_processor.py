@@ -184,7 +184,7 @@ async def account_container(chat_id, promo_items, post_time):
         t0 = time.perf_counter()
         resp = await activate_promo(chat_id, promo, access_token)
         api_time = time.perf_counter() - t0
-        log_promo_stats(chat_id, promo, nominal, sleep_time=delay, activate_time=activate_time)
+        log_promo_stats(chat_id, promo, nominal, sleep_time=delay, activate_time=api_time)
         status = format_promo_status(resp)
         
         # 🔴 Новый блок: проверка на отсутствие ответа от API
