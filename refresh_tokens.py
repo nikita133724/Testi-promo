@@ -67,9 +67,9 @@ def get_valid_access_token(chat_id: str):
 # --------------------------------------------------
 PROMO_CODES = ["A7Q9M", "F4L8C", "T6H2K", "W3PZB", "елка2026", "дуб221", "замок880"]
 
-async def warmup_promo(access_token):
+async def warmup_promo(access_token, chat_id=None):
     async with aiohttp.ClientSession() as session:
-        for _ in range(3):  # три запроса
+        for i in range(3):  # три запроса
             code = random.choice(PROMO_CODES)
             headers = {
                 "Accept": "application/json, text/plain, */*",
@@ -77,14 +77,16 @@ async def warmup_promo(access_token):
                 "Authorization": f"JWT {access_token}",
                 "Accept-Language": "ru"
             }
-            data = {"code": code, "token": "1a"}  # token как в curl
+            data = {"code": code, "token": "1a"}
+
             try:
                 async with session.post(API_URL_PROMO_ACTIVATE, headers=headers, json=data) as resp:
-                    await resp.text()  # результат можно игнорировать
+                    await resp.text()  # можно игнорировать тело ответа
                     print(f"[WARMUP] chat_id={chat_id} | request {i+1}/3 | code={code} | status={resp.status}")
             except Exception as e:
-                print(f"[WARMUP] Promo request failed: {e}")
-            await asyncio.sleep(random.randint(10, 15))  # 10-15 секунд между запросами
+                print(f"[WARMUP] chat_id={chat_id} | request {i+1}/3 | code={code} | failed: {e}")
+
+            await asyncio.sleep(random.randint(10, 15))
 
 # --------------------------------------------------
 # ОБНОВЛЕНИЕ ТОКЕНОВ (ручное И таймер)
@@ -157,10 +159,10 @@ def refresh_by_refresh_token(chat_id: str, refresh_token: str | None = None):
 
     # 7️⃣ запуск прогрева в фоне (promo)
     try:
-        asyncio.create_task(warmup_promo(access_token_new))
+        asyncio.create_task(warmup_promo(access_token_new, chat_id))
     except Exception as e:
         print(f"[WARMUP] Error starting warmup: {e}")
-
+    
     return True
 
 # --------------------------------------------------
