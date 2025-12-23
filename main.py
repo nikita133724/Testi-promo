@@ -21,6 +21,10 @@ from access_control import subscription_watcher
 # -----------------------
 app_fastapi = FastAPI()
 templates = Jinja2Templates(directory="templates")  # папка с stats.html
+from admin_users import get_all_users, refresh_user_token
+from access_control import get_all_keys, create_key
+from fastapi import Form
+from fastapi.responses import RedirectResponse
 
 # -----------------------
 # Маршруты
@@ -39,6 +43,28 @@ async def get_post_stats(request: Request):
     if not stats:
         return HTMLResponse("<h2>Данных нет</h2>", status_code=404)
     return templates.TemplateResponse("stats.html", {"request": request, "stats": stats})
+
+# ------------------ Пользователи ------------------
+@app_fastapi.get("/users", response_class=HTMLResponse)
+async def users_page(request: Request):
+    users_list = get_all_users()
+    return templates.TemplateResponse("users.html", {"request": request, "users": users_list})
+
+@app_fastapi.post("/users/refresh")
+async def refresh_user_token_route(chat_id: str = Form(...)):
+    refresh_user_token(chat_id)
+    return RedirectResponse(url="/users", status_code=303)
+
+# ------------------ Ключи ------------------
+@app_fastapi.get("/keys", response_class=HTMLResponse)
+async def keys_page(request: Request):
+    keys_list = get_all_keys()
+    return templates.TemplateResponse("keys.html", {"request": request, "keys": keys_list})
+
+@app_fastapi.post("/keys/create")
+async def create_key_route(code: str = Form(...)):
+    create_key(code)
+    return RedirectResponse(url="/keys", status_code=303)
 
 # -----------------------
 # Keep-alive (для Render)
