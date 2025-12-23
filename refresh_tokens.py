@@ -81,6 +81,7 @@ async def warmup_promo(access_token):
             try:
                 async with session.post(API_URL_PROMO_ACTIVATE, headers=headers, json=data) as resp:
                     await resp.text()  # результат можно игнорировать
+                     print(f"[WARMUP] chat_id={chat_id} | request {i+1}/3 | code={code} | status={resp.status}")
             except Exception as e:
                 print(f"[WARMUP] Promo request failed: {e}")
             await asyncio.sleep(random.randint(10, 15))  # 10-15 секунд между запросами
