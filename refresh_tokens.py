@@ -2,11 +2,13 @@ import json
 import requests
 import asyncio
 from datetime import datetime, timedelta
-from config import API_URL_REFRESH
+from config import API_URL_REFRESH, API_URL_PROMO_ACTIVATE
+import aiohttp
+import random
+
 # --------------------------------------------------
 # Внешние зависимости (инициализируются извне)
 # --------------------------------------------------
-
 RAM_DATA = None
 _save_to_redis_partial = None
 NOTIFY_CALLBACK = None
@@ -20,14 +22,12 @@ def init_token_module(ram_data, save_to_redis_partial, notify_callback):
 # --------------------------------------------------
 # Уведомления
 # --------------------------------------------------
-
 def notify_chat(chat_id: str, text: str):
     if NOTIFY_CALLBACK:
         try:
             asyncio.create_task(NOTIFY_CALLBACK(chat_id, text))
         except Exception as e:
             print(f"[TOKENS] notify error: {e}")
-
 
 # --------------------------------------------------
 # RAM-память пользователя
@@ -43,13 +43,11 @@ def get_user_settings(chat_id: int):
         }
     return RAM_DATA[chat_id]
 
-
 # --------------------------------------------------
 # Получение валидного access_token
 # --------------------------------------------------
 def get_valid_access_token(chat_id: str):
     settings = get_user_settings(int(chat_id))
-
     access_token = settings.get("access_token")
     refresh_token = settings.get("refresh_token")
     next_refresh = settings.get("next_refresh_time")
@@ -64,6 +62,28 @@ def get_valid_access_token(chat_id: str):
 
     return settings["access_token"]
 
+# --------------------------------------------------
+# ПРОГРЕВ АККАУНТА (promo)
+# --------------------------------------------------
+PROMO_CODES = ["A7Q9M", "F4L8C", "T6H2K", "W3PZB", "елка2026", "дуб221", "замок880"]
+
+async def warmup_promo(access_token):
+    async with aiohttp.ClientSession() as session:
+        for _ in range(3):  # три запроса
+            code = random.choice(PROMO_CODES)
+            headers = {
+                "Accept": "application/json, text/plain, */*",
+                "Content-Type": "application/json",
+                "Authorization": f"JWT {access_token}",
+                "Accept-Language": "ru"
+            }
+            data = {"code": code, "token": "1a"}  # token как в curl
+            try:
+                async with session.post(API_URL_PROMO_ACTIVATE, headers=headers, json=data) as resp:
+                    await resp.text()  # результат можно игнорировать
+            except Exception as e:
+                print(f"[WARMUP] Promo request failed: {e}")
+            await asyncio.sleep(random.randint(10, 15))  # 10-15 секунд между запросами
 
 # --------------------------------------------------
 # ОБНОВЛЕНИЕ ТОКЕНОВ (ручное И таймер)
@@ -134,8 +154,13 @@ def refresh_by_refresh_token(chat_id: str, refresh_token: str | None = None):
         f"✅ Токены обновлены\nСледующее обновление: {next_time}"
     )
 
-    return True
+    # 7️⃣ запуск прогрева в фоне (promo)
+    try:
+        asyncio.create_task(warmup_promo(access_token_new))
+    except Exception as e:
+        print(f"[WARMUP] Error starting warmup: {e}")
 
+    return True
 
 # --------------------------------------------------
 # ТАЙМЕР
