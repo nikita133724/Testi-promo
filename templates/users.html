@@ -1,0 +1,30 @@
+{% extends "base.html" %}
+
+{% block content %}
+<h2>Пользователи</h2>
+<table class="table table-striped">
+    <thead>
+        <tr>
+            <th>Chat ID</th>
+            <th>Access Token</th>
+            <th>Refresh Token</th>
+            <th>Действия</th>
+        </tr>
+    </thead>
+    <tbody>
+        {% for u in users %}
+        <tr>
+            <td>{{ u.chat_id }}</td>
+            <td>{{ u.access_token[:8] }}...</td>
+            <td>{{ u.refresh_token[:8] }}...</td>
+            <td>
+                <form method="post" action="/users/refresh">
+                    <input type="hidden" name="chat_id" value="{{ u.chat_id }}">
+                    <button type="submit" class="btn btn-sm btn-primary">Обновить токен</button>
+                </form>
+            </td>
+        </tr>
+        {% endfor %}
+    </tbody>
+</table>
+{% endblock %}
