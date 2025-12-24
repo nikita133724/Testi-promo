@@ -204,7 +204,7 @@ async def admin_generate_key(
         {"request": request, "durations": KEY_DURATION_OPTIONS, "key": key, "is_admin": True}
     )
 
-@app_fastapi.get("/stats", response_class=HTMLResponse)
+@app_fastapi.get("/admin/stats", response_class=HTMLResponse)
 async def get_post_stats(
     request: Request,
     _: None = Depends(admin_required)
@@ -214,7 +214,7 @@ async def get_post_stats(
         return HTMLResponse("<h2>Данных нет</h2>", status_code=404)
 
     return templates.TemplateResponse(
-        "stats.html",
+        "admin/stats.html",
         {"request": request, "stats": stats}
     )
 
