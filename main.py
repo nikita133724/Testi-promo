@@ -32,9 +32,9 @@ app_fastapi.add_middleware(SessionMiddleware, secret_key=SECRET_KEY)
 
 @app_fastapi.middleware("http")
 async def add_is_admin_to_request(request: Request, call_next):
-    # безопасно получаем сессию из scope
-    session = request.scope.get("session")
-    request.state.is_admin = session.get("is_admin", False) if session else False
+    # безопасно через request.session
+    is_admin = request.session.get("is_admin", False)
+    request.state.is_admin = is_admin
     response = await call_next(request)
     return response
 
@@ -43,7 +43,7 @@ async def add_is_admin_to_request(request: Request, call_next):
 def admin_required(func):
     @wraps(func)
     async def wrapper(request: Request, *args, **kwargs):
-        if not getattr(request.state, "is_admin", False):
+        if not request.session.get("is_admin", False):
             return RedirectResponse("/login", status_code=303)
         return await func(request, *args, **kwargs)
     return wrapper
