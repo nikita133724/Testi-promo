@@ -32,10 +32,11 @@
         <a href="/admin/users">Пользователи</a>
         <a href="/admin/keys">Генерация ключей</a>
     
-        {% if request.state.is_admin %}
+        {% if request.session.get("is_admin") %}
             <a href="/logout">Выйти</a>
         {% endif %}
     </aside>
+
 
 
 
