@@ -234,18 +234,18 @@ async def run_token_refresher():
 
 async def start_telegram():
     print("Запуск Telegram-бота...")
-    await tg_app.initialize()
-    await tg_app.start()
-    await client.start()
-    print("Telethon клиент запущен.")
-    await tg_app.updater.start_polling()
-    await client.run_until_disconnected()
+    await bot.initialize()   # инициализация клиента
+    await bot.start()        # старт
+    await client.start()     # Telethon клиент
 
-# -----------------------
-# Startup
+    # Запускаем polling в фоне, НЕ блокируя loop
+    asyncio.create_task(bot.updater.start_polling())
+    print("Telegram бот запущен в фоне.")
+
 @app_fastapi.on_event("startup")
 async def startup_event():
     asyncio.create_task(keep_alive())
     asyncio.create_task(run_token_refresher())
     asyncio.create_task(subscription_watcher(bot))
-    asyncio.create_task(start_telegram())
+    asyncio.create_task(start_telegram())  # запускаем бота в фоне
+    print("FastAPI стартовал, Telegram бот запускается параллельно")
