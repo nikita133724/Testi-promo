@@ -239,7 +239,7 @@ async def start_telegram():
 
     # aiogram
     await tg_app.initialize()
-    asyncio.create_task(tg_app.start_polling())
+    asyncio.create_task(tg_app.start())  # запускаем polling параллельно
 
     # Telethon
     async def start_telethon_client():
@@ -250,11 +250,11 @@ async def start_telegram():
             print(f"Ошибка Telethon: {e}")
 
     asyncio.create_task(start_telethon_client())
-
+    
 @app_fastapi.on_event("startup")
 async def startup_event():
     asyncio.create_task(keep_alive())
     asyncio.create_task(run_token_refresher())
     asyncio.create_task(subscription_watcher(bot))
-    asyncio.create_task(start_telegram())  # запускаем бота в фоне
+    asyncio.create_task(start_telegram())
     print("FastAPI стартовал, Telegram бот запускается параллельно")
