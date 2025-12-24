@@ -236,12 +236,20 @@ async def run_token_refresher():
 # Фоновая задача запуска бота
 async def start_telegram():
     print("Запуск Telegram-бота...")
-    await tg_app.initialize()  # инициализация aiogram App
-    await client.start()        # Telethon клиент
-    print("Telethon клиент запущен.")
-    # В aiogram 3+ запуск long-polling делается через executor или создаём task
-    # FastAPI будет жить параллельно, поэтому polling можно запускать как задачу:
-    asyncio.create_task(tg_app.start_polling())  # запускаем polling параллельно
+
+    # aiogram
+    await tg_app.initialize()
+    asyncio.create_task(tg_app.start_polling())
+
+    # Telethon
+    async def start_telethon_client():
+        try:
+            await client.start()
+            print("Telethon клиент запущен.")
+        except Exception as e:
+            print(f"Ошибка Telethon: {e}")
+
+    asyncio.create_task(start_telethon_client())
 
 @app_fastapi.on_event("startup")
 async def startup_event():
