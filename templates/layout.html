@@ -1,0 +1,23 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <title>Admin Panel</title>
+    <link rel="stylesheet" href="/static/styles.css">
+</head>
+<body>
+<div class="wrapper">
+    <aside class="sidebar">
+        <h2>Admin</h2>
+        <nav>
+            <a href="/admin/users">Пользователи</a>
+            <a href="/admin/keys">Генерация ключей</a>
+        </nav>
+    </aside>
+
+    <main class="content">
+        {% block content %}{% endblock %}
+    </main>
+</div>
+</body>
+</html>
