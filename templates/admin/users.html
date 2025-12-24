@@ -1,6 +1,21 @@
-{% extends "layout.html" %}
+{% extends "admin/layout.html" %}
 
 {% block content %}
 <h1>Пользователи</h1>
-<p>Здесь будет список пользователей</p>
+
+{% if users %}
+<table border="1" cellpadding="8" cellspacing="0">
+    <tr>
+        <th>ID пользователя</th>
+    </tr>
+    {% for user in users %}
+    <tr>
+        <td>{{ user }}</td>
+    </tr>
+    {% endfor %}
+</table>
+{% else %}
+<p>Пользователей нет</p>
+{% endif %}
+
 {% endblock %}
