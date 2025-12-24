@@ -3,16 +3,34 @@
 <head>
     <meta charset="UTF-8">
     <title>Admin Panel</title>
-    <link rel="stylesheet" href="/static/styles.css">
+    <style>
+        body { margin: 0; font-family: Arial, sans-serif; }
+        .wrapper { display: flex; height: 100vh; }
+        .sidebar {
+            width: 220px;
+            background: #1f2937;
+            color: white;
+            padding: 20px;
+        }
+        .sidebar a {
+            display: block;
+            color: white;
+            text-decoration: none;
+            margin: 10px 0;
+        }
+        .content {
+            flex: 1;
+            padding: 30px;
+            background: #f3f4f6;
+        }
+    </style>
 </head>
 <body>
 <div class="wrapper">
     <aside class="sidebar">
         <h2>Admin</h2>
-        <nav>
-            <a href="/admin/users">Пользователи</a>
-            <a href="/admin/keys">Генерация ключей</a>
-        </nav>
+        <a href="/admin/users">Пользователи</a>
+        <a href="/admin/keys">Генерация ключей</a>
     </aside>
 
     <main class="content">
