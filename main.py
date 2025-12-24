@@ -44,20 +44,21 @@ async def get_post_stats(request: Request):
 # Admin panel
 # -----------------------
 
-@app_fastapi.get("/users", response_class=HTMLResponse)
+@app_fastapi.get("/admin/users", response_class=HTMLResponse)
 async def admin_users_page(request: Request):
     return templates.TemplateResponse(
-        "users.html",
+        "admin/users.html",
         {"request": request}
     )
 
 
-@app_fastapi.get("/keys", response_class=HTMLResponse)
+@app_fastapi.get("/admin/keys", response_class=HTMLResponse)
 async def admin_keys_page(request: Request):
     return templates.TemplateResponse(
-        "keys.html",
+        "admin/keys.html",
         {"request": request}
     )
+
 
 # -----------------------
 # Keep-alive (для Render)
