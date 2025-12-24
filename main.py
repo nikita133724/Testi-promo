@@ -23,18 +23,23 @@ from admin_users import AdminUsers, KEY_DURATION_OPTIONS, extract_user_id_from_r
 app_fastapi = FastAPI()
 templates = Jinja2Templates(directory="templates")
 
+# -----------------------
+# Middleware для шаблонов
+# -----------------------
 from starlette.middleware.sessions import SessionMiddleware
 SECRET_KEY = "vAGavYNa1WzrymonUQIEJ9ZW9mEDf"
 app_fastapi.add_middleware(SessionMiddleware, secret_key=SECRET_KEY)
 
-# -----------------------
-# Middleware для шаблонов
-# -----------------------
 @app_fastapi.middleware("http")
 async def add_is_admin_to_request(request: Request, call_next):
-    request.state.is_admin = request.session.get("is_admin", False)
+    # Проверяем наличие session, чтобы не падало
+    is_admin = False
+    if hasattr(request, "session"):
+        is_admin = request.session.get("is_admin", False)
+    request.state.is_admin = is_admin
     response = await call_next(request)
     return response
+
 
 def admin_required(func):
     @wraps(func)
@@ -162,6 +167,7 @@ async def admin_user_toggle_status(request: Request, chat_id: int):
     user_data["suspended"] = not user_data.get("suspended", False)
     _save_to_redis_partial(chat_id, {"suspended": user_data["suspended"]})
     return RedirectResponse(f"/admin/users/{chat_id}", status_code=303)
+
 
 @app_fastapi.post("/admin/users/{chat_id}/tokens")
 @admin_required
