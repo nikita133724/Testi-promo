@@ -10,9 +10,12 @@
     </tr>
     {% for user in users %}
     <tr>
-        <td>{{ user }}</td>
+        <td>
+            <a href="/admin/users/{{ user }}">{{ user }}</a>
+        </td>
     </tr>
     {% endfor %}
+
 </table>
 {% else %}
 <p>Пользователей нет</p>
