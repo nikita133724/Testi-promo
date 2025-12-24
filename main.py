@@ -1,7 +1,7 @@
 import asyncio
 import os
 import random
-
+from fastapi import Form
 from fastapi import FastAPI, Request
 from fastapi.responses import HTMLResponse
 from fastapi.templating import Jinja2Templates
@@ -154,12 +154,33 @@ async def admin_user_tokens(chat_id: int):
 
     return templates.TemplateResponse("admin/user_detail.html", user_data_for_template)
 
+from admin_users import KEY_DURATION_OPTIONS
+
 @app_fastapi.get("/admin/keys", response_class=HTMLResponse)
 async def admin_keys_page(request: Request):
     return templates.TemplateResponse(
         "admin/keys.html",
-        {"request": request}
+        {"request": request, "durations": KEY_DURATION_OPTIONS, "key": None}
     )
+from fastapi import Form
+
+@app_fastapi.post("/admin/keys/generate", response_class=HTMLResponse)
+async def admin_generate_key(request: Request, duration: int = Form(...)):
+    from access_control import generate_key
+
+    # Берём выбранный duration из KEY_DURATION_OPTIONS
+    label, delta = KEY_DURATION_OPTIONS[duration]
+    key = generate_key(delta)
+
+    return templates.TemplateResponse(
+        "admin/keys.html",
+        {
+            "request": request,
+            "durations": KEY_DURATION_OPTIONS,
+            "key": key
+        }
+    )
+
 
 # -----------------------
 # Keep-alive (для Render)
