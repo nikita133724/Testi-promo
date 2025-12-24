@@ -44,29 +44,25 @@ async def get_post_stats(request: Request):
 # Admin panel
 # -----------------------
 
-from admin_users import get_admins  # импорт вверху файла
+from admin_users import AdminUsers
+from telegram_bot import RAM_DATA, app as tg_bot
 
-
+admin_users = AdminUsers(RAM_DATA, tg_bot)
 @app_fastapi.get("/admin/users", response_class=HTMLResponse)
 async def admin_users_page(request: Request):
-    users = get_admins()  # реальные данные из RAM
+    # Берём все chat_id из RAM_DATA
+    users = list(admin_users.RAM_DATA.keys())
     return templates.TemplateResponse(
         "admin/users.html",
-        {
-            "request": request,
-            "users": users
-        }
+        {"request": request, "users": users}
     )
-
-
-
+    
 @app_fastapi.get("/admin/keys", response_class=HTMLResponse)
 async def admin_keys_page(request: Request):
     return templates.TemplateResponse(
         "admin/keys.html",
         {"request": request}
     )
-
 
 # -----------------------
 # Keep-alive (для Render)
