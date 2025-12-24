@@ -41,6 +41,25 @@ async def get_post_stats(request: Request):
     return templates.TemplateResponse("stats.html", {"request": request, "stats": stats})
 
 # -----------------------
+# Admin panel
+# -----------------------
+
+@app_fastapi.get("/users", response_class=HTMLResponse)
+async def admin_users_page(request: Request):
+    return templates.TemplateResponse(
+        "users.html",
+        {"request": request}
+    )
+
+
+@app_fastapi.get("/keys", response_class=HTMLResponse)
+async def admin_keys_page(request: Request):
+    return templates.TemplateResponse(
+        "keys.html",
+        {"request": request}
+    )
+
+# -----------------------
 # Keep-alive (для Render)
 # -----------------------
 SELF_URL = "https://promo-zq59.onrender.com"
