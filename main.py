@@ -50,13 +50,21 @@ from telegram_bot import RAM_DATA, app as tg_bot
 admin_users = AdminUsers(RAM_DATA, tg_bot)
 @app_fastapi.get("/admin/users", response_class=HTMLResponse)
 async def admin_users_page(request: Request):
-    # Берём все chat_id из RAM_DATA
-    users = list(admin_users.RAM_DATA.keys())
+    users_list = []
+    for chat_id in admin_users.RAM_DATA.keys():
+        user_data = admin_users.RAM_DATA[chat_id]
+        try:
+            user = await tg_bot.get_chat(chat_id)
+            username = f"@{user.username}" if user.username else str(chat_id)
+        except Exception:
+            username = str(chat_id)
+        users_list.append({"chat_id": chat_id, "username": username})
+
     return templates.TemplateResponse(
         "admin/users.html",
-        {"request": request, "users": users}
+        {"request": request, "users": users_list}
     )
-    
+
 from datetime import datetime
 
 @app_fastapi.get("/admin/users/{chat_id}", response_class=HTMLResponse)
