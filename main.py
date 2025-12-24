@@ -272,8 +272,8 @@ async def main():
 
     # Telegram
     print("Запуск Telegram-бота...")
-    await app.initialize()
-    await app.start()
+    await tg_app.initialize()
+    await tg_app.start()
 
     # Telethon
     await client.start()
@@ -281,7 +281,7 @@ async def main():
 
     try:
         await asyncio.gather(
-            app.updater.start_polling(),
+            tg_app.updater.start_polling(),
             client.run_until_disconnected()
         )
     finally:
