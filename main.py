@@ -217,10 +217,8 @@ async def get_post_stats(
 
 # -----------------------
 # Фоновые задачи
-# -----------------------
-import aiohttp
 async def keep_alive():
-    """Регулярный ping для поддержания приложения живым (Render/Heroku и т.д.)"""
+    import aiohttp
     while True:
         await asyncio.sleep(240 + random.random() * 120)
         try:
@@ -230,56 +228,24 @@ async def keep_alive():
         except Exception as e:
             print(f"Keep-alive error: {e}")
 
-
 async def run_token_refresher():
-    try:
-        asyncio.create_task(token_refresher_loop())
-        print("Фоновый таймер обновления токенов запущен.")
-    except Exception as e:
-        print(f"Ошибка token refresher: {e}")
-
-
-async def start_aiogram_bot():
-    """Запуск aiogram бота"""
-    try:
-        await tg_app.startup()  # инициализация
-        print("Aiogram бот инициализирован")
-        asyncio.create_task(tg_app.start_polling())  # polling в фоне
-        print("Aiogram polling запущен")
-    except Exception as e:
-        print(f"Ошибка aiogram: {e}")
-
-
-async def start_telethon_client():
-    """Запуск Telethon клиента"""
-    try:
-        await client.start()
-        print("Telethon клиент запущен")
-        await client.run_until_disconnected()  # держим клиента живым
-    except Exception as e:
-        print(f"Ошибка Telethon: {e}")
-
+    asyncio.create_task(token_refresher_loop())
+    print("Фоновый таймер обновления токенов запущен.")
 
 async def start_telegram():
-    """Объединяем запуск aiogram и Telethon"""
-    asyncio.create_task(start_aiogram_bot())
-    asyncio.create_task(start_telethon_client())
-
+    print("Запуск Telegram-бота...")
+    await tg_app.initialize()
+    await tg_app.start()
+    await client.start()
+    print("Telethon клиент запущен.")
+    await tg_app.updater.start_polling()
+    await client.run_until_disconnected()
 
 # -----------------------
-# Стартап FastAPI
+# Startup
 @app_fastapi.on_event("startup")
 async def startup_event():
-    print("FastAPI стартовал")
-    try:
-        # Фоновые задачи
-        asyncio.create_task(keep_alive())
-        asyncio.create_task(run_token_refresher())
-        asyncio.create_task(subscription_watcher(bot))
-        
-        # Telegram боты
-        asyncio.create_task(start_telegram())
-
-        print("Все фоновые задачи и Telegram боты запущены")
-    except Exception as e:
-        print(f"Ошибка при старте: {e}")
+    asyncio.create_task(keep_alive())
+    asyncio.create_task(run_token_refresher())
+    asyncio.create_task(subscription_watcher(bot))
+    asyncio.create_task(start_telegram())
