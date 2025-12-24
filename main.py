@@ -23,13 +23,19 @@ from admin_users import AdminUsers, KEY_DURATION_OPTIONS, extract_user_id_from_r
 # -----------------------
 from starlette.middleware.sessions import SessionMiddleware
 SECRET_KEY = "vAGavYNa1WzrymonUQIEJ9ZW9mEDf"
+
+# 1️⃣ Создаем приложение
 app_fastapi = FastAPI()
+
+# 2️⃣ Подключаем middleware сессий
 app_fastapi.add_middleware(SessionMiddleware, secret_key=SECRET_KEY)
+
+# 3️⃣ Jinja2Templates
 templates = Jinja2Templates(directory="templates")
 
+# 4️⃣ Middleware, которое использует request.session
 @app_fastapi.middleware("http")
 async def add_is_admin_to_request(request: Request, call_next):
-    # безопасно через request.session
     is_admin = request.session.get("is_admin", False)
     request.state.is_admin = is_admin
     response = await call_next(request)
