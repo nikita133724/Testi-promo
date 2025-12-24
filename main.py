@@ -44,12 +44,20 @@ async def get_post_stats(request: Request):
 # Admin panel
 # -----------------------
 
+from admin_users import get_admins  # импорт вверху файла
+
+
 @app_fastapi.get("/admin/users", response_class=HTMLResponse)
 async def admin_users_page(request: Request):
+    users = get_admins()  # реальные данные из RAM
     return templates.TemplateResponse(
         "admin/users.html",
-        {"request": request}
+        {
+            "request": request,
+            "users": users
+        }
     )
+
 
 
 @app_fastapi.get("/admin/keys", response_class=HTMLResponse)
