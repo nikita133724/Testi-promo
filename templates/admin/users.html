@@ -11,7 +11,7 @@
     {% for user in users %}
     <tr>
         <td>
-            <a href="/admin/users/{{ user }}">{{ user }}</a>
+            <a href="/admin/users/{{ user.chat_id }}">{{ user.username }}</a>
         </td>
     </tr>
     {% endfor %}
