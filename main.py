@@ -27,7 +27,7 @@ templates = Jinja2Templates(directory="templates")
 ADMIN_LOGIN = "сахар"
 ADMIN_PASSWORD = "394990!mmmn"
 
-admin_users = AdminUsers(RAM_DATA, bot)
+admin_users = AdminUsers(RAM_DATA, tg_app)
 chat_ids = load_chatids()
 
 # -----------------------
