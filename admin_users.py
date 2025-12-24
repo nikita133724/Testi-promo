@@ -387,13 +387,14 @@ class AdminUsers:
                 await query.message.edit_text(text, parse_mode="Markdown")
             else:
                 await self.bot.send_message(admin_chat_id, text, parse_mode="Markdown")
+                
     async def get_username(self, uid: int) -> str:
-        """
-        Получает username Telegram-пользователя.
-        Если username нет, возвращает chat_id как строку.
-        """
         try:
             user = await self.bot.get_chat(uid)
-            return f"@{user.username}" if user.username else str(uid)
-        except Exception:
+            username = f"@{user.username}" if user.username else str(uid)
+            print(f"DEBUG: got username for {uid} -> {username}")
+            return username
+        except Exception as e:
+            print(f"DEBUG: failed to get username for {uid}: {e}")
             return str(uid)
+
