@@ -7,6 +7,12 @@ from fastapi.responses import HTMLResponse
 from fastapi.templating import Jinja2Templates
 import uvicorn
 from aiohttp import ClientSession
+from fastapi import HTTPException
+
+def require_admin(request: Request):
+    if not request.session.get("is_admin"):
+        # Если админ не залогинен — редирект на /login
+        raise HTTPException(status_code=303, detail="Redirect", headers={"Location": "/login"})
 
 # -----------------------
 # Импорты Telegram и RAM_DATA
@@ -21,6 +27,9 @@ from access_control import subscription_watcher
 # -----------------------
 app_fastapi = FastAPI()
 templates = Jinja2Templates(directory="templates")  # папка с stats.html
+from starlette.middleware.sessions import SessionMiddleware
+SECRET_KEY = "СЮДА_ТВОЙ_СЕКРЕТНЫЙ_КЛЮЧ_ТОЛСТЫЙ_И_СЛОЖНЫЙ"
+app_fastapi.add_middleware(SessionMiddleware, secret_key=SECRET_KEY)
 
 # -----------------------
 # Маршруты
@@ -43,6 +52,29 @@ async def get_post_stats(request: Request):
 # -----------------------
 # Admin panel
 # -----------------------
+from fastapi.responses import RedirectResponse
+from fastapi import Form
+
+# Задаём свои логин и пароль (можно потом вынести в ENV)
+ADMIN_LOGIN = "admin"
+ADMIN_PASSWORD = "supersecret"
+
+@app_fastapi.get("/login", response_class=HTMLResponse)
+async def login_page(request: Request):
+    return templates.TemplateResponse("login.html", {"request": request, "error": None})
+
+@app_fastapi.post("/login")
+async def login_post(request: Request, username: str = Form(...), password: str = Form(...)):
+    if username == ADMIN_LOGIN and password == ADMIN_PASSWORD:
+        request.session["is_admin"] = True
+        return RedirectResponse("/admin/users", status_code=303)
+
+    # Неверный логин/пароль
+    return templates.TemplateResponse(
+        "login.html",
+        {"request": request, "error": "Неверный логин или пароль"}
+    )
+
 
 from admin_users import AdminUsers
 from telegram_bot import RAM_DATA, app as tg_bot
@@ -50,11 +82,11 @@ from telegram_bot import RAM_DATA, app as tg_bot
 admin_users = AdminUsers(RAM_DATA, tg_bot)
 @app_fastapi.get("/admin/users", response_class=HTMLResponse)
 async def admin_users_page(request: Request):
+    require_admin(request)  # <- Добавляем сюда
     users_list = []
     for chat_id in admin_users.RAM_DATA.keys():
-        username = str(chat_id)  # по умолчанию
+        username = str(chat_id)
         try:
-            # пробуем получить username через бота
             user = await tg_bot.get_chat(chat_id)
             if user.username:
                 username = f"@{user.username}"
@@ -64,8 +96,9 @@ async def admin_users_page(request: Request):
 
     return templates.TemplateResponse(
         "admin/users.html",
-        {"request": request, "users": users_list}
+        {"request": request, "users": users_list, "is_admin": True}  # передаём флаг
     )
+
 
 
 from datetime import datetime
@@ -158,9 +191,10 @@ from admin_users import KEY_DURATION_OPTIONS
 
 @app_fastapi.get("/admin/keys", response_class=HTMLResponse)
 async def admin_keys_page(request: Request):
+    require_admin(request)
     return templates.TemplateResponse(
         "admin/keys.html",
-        {"request": request, "durations": KEY_DURATION_OPTIONS, "key": None}
+        {"request": request, "durations": KEY_DURATION_OPTIONS, "key": None, "is_admin": True}
     )
 from fastapi import Form
 
