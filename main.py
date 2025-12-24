@@ -210,7 +210,6 @@ async def get_post_stats(
     _: None = Depends(admin_required)
 ):
     stats = RAM_DATA.get("last_post_stats")
-    print("DEBUG: stats =", stats)
     if not stats:
         return HTMLResponse("<h2>Данных нет</h2>", status_code=404)
 
