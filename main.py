@@ -1,35 +1,61 @@
 import asyncio
 import os
 import random
-from fastapi import Form
-from fastapi import FastAPI, Request
-from fastapi.responses import HTMLResponse
+from fastapi import Form, FastAPI, Request, HTTPException
+from fastapi.responses import HTMLResponse, RedirectResponse
 from fastapi.templating import Jinja2Templates
 import uvicorn
 from aiohttp import ClientSession
-from fastapi import HTTPException
-
-def require_admin(request: Request):
-    if not request.session.get("is_admin"):
-        # Если админ не залогинен — редирект на /login
-        raise HTTPException(status_code=303, detail="Redirect", headers={"Location": "/login"})
+from functools import wraps
 
 # -----------------------
-# Импорты Telegram и RAM_DATA
+# Telegram и RAM_DATA
 # -----------------------
 from telegram_client import client
-from telegram_bot import app, bot, load_chatids, build_reply_keyboard, RAM_DATA
+from telegram_bot import app as tg_app, bot, load_chatids, build_reply_keyboard, RAM_DATA, _save_to_redis_partial
 from refresh_tokens import token_refresher_loop
-from access_control import subscription_watcher
+from access_control import subscription_watcher, generate_key
+from admin_users import AdminUsers, KEY_DURATION_OPTIONS, extract_user_id_from_refresh, fetch_site_nickname
 
 # -----------------------
-# Настройка FastAPI и Jinja2
+# FastAPI и Jinja2
 # -----------------------
 app_fastapi = FastAPI()
-templates = Jinja2Templates(directory="templates")  # папка с stats.html
+templates = Jinja2Templates(directory="templates")
+
 from starlette.middleware.sessions import SessionMiddleware
 SECRET_KEY = "СЮДА_ТВОЙ_СЕКРЕТНЫЙ_КЛЮЧ_ТОЛСТЫЙ_И_СЛОЖНЫЙ"
 app_fastapi.add_middleware(SessionMiddleware, secret_key=SECRET_KEY)
+
+# -----------------------
+# Middleware для всех шаблонов
+# -----------------------
+@app_fastapi.middleware("http")
+async def add_is_admin_to_request(request: Request, call_next):
+    request.state.is_admin = request.session.get("is_admin", False)
+    response = await call_next(request)
+    return response
+
+# -----------------------
+# Декоратор для админки
+# -----------------------
+def admin_required(func):
+    @wraps(func)
+    async def wrapper(request: Request, *args, **kwargs):
+        if not request.session.get("is_admin"):
+            raise HTTPException(
+                status_code=303,
+                detail="Redirect",
+                headers={"Location": "/login"}
+            )
+        return await func(request, *args, **kwargs)
+    return wrapper
+
+# -----------------------
+# Настройки админа
+# -----------------------
+ADMIN_LOGIN = "admin"
+ADMIN_PASSWORD = "supersecret"
 
 # -----------------------
 # Маршруты
@@ -50,15 +76,8 @@ async def get_post_stats(request: Request):
     return templates.TemplateResponse("stats.html", {"request": request, "stats": stats})
 
 # -----------------------
-# Admin panel
+# Login/Logout
 # -----------------------
-from fastapi.responses import RedirectResponse
-from fastapi import Form
-
-# Задаём свои логин и пароль (можно потом вынести в ENV)
-ADMIN_LOGIN = "admin"
-ADMIN_PASSWORD = "supersecret"
-
 @app_fastapi.get("/login", response_class=HTMLResponse)
 async def login_page(request: Request):
     return templates.TemplateResponse("login.html", {"request": request, "error": None})
@@ -68,61 +87,52 @@ async def login_post(request: Request, username: str = Form(...), password: str 
     if username == ADMIN_LOGIN and password == ADMIN_PASSWORD:
         request.session["is_admin"] = True
         return RedirectResponse("/admin/users", status_code=303)
+    return templates.TemplateResponse("login.html", {"request": request, "error": "Неверный логин или пароль"})
 
-    # Неверный логин/пароль
-    return templates.TemplateResponse(
-        "login.html",
-        {"request": request, "error": "Неверный логин или пароль"}
-    )
+@app_fastapi.get("/logout")
+async def logout(request: Request):
+    request.session.clear()
+    return RedirectResponse("/login", status_code=303)
 
+# -----------------------
+# Admin Users
+# -----------------------
+admin_users = AdminUsers(RAM_DATA, tg_app)
 
-from admin_users import AdminUsers
-from telegram_bot import RAM_DATA, app as tg_bot
-
-admin_users = AdminUsers(RAM_DATA, tg_bot)
 @app_fastapi.get("/admin/users", response_class=HTMLResponse)
+@admin_required
 async def admin_users_page(request: Request):
-    require_admin(request)  # <- Добавляем сюда
     users_list = []
     for chat_id in admin_users.RAM_DATA.keys():
         username = str(chat_id)
         try:
-            user = await tg_bot.get_chat(chat_id)
+            user = await tg_app.get_chat(chat_id)
             if user.username:
                 username = f"@{user.username}"
-        except Exception:
+        except:
             pass
         users_list.append({"chat_id": chat_id, "username": username})
 
-    return templates.TemplateResponse(
-        "admin/users.html",
-        {"request": request, "users": users_list, "is_admin": True}  # передаём флаг
-    )
-
-
-
-from datetime import datetime
+    return templates.TemplateResponse("admin/users.html", {"request": request, "users": users_list})
 
 @app_fastapi.get("/admin/users/{chat_id}", response_class=HTMLResponse)
+@admin_required
 async def admin_user_detail(request: Request, chat_id: int):
     user_data = admin_users.RAM_DATA.get(chat_id)
     if not user_data:
         return HTMLResponse("<h2>Пользователь не найден</h2>", status_code=404)
 
-    # Получаем username через бота
     try:
-        user = await tg_bot.get_chat(chat_id)
+        user = await tg_app.get_chat(chat_id)
         username = f"@{user.username}" if user.username else str(chat_id)
-    except Exception:
+    except:
         username = str(chat_id)
 
     next_refresh = user_data.get("next_refresh_time", "не задано")
-
     refresh_token = user_data.get("refresh_token")
     site_name = "Неизвестно"
     profile_link = "#"
     if refresh_token:
-        from admin_users import extract_user_id_from_refresh, fetch_site_nickname
         user_id = extract_user_id_from_refresh(refresh_token)
         if user_id:
             nickname = await fetch_site_nickname(user_id)
@@ -143,26 +153,23 @@ async def admin_user_detail(request: Request, chat_id: int):
             "profile_link": profile_link,
             "status": status,
             "button_text": "🔄 Восстановить" if user_data.get("suspended") else "⏸ Приостановить",
-            "tokens": None  # пока скрыто
+            "tokens": None
         }
     )
+
 @app_fastapi.post("/admin/users/{chat_id}/toggle_status")
+@admin_required
 async def admin_user_toggle_status(chat_id: int):
     user_data = admin_users.RAM_DATA.get(chat_id)
     if not user_data:
         return HTMLResponse("<h2>Пользователь не найден</h2>", status_code=404)
-
-    # Переключаем статус
     user_data["suspended"] = not user_data.get("suspended", False)
-
-    # Сохраняем через _save_to_redis_partial
-    from telegram_bot import _save_to_redis_partial
     _save_to_redis_partial(chat_id, {"suspended": user_data["suspended"]})
-
-    # Перенаправляем обратно на страницу пользователя
     return RedirectResponse(f"/admin/users/{chat_id}", status_code=303)
+
 @app_fastapi.post("/admin/users/{chat_id}/tokens")
-async def admin_user_tokens(chat_id: int):
+@admin_required
+async def admin_user_tokens(request: Request, chat_id: int):
     user_data = admin_users.RAM_DATA.get(chat_id)
     if not user_data:
         return HTMLResponse("<h2>Пользователь не найден</h2>", status_code=404)
@@ -172,74 +179,61 @@ async def admin_user_tokens(chat_id: int):
         "refresh_token": user_data.get("refresh_token", "не задан")
     }
 
-    # Перенаправляем на ту же страницу с токенами
-    user_data_for_template = {
-        "request": None,  # временно, FastAPI сам передаст request в route
-        "chat_id": chat_id,
-        "username": f"@{user_data.get('username', chat_id)}",
-        "next_refresh": user_data.get("next_refresh_time", "не задано"),
-        "site_name": "Неизвестно",
-        "profile_link": "#",
-        "status": "приостановлен" if user_data.get("suspended") else "активен",
-        "button_text": "🔄 Восстановить" if user_data.get("suspended") else "⏸ Приостановить",
-        "tokens": tokens
-    }
-
-    return templates.TemplateResponse("admin/user_detail.html", user_data_for_template)
-
-from admin_users import KEY_DURATION_OPTIONS
-
-@app_fastapi.get("/admin/keys", response_class=HTMLResponse)
-async def admin_keys_page(request: Request):
-    require_admin(request)
     return templates.TemplateResponse(
-        "admin/keys.html",
-        {"request": request, "durations": KEY_DURATION_OPTIONS, "key": None, "is_admin": True}
-    )
-from fastapi import Form
-
-@app_fastapi.post("/admin/keys/generate", response_class=HTMLResponse)
-async def admin_generate_key(request: Request, duration: int = Form(...)):
-    from access_control import generate_key
-
-    # Берём выбранный duration из KEY_DURATION_OPTIONS
-    label, delta = KEY_DURATION_OPTIONS[duration]
-    key = generate_key(delta)
-
-    return templates.TemplateResponse(
-        "admin/keys.html",
+        "admin/user_detail.html",
         {
             "request": request,
-            "durations": KEY_DURATION_OPTIONS,
-            "key": key
+            "chat_id": chat_id,
+            "username": f"@{user_data.get('username', chat_id)}",
+            "next_refresh": user_data.get("next_refresh_time", "не задано"),
+            "site_name": "Неизвестно",
+            "profile_link": "#",
+            "status": "приостановлен" if user_data.get("suspended") else "активен",
+            "button_text": "🔄 Восстановить" if user_data.get("suspended") else "⏸ Приостановить",
+            "tokens": tokens
         }
     )
 
+# -----------------------
+# Admin Keys
+# -----------------------
+@app_fastapi.get("/admin/keys", response_class=HTMLResponse)
+@admin_required
+async def admin_keys_page(request: Request):
+    return templates.TemplateResponse(
+        "admin/keys.html",
+        {"request": request, "durations": KEY_DURATION_OPTIONS, "key": None}
+    )
+
+@app_fastapi.post("/admin/keys/generate", response_class=HTMLResponse)
+@admin_required
+async def admin_generate_key(request: Request, duration: int = Form(...)):
+    label, delta = KEY_DURATION_OPTIONS[duration]
+    key = generate_key(delta)
+    return templates.TemplateResponse(
+        "admin/keys.html",
+        {"request": request, "durations": KEY_DURATION_OPTIONS, "key": key}
+    )
 
 # -----------------------
-# Keep-alive (для Render)
+# Keep-alive
 # -----------------------
 SELF_URL = "https://promo-zq59.onrender.com"
 
 async def keep_alive():
     if not SELF_URL:
-        print("SELF_URL не задан, keep-alive не будет работать")
         return
     while True:
-        delay = 240 + random.random() * 120
-        await asyncio.sleep(delay)
+        await asyncio.sleep(240 + random.random() * 120)
         try:
             async with ClientSession() as session:
                 async with session.get(f"{SELF_URL}/healthz") as resp:
-                    if resp.status == 200:
-                        print("Keep-alive ping OK")
-                    else:
-                        print(f"Keep-alive ping вернул статус {resp.status}")
+                    print(f"Keep-alive ping: {resp.status}")
         except Exception as e:
             print(f"Keep-alive error: {e}")
 
 # -----------------------
-# Функции для Telegram
+# Telegram bot helpers
 # -----------------------
 chat_ids = load_chatids()
 
@@ -256,7 +250,7 @@ async def send_message_to_all(text, keyboard=False):
             print(f"Ошибка отправки сообщения {chat_id}: {e}")
 
 # -----------------------
-# Запуск FastAPI сервера (uvicorn)
+# FastAPI запуск
 # -----------------------
 async def start_fastapi():
     port = int(os.environ.get("PORT", 8000))
@@ -268,35 +262,32 @@ async def start_fastapi():
 # Основная логика
 # -----------------------
 async def main():
-    # 🔹 FastAPI сервер
+    # FastAPI
     asyncio.create_task(start_fastapi())
     asyncio.create_task(keep_alive())
 
-    # 🔹 Таймер токенов
+    # Таймеры
     asyncio.create_task(run_token_refresher())
-
-    # 🔹 Фоновый таймер подписок
     asyncio.create_task(subscription_watcher(bot))
 
-    # 🔹 Запуск Telegram-бота асинхронно
+    # Telegram
     print("Запуск Telegram-бота...")
     await app.initialize()
     await app.start()
-    
-    # 🔹 Telethon
-    await client.start()
-    print("Telethon клиент запущен, ждём сообщений...")
 
-    # 🔹 Ожидание работы бота и Telethon
+    # Telethon
+    await client.start()
+    print("Telethon клиент запущен.")
+
     try:
         await asyncio.gather(
             app.updater.start_polling(),
             client.run_until_disconnected()
         )
     finally:
-        await app.updater.stop()
-        await app.stop()
-        await app.shutdown()
+        await tg_app.updater.stop()
+        await tg_app.stop()
+        await tg_app.shutdown()
 
 # -----------------------
 # Запуск
