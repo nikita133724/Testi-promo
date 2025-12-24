@@ -1,0 +1,29 @@
+{% extends "admin/layout.html" %}
+
+{% block content %}
+<h1>Информация о пользователе</h1>
+
+<p><strong>Username:</strong> {{ username }}</p>
+<p><strong>chat_id:</strong> {{ chat_id }}</p>
+<p><strong>Следующий refresh:</strong> {{ next_refresh }}</p>
+<p><strong>Сайт:</strong> <a href="{{ profile_link }}" target="_blank">{{ site_name }}</a></p>
+<p><strong>Статус:</strong> {{ status }}</p>
+
+<h3>Действия</h3>
+<form method="post" action="/admin/users/{{ chat_id }}/toggle_status" style="display:inline-block;">
+    <button type="submit">{{ button_text }}</button>
+</form>
+
+<form method="post" action="/admin/users/{{ chat_id }}/tokens" style="display:inline-block; margin-left:10px;">
+    <button type="submit">Посмотреть токены</button>
+</form>
+
+<a href="/admin/users" style="margin-left:20px;">⬅️ Назад к списку</a>
+
+{% if tokens %}
+<h3>Токены пользователя</h3>
+<p><strong>Access Token:</strong> {{ tokens.access_token }}</p>
+<p><strong>Refresh Token:</strong> {{ tokens.refresh_token }}</p>
+{% endif %}
+
+{% endblock %}
