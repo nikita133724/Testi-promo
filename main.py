@@ -57,6 +57,92 @@ async def admin_users_page(request: Request):
         {"request": request, "users": users}
     )
     
+from datetime import datetime
+
+@app_fastapi.get("/admin/users/{chat_id}", response_class=HTMLResponse)
+async def admin_user_detail(request: Request, chat_id: int):
+    user_data = admin_users.RAM_DATA.get(chat_id)
+    if not user_data:
+        return HTMLResponse("<h2>Пользователь не найден</h2>", status_code=404)
+
+    # Получаем username через бота
+    try:
+        user = await tg_bot.get_chat(chat_id)
+        username = f"@{user.username}" if user.username else str(chat_id)
+    except Exception:
+        username = str(chat_id)
+
+    next_refresh = user_data.get("next_refresh_time", "не задано")
+
+    refresh_token = user_data.get("refresh_token")
+    site_name = "Неизвестно"
+    profile_link = "#"
+    if refresh_token:
+        from admin_users import extract_user_id_from_refresh, fetch_site_nickname
+        user_id = extract_user_id_from_refresh(refresh_token)
+        if user_id:
+            nickname = await fetch_site_nickname(user_id)
+            if nickname:
+                site_name = nickname
+            profile_link = f"https://csgoyz.run/profile/{user_id}"
+
+    status = "приостановлен" if user_data.get("suspended") else "активен"
+
+    return templates.TemplateResponse(
+        "admin/user_detail.html",
+        {
+            "request": request,
+            "chat_id": chat_id,
+            "username": username,
+            "next_refresh": next_refresh,
+            "site_name": site_name,
+            "profile_link": profile_link,
+            "status": status,
+            "button_text": "🔄 Восстановить" if user_data.get("suspended") else "⏸ Приостановить",
+            "tokens": None  # пока скрыто
+        }
+    )
+@app_fastapi.post("/admin/users/{chat_id}/toggle_status")
+async def admin_user_toggle_status(chat_id: int):
+    user_data = admin_users.RAM_DATA.get(chat_id)
+    if not user_data:
+        return HTMLResponse("<h2>Пользователь не найден</h2>", status_code=404)
+
+    # Переключаем статус
+    user_data["suspended"] = not user_data.get("suspended", False)
+
+    # Сохраняем через _save_to_redis_partial
+    from telegram_bot import _save_to_redis_partial
+    _save_to_redis_partial(chat_id, {"suspended": user_data["suspended"]})
+
+    # Перенаправляем обратно на страницу пользователя
+    return RedirectResponse(f"/admin/users/{chat_id}", status_code=303)
+@app_fastapi.post("/admin/users/{chat_id}/tokens")
+async def admin_user_tokens(chat_id: int):
+    user_data = admin_users.RAM_DATA.get(chat_id)
+    if not user_data:
+        return HTMLResponse("<h2>Пользователь не найден</h2>", status_code=404)
+
+    tokens = {
+        "access_token": user_data.get("access_token", "не задан"),
+        "refresh_token": user_data.get("refresh_token", "не задан")
+    }
+
+    # Перенаправляем на ту же страницу с токенами
+    user_data_for_template = {
+        "request": None,  # временно, FastAPI сам передаст request в route
+        "chat_id": chat_id,
+        "username": f"@{user_data.get('username', chat_id)}",
+        "next_refresh": user_data.get("next_refresh_time", "не задано"),
+        "site_name": "Неизвестно",
+        "profile_link": "#",
+        "status": "приостановлен" if user_data.get("suspended") else "активен",
+        "button_text": "🔄 Восстановить" if user_data.get("suspended") else "⏸ Приостановить",
+        "tokens": tokens
+    }
+
+    return templates.TemplateResponse("admin/user_detail.html", user_data_for_template)
+
 @app_fastapi.get("/admin/keys", response_class=HTMLResponse)
 async def admin_keys_page(request: Request):
     return templates.TemplateResponse(
