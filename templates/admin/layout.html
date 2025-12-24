@@ -31,7 +31,12 @@
         <h2>Admin</h2>
         <a href="/admin/users">Пользователи</a>
         <a href="/admin/keys">Генерация ключей</a>
+    
+        {% if is_admin %}
+        <a href="/logout" style="margin-top: 20px; background: #f44336; padding: 8px; border-radius: 4px; display: inline-block; text-align: center;">Выйти</a>
+        {% endif %}
     </aside>
+
 
     <main class="content">
         {% block content %}{% endblock %}
