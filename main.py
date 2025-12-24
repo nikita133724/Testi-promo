@@ -1,47 +1,43 @@
 import asyncio
-import os
 import random
-from fastapi import Form, FastAPI, Request, HTTPException
+import os
+from fastapi import FastAPI, Request, Form
 from fastapi.responses import HTMLResponse, RedirectResponse
 from fastapi.templating import Jinja2Templates
-import uvicorn
-from aiohttp import ClientSession
+from starlette.middleware.sessions import SessionMiddleware
 from functools import wraps
 
 # -----------------------
 # Telegram и RAM_DATA
-# -----------------------
 from telegram_client import client
 from telegram_bot import app as tg_app, bot, load_chatids, build_reply_keyboard, RAM_DATA, _save_to_redis_partial
 from refresh_tokens import token_refresher_loop
 from access_control import subscription_watcher, generate_key
 from admin_users import AdminUsers, KEY_DURATION_OPTIONS, extract_user_id_from_refresh, fetch_site_nickname
 
-
 # -----------------------
-# Middleware для шаблонов
-# -----------------------
-from starlette.middleware.sessions import SessionMiddleware
 SECRET_KEY = "vAGavYNa1WzrymonUQIEJ9ZW9mEDf"
+SELF_URL = os.environ.get("SELF_URL", "https://promo-zq59.onrender.com")
 
-# 1️⃣ Создаем приложение
 app_fastapi = FastAPI()
-
-# 2️⃣ Подключаем middleware сессий
 app_fastapi.add_middleware(SessionMiddleware, secret_key=SECRET_KEY)
-
-# 3️⃣ Jinja2Templates
 templates = Jinja2Templates(directory="templates")
 
-# 4️⃣ Middleware, которое использует request.session
+# -----------------------
+# Настройки админа
+ADMIN_LOGIN = "сахар"
+ADMIN_PASSWORD = "394990!mmmn"
+
+admin_users = AdminUsers(RAM_DATA, tg_app)
+chat_ids = load_chatids()
+
+# -----------------------
+# Middleware
 @app_fastapi.middleware("http")
 async def add_is_admin_to_request(request: Request, call_next):
-    is_admin = request.session.get("is_admin", False)
-    request.state.is_admin = is_admin
+    request.state.is_admin = request.session.get("is_admin", False)
     response = await call_next(request)
     return response
-
-
 
 def admin_required(func):
     @wraps(func)
@@ -51,17 +47,8 @@ def admin_required(func):
         return await func(request, *args, **kwargs)
     return wrapper
 
-
-
 # -----------------------
-# Настройки админа
-# -----------------------
-ADMIN_LOGIN = "сахар"
-ADMIN_PASSWORD = "394990!mmmn"
-
-# -----------------------
-# Маршруты
-# -----------------------
+# Routes
 @app_fastapi.get("/", response_class=HTMLResponse)
 async def root():
     return HTMLResponse("<h2>Сервер работает</h2>")
@@ -78,8 +65,7 @@ async def get_post_stats(request: Request):
     return templates.TemplateResponse("stats.html", {"request": request, "stats": stats})
 
 # -----------------------
-# Login/Logout
-# -----------------------
+# Login / Logout
 @app_fastapi.get("/login", response_class=HTMLResponse)
 async def login_page(request: Request):
     return templates.TemplateResponse("login.html", {"request": request, "error": None})
@@ -98,9 +84,6 @@ async def logout(request: Request):
 
 # -----------------------
 # Admin Users
-# -----------------------
-admin_users = AdminUsers(RAM_DATA, tg_app)
-
 @app_fastapi.get("/admin/users", response_class=HTMLResponse)
 @admin_required
 async def admin_users_page(request: Request):
@@ -171,19 +154,16 @@ async def admin_user_toggle_status(request: Request, chat_id: int):
     _save_to_redis_partial(chat_id, {"suspended": user_data["suspended"]})
     return RedirectResponse(f"/admin/users/{chat_id}", status_code=303)
 
-
 @app_fastapi.post("/admin/users/{chat_id}/tokens")
 @admin_required
 async def admin_user_tokens(request: Request, chat_id: int):
     user_data = admin_users.RAM_DATA.get(chat_id)
     if not user_data:
         return HTMLResponse("<h2>Пользователь не найден</h2>", status_code=404)
-
     tokens = {
         "access_token": user_data.get("access_token", "не задан"),
         "refresh_token": user_data.get("refresh_token", "не задан")
     }
-
     return templates.TemplateResponse("admin/user_detail.html", {
         "request": request,
         "chat_id": chat_id,
@@ -199,7 +179,6 @@ async def admin_user_tokens(request: Request, chat_id: int):
 
 # -----------------------
 # Admin Keys
-# -----------------------
 @app_fastapi.get("/admin/keys", response_class=HTMLResponse)
 @admin_required
 async def admin_keys_page(request: Request):
@@ -223,81 +202,36 @@ async def admin_generate_key(request: Request, duration: int = Form(...)):
     })
 
 # -----------------------
-# Keep-alive
-# -----------------------
-SELF_URL = "https://promo-zq59.onrender.com"
-
+# Фоновые задачи
 async def keep_alive():
-    if not SELF_URL:
-        return
+    import aiohttp
     while True:
         await asyncio.sleep(240 + random.random() * 120)
         try:
-            async with ClientSession() as session:
+            async with aiohttp.ClientSession() as session:
                 async with session.get(f"{SELF_URL}/healthz") as resp:
                     print(f"Keep-alive ping: {resp.status}")
         except Exception as e:
             print(f"Keep-alive error: {e}")
 
-# -----------------------
-# Telegram bot helpers
-# -----------------------
-chat_ids = load_chatids()
-
 async def run_token_refresher():
     asyncio.create_task(token_refresher_loop())
     print("Фоновый таймер обновления токенов запущен.")
 
-async def send_message_to_all(text, keyboard=False):
-    for chat_id in chat_ids:
-        try:
-            reply_markup = build_reply_keyboard(chat_id) if keyboard else None
-            await bot.send_message(chat_id=chat_id, text=text, reply_markup=reply_markup)
-        except Exception as e:
-            print(f"Ошибка отправки сообщения {chat_id}: {e}")
-
-# -----------------------
-# FastAPI запуск
-# -----------------------
-async def start_fastapi():
-    port = int(os.environ.get("PORT", 8000))
-    config = uvicorn.Config(app_fastapi, host="0.0.0.0", port=port, log_level="info")
-    server = uvicorn.Server(config)
-    await server.serve()
-
-# -----------------------
-# Основная логика
-# -----------------------
-async def main():
-    # FastAPI
-    asyncio.create_task(start_fastapi())
-    asyncio.create_task(keep_alive())
-
-    # Таймеры
-    asyncio.create_task(run_token_refresher())
-    asyncio.create_task(subscription_watcher(bot))
-
-    # Telegram
+async def start_telegram():
     print("Запуск Telegram-бота...")
     await tg_app.initialize()
     await tg_app.start()
-
-    # Telethon
     await client.start()
     print("Telethon клиент запущен.")
-
-    try:
-        await asyncio.gather(
-            tg_app.updater.start_polling(),
-            client.run_until_disconnected()
-        )
-    finally:
-        await tg_app.updater.stop()
-        await tg_app.stop()
-        await tg_app.shutdown()
+    await tg_app.updater.start_polling()
+    await client.run_until_disconnected()
 
 # -----------------------
-# Запуск
-# -----------------------
-if __name__ == "__main__":
-    asyncio.run(main())
+# Startup event
+@app_fastapi.on_event("startup")
+async def startup_event():
+    asyncio.create_task(keep_alive())
+    asyncio.create_task(run_token_refresher())
+    asyncio.create_task(subscription_watcher(bot))
+    asyncio.create_task(start_telegram())
