@@ -28,15 +28,22 @@ SECRET_KEY = "vAGavYNa1WzrymonUQIEJ9ZW9mEDf"
 app_fastapi.add_middleware(SessionMiddleware, secret_key=SECRET_KEY)
 
 # -----------------------
-# Декоратор для админки
+# Middleware для шаблонов
 # -----------------------
+@app_fastapi.middleware("http")
+async def add_is_admin_to_request(request: Request, call_next):
+    request.state.is_admin = request.session.get("is_admin", False)
+    response = await call_next(request)
+    return response
+
 def admin_required(func):
     @wraps(func)
     async def wrapper(request: Request, *args, **kwargs):
-        if not getattr(request, "session", None) or not request.session.get("is_admin"):
+        if not request.session.get("is_admin"):
             return RedirectResponse("/login", status_code=303)
         return await func(request, *args, **kwargs)
     return wrapper
+
 
 # -----------------------
 # Настройки админа
@@ -148,7 +155,7 @@ async def admin_user_detail(request: Request, chat_id: int):
 
 @app_fastapi.post("/admin/users/{chat_id}/toggle_status")
 @admin_required
-async def admin_user_toggle_status(chat_id: int):
+async def admin_user_toggle_status(request: Request, chat_id: int):
     user_data = admin_users.RAM_DATA.get(chat_id)
     if not user_data:
         return HTMLResponse("<h2>Пользователь не найден</h2>", status_code=404)
