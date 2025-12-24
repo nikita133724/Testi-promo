@@ -17,11 +17,6 @@ from refresh_tokens import token_refresher_loop
 from access_control import subscription_watcher, generate_key
 from admin_users import AdminUsers, KEY_DURATION_OPTIONS, extract_user_id_from_refresh, fetch_site_nickname
 
-# -----------------------
-# FastAPI и Jinja2
-# -----------------------
-app_fastapi = FastAPI()
-templates = Jinja2Templates(directory="templates")
 
 # -----------------------
 # Middleware для шаблонов
