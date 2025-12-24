@@ -52,18 +52,21 @@ admin_users = AdminUsers(RAM_DATA, tg_bot)
 async def admin_users_page(request: Request):
     users_list = []
     for chat_id in admin_users.RAM_DATA.keys():
-        user_data = admin_users.RAM_DATA[chat_id]
+        username = str(chat_id)  # по умолчанию
         try:
+            # пробуем получить username через бота
             user = await tg_bot.get_chat(chat_id)
-            username = f"@{user.username}" if user.username else str(chat_id)
+            if user.username:
+                username = f"@{user.username}"
         except Exception:
-            username = str(chat_id)
+            pass
         users_list.append({"chat_id": chat_id, "username": username})
 
     return templates.TemplateResponse(
         "admin/users.html",
         {"request": request, "users": users_list}
     )
+
 
 from datetime import datetime
 
