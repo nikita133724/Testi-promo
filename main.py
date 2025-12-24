@@ -28,6 +28,8 @@ templates = Jinja2Templates(directory="templates")
 # -----------------------
 from starlette.middleware.sessions import SessionMiddleware
 SECRET_KEY = "vAGavYNa1WzrymonUQIEJ9ZW9mEDf"
+app_fastapi = FastAPI()
+templates = Jinja2Templates(directory="templates")
 app_fastapi.add_middleware(SessionMiddleware, secret_key=SECRET_KEY)
 
 @app_fastapi.middleware("http")
