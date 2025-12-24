@@ -22,7 +22,29 @@
             flex: 1;
             padding: 30px;
             background: #f3f4f6;
+            overflow-y: auto;
         }
+
+        /* Общие стили таблиц */
+        table {
+            border-collapse: collapse;
+            width: 100%;
+            margin-bottom: 30px;
+        }
+        th, td {
+            border: 1px solid #ccc;
+            padding: 8px 12px;
+            text-align: center;
+        }
+        th {
+            background-color: #556B2F;
+            color: white;
+        }
+        tr:nth-child(even) {
+            background-color: #f9f9f9;
+        }
+
+        h2, h3 { margin: 10px 0; }
     </style>
 </head>
 <body>
@@ -31,15 +53,12 @@
         <h2>Admin</h2>
         <a href="/admin/users">Пользователи</a>
         <a href="/admin/keys">Генерация ключей</a>
-        <a href="/stats">статистика по посту</a>
-        
+        <a href="/stats">Статистика по посту</a>
+
         {% if request.session.get("is_admin") %}
             <a href="/logout">Выйти</a>
         {% endif %}
     </aside>
-
-
-
 
     <main class="content">
         {% block content %}{% endblock %}
