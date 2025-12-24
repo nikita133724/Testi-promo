@@ -73,19 +73,14 @@ async def admin_users_page(
 ):
     users_list = []
     for chat_id in admin_users.RAM_DATA.keys():
-        username = str(chat_id)
-        try:
-            user = await tg_app.get_chat(chat_id)
-            if user.username:
-                username = f"@{user.username}"
-        except:
-            pass
+        username = await admin_users.get_username(chat_id)  # Используем новую функцию
         users_list.append({"chat_id": chat_id, "username": username})
 
     return templates.TemplateResponse(
         "admin/users.html",
         {"request": request, "users": users_list, "is_admin": True}
     )
+
 
 @app_fastapi.get("/admin/users/{chat_id}", response_class=HTMLResponse)
 async def admin_user_detail(
@@ -97,11 +92,7 @@ async def admin_user_detail(
     if not user_data:
         return HTMLResponse("<h2>Пользователь не найден</h2>", status_code=404)
 
-    try:
-        user = await tg_app.get_chat(chat_id)
-        username = f"@{user.username}" if user.username else str(chat_id)
-    except:
-        username = str(chat_id)
+    username = await admin_users.get_username(chat_id)  # Вот здесь
 
     next_refresh = user_data.get("next_refresh_time", "не задано")
     refresh_token = user_data.get("refresh_token")
@@ -133,6 +124,7 @@ async def admin_user_detail(
             "is_admin": True
         }
     )
+
 
 @app_fastapi.post("/admin/users/{chat_id}/toggle_status")
 async def admin_user_toggle_status(
@@ -212,6 +204,11 @@ async def get_post_stats(
     stats = RAM_DATA.get("last_post_stats")
     if not stats:
         return HTMLResponse("<h2>Данных нет</h2>", status_code=404)
+
+    # Пробегаем по каждому пользователю и обновляем username
+    for user in stats:
+        chat_id = user.get("chat_id")
+        user["username"] = await admin_users.get_username(chat_id)
 
     return templates.TemplateResponse(
         "admin/stats.html",
