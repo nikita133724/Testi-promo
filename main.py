@@ -24,17 +24,8 @@ app_fastapi = FastAPI()
 templates = Jinja2Templates(directory="templates")
 
 from starlette.middleware.sessions import SessionMiddleware
-SECRET_KEY = "СЮДА_ТВОЙ_СЕКРЕТНЫЙ_КЛЮЧ_ТОЛСТЫЙ_И_СЛОЖНЫЙ"
+SECRET_KEY = "vAGavYNa1WzrymonUQIEJ9ZW9mEDf"
 app_fastapi.add_middleware(SessionMiddleware, secret_key=SECRET_KEY)
-
-# -----------------------
-# Middleware для всех шаблонов
-# -----------------------
-@app_fastapi.middleware("http")
-async def add_is_admin_to_request(request: Request, call_next):
-    request.state.is_admin = request.session.get("is_admin", False)
-    response = await call_next(request)
-    return response
 
 # -----------------------
 # Декоратор для админки
@@ -42,20 +33,16 @@ async def add_is_admin_to_request(request: Request, call_next):
 def admin_required(func):
     @wraps(func)
     async def wrapper(request: Request, *args, **kwargs):
-        if not request.session.get("is_admin"):
-            raise HTTPException(
-                status_code=303,
-                detail="Redirect",
-                headers={"Location": "/login"}
-            )
+        if not getattr(request, "session", None) or not request.session.get("is_admin"):
+            return RedirectResponse("/login", status_code=303)
         return await func(request, *args, **kwargs)
     return wrapper
 
 # -----------------------
 # Настройки админа
 # -----------------------
-ADMIN_LOGIN = "admin"
-ADMIN_PASSWORD = "supersecret"
+ADMIN_LOGIN = "сахар"
+ADMIN_PASSWORD = "394990!mmmn"
 
 # -----------------------
 # Маршруты
@@ -113,7 +100,11 @@ async def admin_users_page(request: Request):
             pass
         users_list.append({"chat_id": chat_id, "username": username})
 
-    return templates.TemplateResponse("admin/users.html", {"request": request, "users": users_list})
+    return templates.TemplateResponse("admin/users.html", {
+        "request": request,
+        "users": users_list,
+        "is_admin": True
+    })
 
 @app_fastapi.get("/admin/users/{chat_id}", response_class=HTMLResponse)
 @admin_required
@@ -142,20 +133,18 @@ async def admin_user_detail(request: Request, chat_id: int):
 
     status = "приостановлен" if user_data.get("suspended") else "активен"
 
-    return templates.TemplateResponse(
-        "admin/user_detail.html",
-        {
-            "request": request,
-            "chat_id": chat_id,
-            "username": username,
-            "next_refresh": next_refresh,
-            "site_name": site_name,
-            "profile_link": profile_link,
-            "status": status,
-            "button_text": "🔄 Восстановить" if user_data.get("suspended") else "⏸ Приостановить",
-            "tokens": None
-        }
-    )
+    return templates.TemplateResponse("admin/user_detail.html", {
+        "request": request,
+        "chat_id": chat_id,
+        "username": username,
+        "next_refresh": next_refresh,
+        "site_name": site_name,
+        "profile_link": profile_link,
+        "status": status,
+        "button_text": "🔄 Восстановить" if user_data.get("suspended") else "⏸ Приостановить",
+        "tokens": None,
+        "is_admin": True
+    })
 
 @app_fastapi.post("/admin/users/{chat_id}/toggle_status")
 @admin_required
@@ -179,20 +168,18 @@ async def admin_user_tokens(request: Request, chat_id: int):
         "refresh_token": user_data.get("refresh_token", "не задан")
     }
 
-    return templates.TemplateResponse(
-        "admin/user_detail.html",
-        {
-            "request": request,
-            "chat_id": chat_id,
-            "username": f"@{user_data.get('username', chat_id)}",
-            "next_refresh": user_data.get("next_refresh_time", "не задано"),
-            "site_name": "Неизвестно",
-            "profile_link": "#",
-            "status": "приостановлен" if user_data.get("suspended") else "активен",
-            "button_text": "🔄 Восстановить" if user_data.get("suspended") else "⏸ Приостановить",
-            "tokens": tokens
-        }
-    )
+    return templates.TemplateResponse("admin/user_detail.html", {
+        "request": request,
+        "chat_id": chat_id,
+        "username": f"@{user_data.get('username', chat_id)}",
+        "next_refresh": user_data.get("next_refresh_time", "не задано"),
+        "site_name": "Неизвестно",
+        "profile_link": "#",
+        "status": "приостановлен" if user_data.get("suspended") else "активен",
+        "button_text": "🔄 Восстановить" if user_data.get("suspended") else "⏸ Приостановить",
+        "tokens": tokens,
+        "is_admin": True
+    })
 
 # -----------------------
 # Admin Keys
@@ -200,20 +187,24 @@ async def admin_user_tokens(request: Request, chat_id: int):
 @app_fastapi.get("/admin/keys", response_class=HTMLResponse)
 @admin_required
 async def admin_keys_page(request: Request):
-    return templates.TemplateResponse(
-        "admin/keys.html",
-        {"request": request, "durations": KEY_DURATION_OPTIONS, "key": None}
-    )
+    return templates.TemplateResponse("admin/keys.html", {
+        "request": request,
+        "durations": KEY_DURATION_OPTIONS,
+        "key": None,
+        "is_admin": True
+    })
 
 @app_fastapi.post("/admin/keys/generate", response_class=HTMLResponse)
 @admin_required
 async def admin_generate_key(request: Request, duration: int = Form(...)):
     label, delta = KEY_DURATION_OPTIONS[duration]
     key = generate_key(delta)
-    return templates.TemplateResponse(
-        "admin/keys.html",
-        {"request": request, "durations": KEY_DURATION_OPTIONS, "key": key}
-    )
+    return templates.TemplateResponse("admin/keys.html", {
+        "request": request,
+        "durations": KEY_DURATION_OPTIONS,
+        "key": key,
+        "is_admin": True
+    })
 
 # -----------------------
 # Keep-alive
