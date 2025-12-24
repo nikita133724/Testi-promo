@@ -9,7 +9,7 @@
         chat_id: {{ user.chat_id }}
     </h3>
 
-    <table style="border-collapse: collapse; width: 100%; margin-bottom: 30px;">
+    <table>
         <tr>
             <th>Номинал</th>
             <th>Промо</th>
@@ -30,8 +30,7 @@
 
         <tr>
             <td colspan="5">
-                <b>Время активации всех промо:
-                {{ "%.2f"|format(user.total_time) }} сек</b>
+                <b>Время активации всех промо: {{ "%.2f"|format(user.total_time) }} сек</b>
             </td>
         </tr>
     </table>
