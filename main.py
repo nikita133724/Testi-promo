@@ -215,6 +215,32 @@ async def get_post_stats(
         {"request": request, "stats": stats}
     )
 
+@app_fastapi.post("/admin/notify")
+async def send_notification(
+    request: Request,
+    recipient_type: str = Form(...),  # "all" или "single"
+    target_user: str = Form(None),
+    message: str = Form(...),
+    _: None = Depends(admin_required)
+):
+    if recipient_type == "all":
+        for uid in RAM_DATA.keys():
+            try:
+                await admin_users.bot.send_message(uid, message)
+            except:
+                pass
+    elif recipient_type == "single":
+        # target_user может быть chat_id или username
+        target_uid = None
+        for uid, user in RAM_DATA.items():
+            if str(uid) == target_user or user.get("username") == target_user:
+                target_uid = uid
+                break
+        if target_uid:
+            await admin_users.bot.send_message(target_uid, message)
+        else:
+            return {"error": "Пользователь не найден"}
+    return {"status": "ok"}
 # -----------------------
 # Фоновые задачи
 async def keep_alive():
