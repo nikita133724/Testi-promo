@@ -49,7 +49,28 @@
     <br>
     <button type="button" id="cancel-restore">Отмена</button>
 </div>
+<div id="extend-options" style="display:none; margin-top:10px; border:1px solid #ccc; padding:10px;">
+    <b>Продлить доступ на:</b><br><br>
 
+    <div>
+        <b>Минуты:</b><br>
+        <button type="button" onclick="extendSub(10,'minutes')">10 минут</button>
+        <button type="button" onclick="extendSub(30,'minutes')">30 минут</button>
+        <button type="button" onclick="extendSub(60,'minutes')">1 час</button>
+    </div>
+
+    <br>
+
+    <div>
+        <b>Дни:</b><br>
+        <button type="button" onclick="extendSub(1,'days')">1 день</button>
+        <button type="button" onclick="extendSub(7,'days')">7 дней</button>
+        <button type="button" onclick="extendSub(30,'days')">30 дней</button>
+    </div>
+
+    <br>
+    <button type="button" onclick="document.getElementById('extend-options').style.display='none'">Отмена</button>
+</div>
 <form method="post" action="/admin/users/{{ chat_id }}/tokens" style="display:inline-block; margin-left:10px;">
     <button type="submit">Посмотреть токены</button>
 </form>
@@ -73,6 +94,17 @@ document.getElementById("cancel-restore").addEventListener("click", function() {
 
 function restoreSub(value, unit) {
     fetch(`/admin/users/{{ chat_id }}/restore_subscription`, {
+        method: "POST",
+        headers: { "Content-Type": "application/x-www-form-urlencoded" },
+        body: `value=${value}&unit=${unit}`
+    }).then(() => location.reload());
+}
+function showExtend() {
+    document.getElementById("extend-options").style.display = "block";
+}
+
+function extendSub(value, unit) {
+    fetch(`/admin/users/{{ chat_id }}/extend_subscription`, {
         method: "POST",
         headers: { "Content-Type": "application/x-www-form-urlencoded" },
         body: `value=${value}&unit=${unit}`
