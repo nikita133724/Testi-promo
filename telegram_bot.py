@@ -490,7 +490,7 @@ async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
     # Открытие профиля
     if text == "👤 Профиль":
         try:
-            await update.message.delete()
+            #await update.message.delete()
         except:
             pass
         await open_user_profile(chat_id)
@@ -786,7 +786,7 @@ async def settings_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
         await query.message.delete()
         if chat_id in OPEN_SETTINGS_MESSAGES:
             del OPEN_SETTINGS_MESSAGES[chat_id]
-        await send_message_to_user(bot, chat_id, reply_markup=build_reply_keyboard(chat_id))
+        await send_message_to_user(bot, chat_id, text="Меню", reply_markup=build_reply_keyboard(chat_id))
 # -----------------------
 # Регистрация обработчиков
 # -----------------------
