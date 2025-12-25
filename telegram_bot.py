@@ -68,7 +68,7 @@ def set_notify_callback(callback):
 async def telegram_notify(chat_id, text):
     try:
         # НЕ обрабатываем это сообщение через handle_message
-        await send_message_to_user(chat_id=int(chat_id), text=text)
+        await send_message_to_user(bot, chat_id=int(chat_id), text=text)
     except Exception as e:
         print(f"[BOT] send message error: {e}")
 
@@ -222,6 +222,7 @@ async def open_user_profile(chat_id):
     if settings.get("suspended", True):
         keyboard = ReplyKeyboardMarkup([["Активировать доступ"]], resize_keyboard=True)
         await send_message_to_user(
+            bot,
             chat_id,
             "⏰ Ваша подписка закончилась.\nЧтобы снова получить доступ, нажмите кнопку ниже 👇",
             reply_markup=keyboard
@@ -484,7 +485,7 @@ async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
             await update.message.delete()
         except:
             pass
-        await open_settings_menu(chat_id)
+        await open_settings_menu(chat_id, bot)
         return
    
     # Открытие профиля
@@ -568,6 +569,7 @@ async def settings_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
             OPEN_SETTINGS_MESSAGES.pop(chat_id, None)
     
             await send_message_to_user(
+                bot,
                 chat_id,
                 "Возврат в меню",
                 reply_markup=build_reply_keyboard(chat_id)
@@ -719,7 +721,7 @@ async def settings_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
     # Выход из меню пользователей
     elif query.data == "users_exit":
         await query.message.delete()
-        await open_settings_menu(chat_id)
+        await open_settings_menu(chat_id, bot)
 
     # -----------------------
     # Выход из настроек
@@ -727,7 +729,7 @@ async def settings_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
         await query.message.delete()
         if chat_id in OPEN_SETTINGS_MESSAGES:
             del OPEN_SETTINGS_MESSAGES[chat_id]
-        await send_message_to_user(chat_id=chat_id, text="выход из меню настроек", reply_markup=build_reply_keyboard(chat_id))
+        await send_message_to_user(bot, chat_id=chat_id, text="выход из меню настроек", reply_markup=build_reply_keyboard(chat_id))
 
     # -----------------------
     # Выбор валюты
@@ -738,7 +740,7 @@ async def settings_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
         if chat_id in OPEN_SETTINGS_MESSAGES:
             del OPEN_SETTINGS_MESSAGES[chat_id]
         _save_to_redis_partial(chat_id, {"currency": settings["currency"]})
-        await send_message_to_user(chat_id, f"✅ Выбрана валюта: {settings['currency']}", reply_markup=build_reply_keyboard(chat_id))
+        await send_message_to_user(bot, chat_id, f"✅ Выбрана валюта: {settings['currency']}", reply_markup=build_reply_keyboard(chat_id))
 
     elif query.data == "currency_usd":
         settings["currency"] = "USD"
@@ -747,7 +749,7 @@ async def settings_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
         if chat_id in OPEN_SETTINGS_MESSAGES:
             del OPEN_SETTINGS_MESSAGES[chat_id]
         _save_to_redis_partial(chat_id, {"currency": settings["currency"]})
-        await send_message_to_user(chat_id, f"✅ Выбрана валюта: {settings['currency']}", reply_markup=build_reply_keyboard(chat_id))
+        await send_message_to_user(bot, chat_id, f"✅ Выбрана валюта: {settings['currency']}", reply_markup=build_reply_keyboard(chat_id))
     
     elif query.data == "settings_summary_silent":
         settings["summary_silent"] = not settings["summary_silent"]
