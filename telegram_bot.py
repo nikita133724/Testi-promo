@@ -113,10 +113,27 @@ def load_chatids():
         chat_id = int(key_bytes)
         chat_ids.add(chat_id)
         obj = json.loads(raw)
+
+        # Обработка next_refresh_time
+        nxt = obj.get("next_refresh_time")
+        if isinstance(nxt, str):
+            try:
+                # пытаемся распарсить ISO строку
+                dt = datetime.fromisoformat(nxt)
+                nxt_timestamp = int(dt.replace(tzinfo=timezone.utc).timestamp())
+                # сохраняем обратно в Redis в виде int
+                _save_to_redis_partial(chat_id, {"next_refresh_time": nxt_timestamp})
+            except Exception:
+                nxt_timestamp = None
+        elif isinstance(nxt, (int, float)):
+            nxt_timestamp = int(nxt)
+        else:
+            nxt_timestamp = None
+
         RAM_DATA[chat_id] = {
             "access_token": obj.get("access_token"),
             "refresh_token": obj.get("refresh_token"),
-            "next_refresh_time": int(obj["next_refresh_time"]) if obj.get("next_refresh_time") else None,
+            "next_refresh_time": nxt_timestamp,
             "active_nominals": {Decimal(str(k)): v for k, v in obj.get("active_nominals", {}).items()} 
                                if obj.get("active_nominals") else {Decimal(str(n)): True for n in ACTIVE_NOMINALS},
             "waiting_for_refresh": False,
