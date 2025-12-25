@@ -14,7 +14,7 @@ SUBSCRIPTION_WATCHER_STARTED = False
 KEY_LENGTH = 32
 RATE_LIMIT_ATTEMPTS = 10
 RATE_LIMIT_WINDOW = timedelta(minutes=30)
-CHECK_INTERVAL = 60  # секунд, интервал фонового таймера
+CHECK_INTERVAL = 45  # секунд, интервал фонового таймера
 
 # -------------------------
 # Хранение активных ключей
@@ -167,7 +167,8 @@ async def activate_key(chat_id: int, key: str, bot) -> dict:
 # -------------------------
 # Фоновый таймер проверки подписок с уведомлением за 24 часа
 # -------------------------
-async def subscription_watcher(bot):
+# В access_control.py
+async def subscription_watcher(bot, send_message_fn):
     from telegram_bot import RAM_DATA, _save_to_redis_partial
     global SUBSCRIPTION_WATCHER_STARTED
 
@@ -177,7 +178,7 @@ async def subscription_watcher(bot):
     SUBSCRIPTION_WATCHER_STARTED = True
 
     while True:
-        now = datetime.now(timezone.utc)  # ✅ UTC
+        now = datetime.now(timezone.utc)
         for chat_id, data in list(RAM_DATA.items()):
             if not data.get("suspended", True):
                 until = data.get("subscription_until")
@@ -189,7 +190,8 @@ async def subscription_watcher(bot):
                 # уведомление за 24 часа
                 if not data.get("notified_24h", False) and now + timedelta(hours=24) >= until_dt:
                     try:
-                        await bot.send_message(
+                        await send_message_fn(
+                            bot,
                             chat_id,
                             "⏳ Ваша подписка истекает через 24 часа. Не забудьте продлить доступ!"
                         )
@@ -211,11 +213,10 @@ async def subscription_watcher(bot):
                     })
 
                     try:
-                        await send_message_to_user(
+                        await send_message_fn(
                             bot,
                             chat_id,
-                            "⏰ Ваша подписка закончилась.\n\n"
-                            "Чтобы снова получить доступ, нажмите кнопку ниже 👇",
+                            "⏰ Ваша подписка закончилась.\n\nЧтобы снова получить доступ, нажмите кнопку ниже 👇",
                             reply_markup=ReplyKeyboardMarkup([["Активировать доступ"]], resize_keyboard=True)
                         )
                     except Exception as e:
