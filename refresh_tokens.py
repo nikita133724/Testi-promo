@@ -136,7 +136,7 @@ def refresh_by_refresh_token(chat_id: str, refresh_token: str | None = None):
         return False
 
     # 4️⃣ новое время обновления
-    next_time = (datetime.utcnow() + timedelta(days=7)).replace(microsecond=0)
+    next_time = int((datetime.utcnow() + timedelta(days=7)).timestamp())
 
     # 5️⃣ ОБНОВЛЕНИЕ RAM (старые токены уничтожаются)
     settings.update({
@@ -144,17 +144,16 @@ def refresh_by_refresh_token(chat_id: str, refresh_token: str | None = None):
         "refresh_token": refresh_token_new,
         "next_refresh_time": next_time
     })
-
-    # 6️⃣ Redis = копия RAM
+    
     _save_to_redis_partial(chat_id, {
         "access_token": access_token_new,
         "refresh_token": refresh_token_new,
-        "next_refresh_time": next_time.isoformat()
+        "next_refresh_time": next_time
     })
 
     notify_chat(
         chat_id,
-        f"✅ Токены обновлены\nСледующее обновление: {next_time}"
+        f"✅ Токены обновлены\nСледующее обновление: {datetime.fromtimestamp(next_time).strftime('%d.%m.%Y %H:%M')}"
     )
 
     # 7️⃣ запуск прогрева в фоне (promo)
