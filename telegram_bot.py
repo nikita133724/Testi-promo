@@ -302,7 +302,7 @@ def reset_menu_timer(chat_id, delay):
     task = asyncio.create_task(menu_timer_task(chat_id, delay))
     if chat_id in OPEN_SETTINGS_MESSAGES:
         OPEN_SETTINGS_MESSAGES[chat_id]["task"] = task
-
+        
 async def menu_timer_task(chat_id, delay):
     try:
         await asyncio.sleep(delay)
@@ -499,12 +499,21 @@ async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
 # Функция открытия меню настроек
 # -----------------------
 async def open_settings_menu(chat_id):
+    # Удаляем старое меню, если есть
+    old = OPEN_SETTINGS_MESSAGES.get(chat_id)
+    if old:
+        try:
+            await bot.delete_message(chat_id, old["message_id"])
+        except:
+            pass
+        task = old.get("task")
+        if task:
+            task.cancel()
+        OPEN_SETTINGS_MESSAGES.pop(chat_id, None)
+
     settings = get_user_settings(chat_id)
-    summary_button_text = (
-    "Тихий режим ✅"
-    if settings["summary_silent"]
-    else "Тихий режим ❌"
-)
+    summary_button_text = "Тихий режим ✅" if settings["summary_silent"] else "Тихий режим ❌"
+
     keyboard = [
         [InlineKeyboardButton("🔄 Refresh Token", callback_data="settings_refresh")],
         [InlineKeyboardButton("💱 Валюта", callback_data="settings_currency")],
@@ -517,6 +526,7 @@ async def open_settings_menu(chat_id):
     keyboard.append([InlineKeyboardButton("❌ Выход", callback_data="settings_exit")])
 
     msg = await send_message_to_user(chat_id, text="Настройки бота:", reply_markup=InlineKeyboardMarkup(keyboard))
+
     OPEN_SETTINGS_MESSAGES[chat_id] = {"message_id": msg.message_id, "menu_type": "settings_main"}
     reset_menu_timer(chat_id, 150)
 
