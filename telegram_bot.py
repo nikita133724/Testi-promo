@@ -498,7 +498,7 @@ async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
 # -----------------------
 # Функция открытия меню настроек
 # -----------------------
-async def open_settings_menu(chat_id):
+async def open_settings_menu(chat_id, bot):
     # Удаляем старое меню, если есть
     old = OPEN_SETTINGS_MESSAGES.get(chat_id)
     if old:
@@ -525,12 +525,14 @@ async def open_settings_menu(chat_id):
         keyboard.append([InlineKeyboardButton("YouRun", callback_data="menu_yourun")])
     keyboard.append([InlineKeyboardButton("❌ Выход", callback_data="settings_exit")])
 
-    msg = await send_message_to_user(chat_id, text="Настройки бота:", reply_markup=InlineKeyboardMarkup(keyboard))
+    try:
+        msg = await send_message_to_user(bot, chat_id, text="Настройки бота:", reply_markup=InlineKeyboardMarkup(keyboard))
+    except Exception as e:
+        print(f"Ошибка при открытии меню настроек: {e}")
+        return
 
     OPEN_SETTINGS_MESSAGES[chat_id] = {"message_id": msg.message_id, "menu_type": "settings_main"}
     reset_menu_timer(chat_id, 150)
-
-
 # -----------------------
 # Обработчик нажатий inline-кнопок
 # -----------------------
@@ -539,14 +541,20 @@ async def settings_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
     chat_id = query.message.chat.id
     if OPEN_SETTINGS_MESSAGES.get(chat_id, {}).get("menu_type") == "profile":
         await query.answer()
-
+    
         # ⚙️ Переход в настройки из профиля
         if query.data == "profile_settings":
             # сбрасываем таймер профиля
             reset_menu_timer(chat_id, 120)
     
-            await query.message.delete()
-            await open_settings_menu(chat_id)
+            # удаляем сообщение профиля
+            try:
+                await query.message.delete()
+            except:
+                pass
+    
+            # открываем меню настроек
+            await open_settings_menu(chat_id, bot)
             return
     
         # ❌ Выход из профиля
