@@ -6,6 +6,7 @@ from fastapi.responses import HTMLResponse, RedirectResponse, JSONResponse
 from fastapi.templating import Jinja2Templates
 from starlette.middleware.sessions import SessionMiddleware
 from datetime import datetime, timedelta, timezone
+from zoneinfo import ZoneInfo
 # -----------------------
 # Telegram и RAM_DATA
 from telegram_client import client
@@ -154,27 +155,35 @@ async def admin_user_toggle_status(
 @app_fastapi.post("/admin/users/{chat_id}/restore_subscription_custom")
 async def restore_custom(request: Request, chat_id: int, _: None = Depends(admin_required)):
     form = await request.form()
-    ts = int(form["utc_ts"])
+    local_str = form["local_datetime"]
+
+    # парсим как локальное время СЕРВЕРА
+    local_dt = datetime.fromisoformat(local_str)
+    local_dt = local_dt.replace(tzinfo=ZoneInfo("Europe/Moscow"))  # ← УКАЖИ нужный TZ сервера
+    utc_ts = int(local_dt.astimezone(timezone.utc).timestamp())
 
     user = RAM_DATA.get(chat_id)
     if not user:
         return JSONResponse({"error": "Not found"}, status_code=404)
 
-    user["subscription_until"] = ts
+    user["subscription_until"] = utc_ts
     user["suspended"] = False
 
     _save_to_redis_partial(chat_id, {
-        "subscription_until": ts,
+        "subscription_until": utc_ts,
         "suspended": False
     })
 
     return JSONResponse({"ok": True})
 
-
 @app_fastapi.post("/admin/users/{chat_id}/extend_subscription_custom")
 async def extend_custom(request: Request, chat_id: int, _: None = Depends(admin_required)):
     form = await request.form()
-    new_ts = int(form["utc_ts"])
+    local_str = form["local_datetime"]
+
+    local_dt = datetime.fromisoformat(local_str)
+    local_dt = local_dt.replace(tzinfo=ZoneInfo("Europe/Moscow"))  # ← Тот же TZ
+    new_ts = int(local_dt.astimezone(timezone.utc).timestamp())
 
     user = RAM_DATA.get(chat_id)
     if not user:
