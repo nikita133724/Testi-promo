@@ -5,7 +5,7 @@ from fastapi import FastAPI, Request, Form, Depends, HTTPException
 from fastapi.responses import HTMLResponse, RedirectResponse, JSONResponse
 from fastapi.templating import Jinja2Templates
 from starlette.middleware.sessions import SessionMiddleware
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 # -----------------------
 # Telegram и RAM_DATA
 from telegram_client import client
@@ -114,7 +114,7 @@ async def admin_user_detail(
     try:
         if not user_data.get("suspended") and raw_until is not None:
             ts = float(raw_until)
-            until_str = datetime.fromtimestamp(ts).strftime("%d.%m.%Y %H:%M")
+            until_str = datetime.fromtimestamp(ts, tz=timezone.utc).astimezone().strftime("%d.%m.%Y %H:%M")
             status_text = f"активен до {until_str}"
     except Exception:
         status_text = "приостановлен"
