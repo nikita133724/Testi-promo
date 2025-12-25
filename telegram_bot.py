@@ -1,7 +1,7 @@
 import json
 import asyncio
 from decimal import Decimal
-from datetime import datetime
+from datetime import datetime, timezone, timedelta
 from telegram import Update, ReplyKeyboardMarkup, InlineKeyboardButton, InlineKeyboardMarkup
 from telegram.ext import (
     ApplicationBuilder,
@@ -217,8 +217,11 @@ async def open_user_profile(chat_id):
 
     # Подписка
     subscription_until_ts = settings.get("subscription_until")
+    from datetime import timezone, timedelta
+    MSK = timezone(timedelta(hours=3))
     if isinstance(subscription_until_ts, (int, float)):
-        subscription_text = datetime.fromtimestamp(subscription_until_ts).strftime("%d.%m.%Y %H:%M")
+        local_dt = datetime.fromtimestamp(subscription_until_ts, tz=timezone.utc).astimezone(MSK)
+        subscription_text = local_dt.strftime("%d.%m.%Y %H:%M") + " МСК"
     else:
         subscription_text = "Неизвестно"
 
