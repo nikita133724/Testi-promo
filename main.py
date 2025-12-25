@@ -184,6 +184,44 @@ async def restore_subscription(
 
     return JSONResponse({"status": "ok"})
     
+@app_fastapi.post("/admin/users/{chat_id}/extend_subscription")
+async def extend_subscription(
+    request: Request,
+    chat_id: int,
+    _: None = Depends(admin_required)
+):
+    form = await request.form()
+
+    value = int(form.get("value"))
+    unit = form.get("unit")
+
+    user_data = RAM_DATA.get(chat_id)
+    if not user_data:
+        return JSONResponse({"error": "User not found"}, status_code=404)
+
+    now_ts = datetime.now().timestamp()
+    current_until = float(user_data.get("subscription_until", 0))
+
+    # Если подписка ещё активна — прибавляем к ней
+    base_time = current_until if current_until > now_ts else now_ts
+
+    if unit == "minutes":
+        new_until = base_time + value * 60
+    elif unit == "days":
+        new_until = base_time + value * 86400
+    else:
+        return JSONResponse({"error": "Invalid unit"}, status_code=400)
+
+    user_data["subscription_until"] = new_until
+    user_data["suspended"] = False
+
+    _save_to_redis_partial(chat_id, {
+        "subscription_until": new_until,
+        "suspended": False
+    })
+
+    return JSONResponse({"status": "ok"})
+    
 @app_fastapi.post("/admin/users/{chat_id}/tokens")
 async def admin_user_tokens(
     request: Request,
