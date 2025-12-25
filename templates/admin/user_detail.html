@@ -7,8 +7,16 @@
 <p><strong>chat_id:</strong> {{ chat_id }}</p>
 <p><strong>Следующий refresh:</strong> {{ next_refresh }}</p>
 <p><strong>Сайт:</strong> <a href="{{ profile_link }}" target="_blank">{{ site_name }}</a></p>
-<p><strong>Статус:</strong> {{ status }}</p>
+<p>
+    <strong>Статус:</strong> 
+    {{ status }}
 
+    {% if "активен" in status %}
+        <button type="button" onclick="showExtend()" style="margin-left:10px;">
+            ➕ Подлить
+        </button>
+    {% endif %}
+</p>
 
 <h3>Действия</h3>
 {% if "приостановлен" in status %}
