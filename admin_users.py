@@ -389,12 +389,10 @@ class AdminUsers:
                 await self.bot.send_message(admin_chat_id, text, parse_mode="Markdown")
                 
     async def get_username(self, uid: int) -> str:
-        try:
-            user = await self.bot.get_chat(uid)
-            username = f"@{user.username}" if user.username else str(uid)
-            print(f"DEBUG: got username for {uid} -> {username}")
-            return username
-        except Exception as e:
-            print(f"DEBUG: failed to get username for {uid}: {e}")
-            return str(uid)
-
+        user = self.RAM_DATA.get(uid, {})
+        if user.get("display_name"):
+            return user["display_name"]
+        if user.get("username"):
+            return user["username"]
+        return str(uid)
+    
