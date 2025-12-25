@@ -390,9 +390,25 @@ class AdminUsers:
                 
     async def get_username(self, uid: int) -> str:
         user = self.RAM_DATA.get(uid, {})
-        if user.get("display_name"):
-            return user["display_name"]
-        if user.get("username"):
+    
+        # если есть cached username — возвращаем
+        if "username" in user and user["username"]:
             return user["username"]
-        return str(uid)
+        if "display_name" in user and user["display_name"]:
+            return user["display_name"]
+    
+        # иначе запрашиваем через Telegram
+        try:
+            tg_user = await self.bot.get_chat(uid)
+            username = f"@{tg_user.username}" if getattr(tg_user, "username", None) else tg_user.first_name
+            display_name = tg_user.first_name
+            if getattr(tg_user, "last_name", None):
+                display_name += f" {tg_user.last_name}"
+    
+            # обновляем RAM
+            user.update({"username": username, "display_name": display_name})
+            self.RAM_DATA[uid] = user
+            return username
+        except:
+            return str(uid)
     
