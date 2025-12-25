@@ -51,11 +51,12 @@ def get_valid_access_token(chat_id: str):
     access_token = settings.get("access_token")
     refresh_token = settings.get("refresh_token")
     next_refresh = settings.get("next_refresh_time")
+    now = int(datetime.utcnow().timestamp())
 
     if not access_token:
         return None
 
-    if next_refresh and refresh_token and datetime.utcnow() >= next_refresh:
+    if next_refresh and refresh_token and now >= next_refresh:
         ok = refresh_by_refresh_token(chat_id)
         if not ok:
             return None
@@ -171,13 +172,13 @@ async def token_refresher_loop():
     print("[TOKENS] запуск таймера для токенов")
 
     while True:
-        now = datetime.utcnow()
+        now = int(datetime.utcnow().timestamp())
 
         for chat_id, obj in list(RAM_DATA.items()):
             next_refresh = obj.get("next_refresh_time")
             refresh_token = obj.get("refresh_token")
 
-            if next_refresh and refresh_token and now >= next_refresh:
+            if next_refresh and now >= next_refresh:
                 print(f"[TOKENS] timer refresh chat_id={chat_id}")
                 refresh_by_refresh_token(str(chat_id))
 
