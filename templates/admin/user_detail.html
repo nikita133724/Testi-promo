@@ -9,9 +9,9 @@
 <p><strong>Сайт:</strong> <a href="{{ profile_link }}" target="_blank">{{ site_name }}</a></p>
 <p>
     <strong>Статус:</strong> 
-    {{ status }}
+    <span id="status-text"></span>
 
-    {% if "активен" in status %}
+    {% if status == "активен" %}
         <button type="button" onclick="openPicker('extend')" style="margin-left:10px;">
             ➕ Продлить
         </button>
@@ -78,5 +78,17 @@ function applyTime() {
     }).then(() => location.reload());
 }
 </script>
+<script>
+const status = "{{ status }}";
+const ts = {{ display_until if display_until else "null" }};
 
+const statusEl = document.getElementById("status-text");
+
+if (status === "приостановлен" || !ts) {
+    statusEl.innerText = "приостановлен";
+} else {
+    const d = new Date(ts * 1000);
+    statusEl.innerText = "активен до " + d.toLocaleString();
+}
+</script>
 {% endblock %}
