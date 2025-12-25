@@ -108,22 +108,13 @@ async def admin_user_detail(
             profile_link = f"https://csgoyz.run/profile/{user_id}"
 
     raw_until = user_data.get("subscription_until")
-    status_text = "приостановлен"
+
+    display_until = None
+    if not user_data.get("suspended") and raw_until:
+        display_until = int(float(raw_until))
     
-    try:
-        if not user_data.get("suspended") and raw_until is not None:
-            ts = float(raw_until)
-    
-            until_str = (
-                datetime.fromtimestamp(ts, tz=timezone.utc)
-                .astimezone()
-                .strftime("%d.%m.%Y %H:%M")
-            )
-    
-            status_text = f"активен до {until_str}"
-    except Exception:
-        status_text = "приостановлен"
-        
+    status_text = "приостановлен" if user_data.get("suspended") else "активен"
+            
     return templates.TemplateResponse(
         "admin/user_detail.html",
         {
@@ -134,6 +125,7 @@ async def admin_user_detail(
             "site_name": site_name,
             "profile_link": profile_link,
             "status": status_text,
+            "display_until": display_until,
             "button_text": "🔄 Восстановить" if user_data.get("suspended") else "⏸ Приостановить",
             "tokens": None,
             "is_admin": True
