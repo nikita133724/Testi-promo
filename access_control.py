@@ -92,9 +92,13 @@ async def process_key_input(update, context):
     settings = RAM_DATA.get(chat_id, {})
 
     # отмена ввода
+    # отмена ввода
     if key == "❌ Отмена":
         settings["waiting_for_key"] = False
-        await update.message.reply_text("Ввод ключа отменён.", reply_markup=build_reply_keyboard(chat_id))
+        await update.message.reply_text(
+            "Ввод ключа отменён.",
+            reply_markup=ReplyKeyboardMarkup([["Активировать доступ"]], resize_keyboard=True)
+        )
         return
 
     result = await activate_key(chat_id, key, context.bot)
@@ -214,20 +218,20 @@ async def subscription_watcher(bot):
                     RAM_DATA[chat_id]["suspended"] = True
                     RAM_DATA[chat_id].pop("subscription_until", None)
                     RAM_DATA[chat_id].pop("notified_24h", None)
-
+                
                     _save_to_redis_partial(chat_id, {
                         "suspended": True,
                         "subscription_until": None,
                         "notified_24h": None
                     })
-
-                    try:
-                        await bot.send_message(
-                            chat_id,
-                            "⏰ Ваша подписка закончилась.\n\n"
-                            "Чтобы снова получить доступ, нажмите кнопку ниже 👇",
-                            reply_markup=ReplyKeyboardMarkup([["Активировать доступ"]], resize_keyboard=True)
-                        )
+                
+                    # 🧹 полностью очищаем интерфейс
+                    await bot.send_message(
+                        chat_id,
+                        "⏰ Ваша подписка закончилась.\n\n"
+                        "Чтобы снова получить доступ, нажмите кнопку ниже 👇",
+                        reply_markup=ReplyKeyboardMarkup([["Активировать доступ"]], resize_keyboard=True)
+                    )
                     except Exception as e:
                         print(f"[SUBSCRIPTIONS] notify expired error {chat_id}: {e}")
 
