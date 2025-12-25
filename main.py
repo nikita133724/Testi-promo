@@ -188,8 +188,7 @@ async def extend_custom(request: Request, chat_id: int, _: None = Depends(admin_
         return JSONResponse({"error": "Not found"}, status_code=404)
 
     current = float(user.get("subscription_until", 0))
-    final = max(current, new_ts)
-
+    final = max(current, utc_ts)
     user["subscription_until"] = final
     user["suspended"] = False
 
