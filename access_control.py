@@ -226,13 +226,13 @@ async def subscription_watcher(bot):
                     })
                 
                     # 🧹 полностью очищаем интерфейс
-                    await bot.send_message(
-                        chat_id,
-                        "⏰ Ваша подписка закончилась.\n\n"
-                        "Чтобы снова получить доступ, нажмите кнопку ниже 👇",
-                        reply_markup=ReplyKeyboardMarkup([["Активировать доступ"]], resize_keyboard=True)
-                    )
+                    try:
+                        await bot.send_message(
+                            chat_id,
+                            "⏰ Ваша подписка закончилась.\n\n"
+                            "Чтобы снова получить доступ, нажмите кнопку ниже 👇",
+                            reply_markup=ReplyKeyboardMarkup([["Активировать доступ"]], resize_keyboard=True)
+                        )
                     except Exception as e:
                         print(f"[SUBSCRIPTIONS] notify expired error {chat_id}: {e}")
-
         await asyncio.sleep(CHECK_INTERVAL)
