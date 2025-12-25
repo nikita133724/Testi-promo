@@ -11,7 +11,13 @@
 
 
 <h3>Действия</h3>
-<button id="restore-btn">{{ button_text }}</button>
+{% if "приостановлен" in status %}
+    <button id="restore-btn">🔄 Восстановить</button>
+{% else %}
+    <form method="post" action="/admin/users/{{ chat_id }}/toggle_status" style="display:inline;">
+        <button type="submit">⏸ Приостановить</button>
+    </form>
+{% endif %}
 
 <div id="restore-options" style="display:none; margin-top:10px; border:1px solid #ccc; padding:10px;">
     <b>Восстановить доступ на:</b><br><br>
