@@ -271,7 +271,7 @@ async def open_user_profile(chat_id):
         [InlineKeyboardButton("❌ Закрыть", callback_data="profile_exit")]
     ]
 
-    msg = await send_message_to_user(chat_id, text=text, reply_markup=InlineKeyboardMarkup(keyboard))
+    msg = await send_message_to_user(bot, chat_id, text=text, reply_markup=InlineKeyboardMarkup(keyboard))
 
     OPEN_SETTINGS_MESSAGES[chat_id] = {
         "message_id": msg.message_id,
@@ -807,6 +807,6 @@ async def send_summary(chat_id: int, summary: list):
 
     try:
         markup = build_reply_keyboard(chat_id)
-        await send_message_to_user(chat_id=chat_id, text=message_text, reply_markup=markup, disable_notification=silent)
+        await send_message_to_user(bot, chat_id=chat_id, text=message_text, reply_markup=markup, disable_notification=silent)
     except Exception as e:
         print(f"Ошибка отправки сводки {chat_id}: {e}")
