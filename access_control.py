@@ -163,9 +163,7 @@ async def activate_key(chat_id: int, key: str, bot) -> dict:
     
     return {"success": True, "subscription_until": RAM_DATA[chat_id]["subscription_until"]}
 
-# -------------------------
-# Фоновый таймер проверки подписок
-# -------------------------
+
 # -------------------------
 # Фоновый таймер проверки подписок с уведомлением за 24 часа
 # -------------------------
@@ -174,33 +172,21 @@ async def subscription_watcher(bot):
     global SUBSCRIPTION_WATCHER_STARTED
 
     if SUBSCRIPTION_WATCHER_STARTED:
-        print("[SUBSCRIPTIONS] watcher already running, skip start")
         return
 
     SUBSCRIPTION_WATCHER_STARTED = True
-    print("[SUBSCRIPTIONS] subscription watcher started")
 
     while True:
-        now = datetime.now()
+        now = datetime.now(timezone.utc)  # ✅ UTC
         for chat_id, data in list(RAM_DATA.items()):
-            # работаем только с активными пользователями
-            if data.get("suspended") is False:
+            if not data.get("suspended", True):
                 until = data.get("subscription_until")
-        
                 if not until:
                     continue
 
-                # приводим к datetime если пришло как timestamp
-                until = data.get("subscription_until")
-
-                if not isinstance(until, (int, float)):
-                    continue
-                
                 until_dt = datetime.fromtimestamp(until, tz=timezone.utc)
-                
-                
-                # -----------------------
-                # 1️⃣ Уведомление за 24 часа
+
+                # уведомление за 24 часа
                 if not data.get("notified_24h", False) and now + timedelta(hours=24) >= until_dt:
                     try:
                         await bot.send_message(
@@ -212,20 +198,18 @@ async def subscription_watcher(bot):
                     except Exception as e:
                         print(f"[SUBSCRIPTIONS] notify 24h error {chat_id}: {e}")
 
-                # -----------------------
-                # 2️⃣ Проверка окончания подписки
+                # окончание подписки
                 if now >= until_dt:
                     RAM_DATA[chat_id]["suspended"] = True
                     RAM_DATA[chat_id].pop("subscription_until", None)
                     RAM_DATA[chat_id].pop("notified_24h", None)
-                
+
                     _save_to_redis_partial(chat_id, {
                         "suspended": True,
                         "subscription_until": None,
                         "notified_24h": None
                     })
-                
-                    # 🧹 полностью очищаем интерфейс
+
                     try:
                         await send_message_to_user(
                             bot,
@@ -236,4 +220,5 @@ async def subscription_watcher(bot):
                         )
                     except Exception as e:
                         print(f"[SUBSCRIPTIONS] notify expired error {chat_id}: {e}")
+
         await asyncio.sleep(CHECK_INTERVAL)
