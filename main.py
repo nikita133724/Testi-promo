@@ -108,13 +108,18 @@ async def admin_user_detail(
             profile_link = f"https://csgoyz.run/profile/{user_id}"
 
     raw_until = user_data.get("subscription_until")
-
     status_text = "приостановлен"
     
     try:
         if not user_data.get("suspended") and raw_until is not None:
             ts = float(raw_until)
-            until_str = datetime.fromtimestamp(ts, tz=timezone.utc).astimezone().strftime("%d.%m.%Y %H:%M")
+    
+            until_str = (
+                datetime.fromtimestamp(ts, tz=timezone.utc)
+                .astimezone()
+                .strftime("%d.%m.%Y %H:%M")
+            )
+    
             status_text = f"активен до {until_str}"
     except Exception:
         status_text = "приостановлен"
