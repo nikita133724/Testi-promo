@@ -108,13 +108,17 @@ async def admin_user_detail(
             profile_link = f"https://csgoyz.run/profile/{user_id}"
 
     raw_until = user_data.get("subscription_until")
-
+    status_text = "приостановлен"
     display_until = None
-    if not user_data.get("suspended") and raw_until:
-        display_until = int(float(raw_until))
-    
-    status_text = "приостановлен" if user_data.get("suspended") else "активен"
-            
+    try:
+        if not user_data.get("suspended") and raw_until:
+            ts = int(float(raw_until))
+            status_text = "активен"
+            display_until = ts
+    except Exception:
+        status_text = "приостановлен"
+        display_until = None
+        
     return templates.TemplateResponse(
         "admin/user_detail.html",
         {
