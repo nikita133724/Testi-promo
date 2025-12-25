@@ -30,7 +30,7 @@ ADMIN_CHAT_ID = 8455743587  # <- замени на свой Telegram ID
 # -----------------------
 RAM_DATA = {}
 async def send_message_to_user(chat_id, text, **kwargs):
-    msg = await send_message_to_user(chat_id, text, **kwargs)
+    msg = await bot.send_message(chat_id=chat_id, text=text, **kwargs)  # <- здесь bot.send_message
     await update_user_names_in_ram(msg.chat)
     return msg
     
@@ -540,7 +540,7 @@ async def settings_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
         await query.message.delete()
         settings["waiting_for_refresh"] = True
         keyboard = [[InlineKeyboardButton("❌ Отменить", callback_data="refresh_cancel")]]
-        msg = await context.send_message_to_user(chat_id, "Отправьте Refresh Token", reply_markup=InlineKeyboardMarkup(keyboard))
+        msg = await send_message_to_user(chat_id, "Отправьте Refresh Token", reply_markup=InlineKeyboardMarkup(keyboard))
         settings["waiting_for_refresh_message_id"] = msg.message_id
         OPEN_SETTINGS_MESSAGES[chat_id] = {"message_id": msg.message_id, "menu_type": "refresh"}
         reset_menu_timer(chat_id, 180)
