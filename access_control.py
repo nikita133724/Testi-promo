@@ -1,12 +1,12 @@
 import asyncio
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 import random
 import string
 from telegram import ReplyKeyboardMarkup, ReplyKeyboardRemove
 from redis_client import r  # твой клиент Redis
 
 KEYS_REDIS = "active_keys"  # отдельный хеш для всех ключей
-
+MSK = timezone(timedelta(hours=3))
 # -------------------------
 # Настройки
 # -------------------------
@@ -102,7 +102,8 @@ async def process_key_input(update, context):
 
     if result["success"]:
         until_ts = result["subscription_until"]
-        until_text = datetime.fromtimestamp(until_ts).strftime("%Y-%m-%d %H:%M:%S")
+        until_dt = datetime.fromtimestamp(until_ts, tz=timezone.utc).astimezone(MSK)
+        until_text = until_dt.strftime("%d.%m.%Y %H:%M") + " МСК"
         await update.message.reply_text(
             f"✅ Доступ активирован! Подписка до {until_text}",
             reply_markup=build_reply_keyboard(chat_id)
@@ -110,9 +111,9 @@ async def process_key_input(update, context):
 
     else:
         if result["error"] == "invalid_length":
-            msg = "❌ Неверная длина ключа."
+            msg = "❌ Неверный ключ."
         elif result["error"] == "key_not_found":
-            msg = "❌ Ключ не найден."
+            msg = "❌ Не верный ключ."
         elif result["error"] == "rate_limited":
             msg = "❌ Превышено количество попыток. Попробуйте через 30 минут."
         else:
@@ -191,7 +192,7 @@ async def subscription_watcher(bot):
                 if not isinstance(until, (int, float)):
                     continue
                 
-                until_dt = datetime.fromtimestamp(until)
+                until_dt = datetime.fromtimestamp(until, tz=timezone.utc)
                 
                 
                 # -----------------------
