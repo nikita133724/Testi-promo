@@ -150,6 +150,24 @@ async def admin_user_toggle_status(
     _save_to_redis_partial(chat_id, {"suspended": user_data["suspended"]})
     return RedirectResponse(f"/admin/users/{chat_id}", status_code=303)
 
+@app_fastapi.post("/admin/users/{chat_id}/restore_subscription")
+async def restore_subscription(chat_id: int, data: dict, _: None = Depends(admin_required)):
+    user_data = admin_users.RAM_DATA.get(chat_id)
+    if not user_data:
+        return JSONResponse({"error": "Пользователь не найден"}, status_code=404)
+
+    duration_days = data.get("duration", 1)
+    new_until = datetime.timestamp(datetime.now() + timedelta(days=duration_days))
+    
+    user_data["subscription_until"] = new_until
+    user_data["suspended"] = False
+    _save_to_redis_partial(chat_id, {
+        "subscription_until": new_until,
+        "suspended": False
+    })
+
+    return JSONResponse({"status": "ok"})
+    
 @app_fastapi.post("/admin/users/{chat_id}/tokens")
 async def admin_user_tokens(
     request: Request,
