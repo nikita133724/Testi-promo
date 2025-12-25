@@ -68,11 +68,13 @@ function applyTime() {
         return;
     }
 
+    const tz = Intl.DateTimeFormat().resolvedOptions().timeZone;
+
     fetch(`/admin/users/{{ chat_id }}/${mode}_subscription_custom`, {
         method: "POST",
         headers: {"Content-Type": "application/x-www-form-urlencoded"},
-        body: `local_datetime=${encodeURIComponent(input)}`
-    }).then(() => location.reload());
+        body: `local_datetime=${encodeURIComponent(input)}&tz=${encodeURIComponent(tz)}`
+    });.then(() => location.reload());
 }
 </script>
 <script>
