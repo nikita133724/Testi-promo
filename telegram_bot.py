@@ -490,7 +490,7 @@ async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
     # Открытие профиля
     if text == "👤 Профиль":
         try:
-            #await update.message.delete()
+            await update.message.delete()
         except:
             pass
         await open_user_profile(chat_id)
