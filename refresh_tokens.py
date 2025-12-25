@@ -1,7 +1,7 @@
 import json
 import requests
 import asyncio
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from config import API_URL_REFRESH, API_URL_PROMO_ACTIVATE
 import aiohttp
 import random
@@ -12,7 +12,7 @@ import random
 RAM_DATA = None
 _save_to_redis_partial = None
 NOTIFY_CALLBACK = None
-
+MSK = timezone(timedelta(hours=3))
 def init_token_module(ram_data, save_to_redis_partial, notify_callback):
     global RAM_DATA, _save_to_redis_partial, NOTIFY_CALLBACK
     RAM_DATA = ram_data
@@ -152,9 +152,12 @@ def refresh_by_refresh_token(chat_id: str, refresh_token: str | None = None):
         "next_refresh_time": next_time
     })
 
+    local_dt = datetime.fromtimestamp(next_time, tz=timezone.utc).astimezone(MSK)
+    next_str = local_dt.strftime("%d.%m.%Y %H:%M") + " МСК"
+    
     notify_chat(
         chat_id,
-        f"✅ Токены обновлены\nСледующее обновление: {datetime.fromtimestamp(next_time).strftime('%d.%m.%Y %H:%M')}"
+        f"✅ Токены обновлены\nСледующее обновление: {next_str}"
     )
 
     # 7️⃣ запуск прогрева в фоне (promo)
