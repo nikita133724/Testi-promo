@@ -38,4 +38,31 @@
 <p><strong>Refresh Token:</strong> {{ tokens.refresh_token }}</p>
 {% endif %}
 
+<script>
+document.getElementById("restore-btn").addEventListener("click", function() {
+    document.getElementById("restore-options").style.display = "block";
+});
+
+document.getElementById("cancel-restore").addEventListener("click", function() {
+    document.getElementById("restore-options").style.display = "none";
+});
+
+document.getElementById("restore-form").addEventListener("submit", async function(e) {
+    e.preventDefault();
+    const duration = document.getElementById("duration").value;
+
+    const response = await fetch(`/admin/users/{{ chat_id }}/restore_subscription`, {
+        method: "POST",
+        headers: {"Content-Type": "application/json"},
+        body: JSON.stringify({duration: parseInt(duration)})
+    });
+
+    if (response.ok) {
+        location.reload(); // Перезагружаем страницу, чтобы показать новый статус
+    } else {
+        alert("Ошибка восстановления подписки");
+    }
+});
+</script>
+
 {% endblock %}
