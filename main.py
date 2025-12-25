@@ -238,24 +238,40 @@ async def send_notification(
     _: None = Depends(admin_required)
 ):
     if recipient_type == "all":
-        for uid in RAM_DATA.keys():
-            try:
-                await admin_users.bot.send_message(uid, message)
-            except:
-                pass
+        for uid, user_data in RAM_DATA.items():
+            # если user_data это список, перебираем его
+            if isinstance(user_data, list):
+                for u in user_data:
+                    try:
+                        await admin_users.bot.send_message(u["chat_id"], message)
+                    except:
+                        pass
+            else:
+                try:
+                    await admin_users.bot.send_message(uid, message)
+                except:
+                    pass
+
     elif recipient_type == "single":
         target_uid = None
-        for uid, user in RAM_DATA.items():
-            if str(uid) == target_user or user.get("username") == target_user:
-                target_uid = uid
+        for uid, user_data in RAM_DATA.items():
+            users_to_check = user_data if isinstance(user_data, list) else [user_data]
+            for user in users_to_check:
+                if str(uid) == target_user or str(user.get("chat_id")) == target_user or user.get("username") == target_user:
+                    target_uid = user.get("chat_id", uid)
+                    break
+            if target_uid:
                 break
+
         if not target_uid:
-            return {"error": "Пользователь не найден"}
+            return JSONResponse({"error": "Пользователь не найден"}, status_code=404)
+
         try:
             await admin_users.bot.send_message(target_uid, message)
         except:
-            return {"error": "Не удалось отправить сообщение"}
-    return {"status": "ok"}
+            return JSONResponse({"error": "Не удалось отправить сообщение"}, status_code=500)
+
+    return JSONResponse({"status": "ok"})
 # -----------------------
 # Фоновые задачи
 async def keep_alive():
