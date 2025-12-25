@@ -111,14 +111,15 @@ async def admin_user_detail(
 
     raw_until = user_data.get("subscription_until")
     subscription_until_text = "нет активной подписки"
+    
     try:
         if raw_until is not None:
             ts = float(raw_until)
             subscription_until_text = datetime.fromtimestamp(ts).strftime("%d.%m.%Y %H:%M")
     except Exception:
         subscription_until_text = "нет активной подписки"
-        
-        return templates.TemplateResponse(
+    
+    return templates.TemplateResponse(
         "admin/user_detail.html",
         {
             "request": request,
