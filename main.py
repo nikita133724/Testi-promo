@@ -156,12 +156,11 @@ async def admin_user_toggle_status(
 async def restore_custom(request: Request, chat_id: int, _: None = Depends(admin_required)):
     form = await request.form()
     local_str = form["local_datetime"]
-
-    # парсим как локальное время СЕРВЕРА
+    tz_name = form["tz"]
+    
     local_dt = datetime.fromisoformat(local_str)
-    local_dt = local_dt.replace(tzinfo=ZoneInfo("Europe/Moscow"))  # ← УКАЖИ нужный TZ сервера
+    local_dt = local_dt.replace(tzinfo=ZoneInfo(tz_name))
     utc_ts = int(local_dt.astimezone(timezone.utc).timestamp())
-
     user = RAM_DATA.get(chat_id)
     if not user:
         return JSONResponse({"error": "Not found"}, status_code=404)
@@ -180,11 +179,10 @@ async def restore_custom(request: Request, chat_id: int, _: None = Depends(admin
 async def extend_custom(request: Request, chat_id: int, _: None = Depends(admin_required)):
     form = await request.form()
     local_str = form["local_datetime"]
-
+    tz_name = form["tz"]
     local_dt = datetime.fromisoformat(local_str)
-    local_dt = local_dt.replace(tzinfo=ZoneInfo("Europe/Moscow"))  # ← Тот же TZ
-    new_ts = int(local_dt.astimezone(timezone.utc).timestamp())
-
+    local_dt = local_dt.replace(tzinfo=ZoneInfo(tz_name))
+    utc_ts = int(local_dt.astimezone(timezone.utc).timestamp())
     user = RAM_DATA.get(chat_id)
     if not user:
         return JSONResponse({"error": "Not found"}, status_code=404)
