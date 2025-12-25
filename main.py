@@ -215,6 +215,15 @@ async def get_post_stats(
         {"request": request, "stats": stats}
     )
 
+
+@app_fastapi.get("/admin/search_users")
+async def search_users(q: str, _: None = Depends(admin_required)):
+    results = []
+    for uid, user in RAM_DATA.items():
+        if q.lower() in str(uid) or q.lower() in (user.get("username","").lower()) or q.lower() in (user.get("display_name","").lower()):
+            results.append({"chat_id": uid, "username": user.get("username"), "display_name": user.get("display_name")})
+    return JSONResponse(results)
+
 @app_fastapi.post("/admin/notify")
 async def send_notification(
     request: Request,
@@ -230,16 +239,17 @@ async def send_notification(
             except:
                 pass
     elif recipient_type == "single":
-        # target_user может быть chat_id или username
         target_uid = None
         for uid, user in RAM_DATA.items():
             if str(uid) == target_user or user.get("username") == target_user:
                 target_uid = uid
                 break
-        if target_uid:
-            await admin_users.bot.send_message(target_uid, message)
-        else:
+        if not target_uid:
             return {"error": "Пользователь не найден"}
+        try:
+            await admin_users.bot.send_message(target_uid, message)
+        except:
+            return {"error": "Не удалось отправить сообщение"}
     return {"status": "ok"}
 # -----------------------
 # Фоновые задачи
