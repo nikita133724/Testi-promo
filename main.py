@@ -215,7 +215,12 @@ async def get_post_stats(
         {"request": request, "stats": stats}
     )
 
+from fastapi.responses import HTMLResponse
 
+@app_fastapi.get("/admin/notify", response_class=HTMLResponse)
+async def notify_page(request: Request, _: None = Depends(admin_required)):
+    return templates.TemplateResponse("admin/notify.html", {"request": request, "is_admin": True})
+    
 @app_fastapi.get("/admin/search_users")
 async def search_users(q: str, _: None = Depends(admin_required)):
     results = []
