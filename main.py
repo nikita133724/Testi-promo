@@ -108,10 +108,14 @@ async def admin_user_detail(
             profile_link = f"https://csgoyz.run/profile/{user_id}"
 
     status = "приостановлен" if user_data.get("suspended") else "активен"
-    subscription_until = user_data.get("subscription_until")
-    if isinstance(subscription_until, (int, float)):
-        subscription_until_text = datetime.fromtimestamp(subscription_until).strftime("%d.%m.%Y %H:%M")
-    else:
+
+    raw_until = user_data.get("subscription_until")
+    subscription_until_text = "нет активной подписки"
+    try:
+        if raw_until is not None:
+            ts = float(raw_until)
+            subscription_until_text = datetime.fromtimestamp(ts).strftime("%d.%m.%Y %H:%M")
+    except Exception:
         subscription_until_text = "нет активной подписки"
         
         return templates.TemplateResponse(
