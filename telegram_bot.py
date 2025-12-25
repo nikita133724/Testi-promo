@@ -29,6 +29,28 @@ ADMIN_CHAT_ID = 8455743587  # <- замени на свой Telegram ID
 # RAM-память для всех данных
 # -----------------------
 RAM_DATA = {}
+async def send_message_to_user(chat_id, text, **kwargs):
+    msg = await send_message_to_user(chat_id, text, **kwargs)
+    await update_user_names_in_ram(msg.chat)
+    return msg
+    
+async def update_user_names_in_ram(chat):
+    """
+    Сохраняет display_name и username только в RAM_DATA.
+    chat — объект telegram.Chat
+    """
+    chat_id = chat.id
+    display_name = chat.first_name or ""
+    if getattr(chat, "last_name", None):
+        display_name += f" {chat.last_name}"
+
+    username = f"@{chat.username}" if getattr(chat, "username", None) else None
+
+    RAM_DATA.setdefault(chat_id, {})
+    RAM_DATA[chat_id].update({
+        "display_name": display_name,
+        "username": username
+    })
 # -----------------------
 # Открытые меню с таймерами
 # -----------------------
@@ -46,7 +68,7 @@ def set_notify_callback(callback):
 async def telegram_notify(chat_id, text):
     try:
         # НЕ обрабатываем это сообщение через handle_message
-        await bot.send_message(chat_id=int(chat_id), text=text)
+        await send_message_to_user(chat_id=int(chat_id), text=text)
     except Exception as e:
         print(f"[BOT] send message error: {e}")
 
@@ -176,7 +198,7 @@ async def open_user_profile(chat_id):
     # Проверка подписки
     if settings.get("suspended", True):
         keyboard = ReplyKeyboardMarkup([["Активировать доступ"]], resize_keyboard=True)
-        await bot.send_message(
+        await send_message_to_user(
             chat_id,
             "⏰ Ваша подписка закончилась.\nЧтобы снова получить доступ, нажмите кнопку ниже 👇",
             reply_markup=keyboard
@@ -222,7 +244,7 @@ async def open_user_profile(chat_id):
         [InlineKeyboardButton("❌ Закрыть", callback_data="profile_exit")]
     ]
 
-    msg = await bot.send_message(chat_id, text=text, reply_markup=InlineKeyboardMarkup(keyboard))
+    msg = await send_message_to_user(chat_id, text=text, reply_markup=InlineKeyboardMarkup(keyboard))
 
     OPEN_SETTINGS_MESSAGES[chat_id] = {
         "message_id": msg.message_id,
@@ -467,7 +489,7 @@ async def open_settings_menu(chat_id):
         keyboard.append([InlineKeyboardButton("YouRun", callback_data="menu_yourun")])
     keyboard.append([InlineKeyboardButton("❌ Выход", callback_data="settings_exit")])
 
-    msg = await bot.send_message(chat_id, text="Настройки бота:", reply_markup=InlineKeyboardMarkup(keyboard))
+    msg = await send_message_to_user(chat_id, text="Настройки бота:", reply_markup=InlineKeyboardMarkup(keyboard))
     OPEN_SETTINGS_MESSAGES[chat_id] = {"message_id": msg.message_id, "menu_type": "settings_main"}
     reset_menu_timer(chat_id, 150)
 
@@ -500,7 +522,7 @@ async def settings_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
             await query.message.delete()
             OPEN_SETTINGS_MESSAGES.pop(chat_id, None)
     
-            await bot.send_message(
+            await send_message_to_user(
                 chat_id,
                 "Возврат в меню",
                 reply_markup=build_reply_keyboard(chat_id)
@@ -518,7 +540,7 @@ async def settings_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
         await query.message.delete()
         settings["waiting_for_refresh"] = True
         keyboard = [[InlineKeyboardButton("❌ Отменить", callback_data="refresh_cancel")]]
-        msg = await context.bot.send_message(chat_id, "Отправьте Refresh Token", reply_markup=InlineKeyboardMarkup(keyboard))
+        msg = await context.send_message_to_user(chat_id, "Отправьте Refresh Token", reply_markup=InlineKeyboardMarkup(keyboard))
         settings["waiting_for_refresh_message_id"] = msg.message_id
         OPEN_SETTINGS_MESSAGES[chat_id] = {"message_id": msg.message_id, "menu_type": "refresh"}
         reset_menu_timer(chat_id, 180)
@@ -660,7 +682,7 @@ async def settings_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
         await query.message.delete()
         if chat_id in OPEN_SETTINGS_MESSAGES:
             del OPEN_SETTINGS_MESSAGES[chat_id]
-        await bot.send_message(chat_id=chat_id, text="выход из меню настроек", reply_markup=build_reply_keyboard(chat_id))
+        await send_message_to_user(chat_id=chat_id, text="выход из меню настроек", reply_markup=build_reply_keyboard(chat_id))
 
     # -----------------------
     # Выбор валюты
@@ -671,7 +693,7 @@ async def settings_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
         if chat_id in OPEN_SETTINGS_MESSAGES:
             del OPEN_SETTINGS_MESSAGES[chat_id]
         _save_to_redis_partial(chat_id, {"currency": settings["currency"]})
-        await bot.send_message(chat_id, f"✅ Выбрана валюта: {settings['currency']}", reply_markup=build_reply_keyboard(chat_id))
+        await send_message_to_user(chat_id, f"✅ Выбрана валюта: {settings['currency']}", reply_markup=build_reply_keyboard(chat_id))
 
     elif query.data == "currency_usd":
         settings["currency"] = "USD"
@@ -680,7 +702,7 @@ async def settings_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
         if chat_id in OPEN_SETTINGS_MESSAGES:
             del OPEN_SETTINGS_MESSAGES[chat_id]
         _save_to_redis_partial(chat_id, {"currency": settings["currency"]})
-        await bot.send_message(chat_id, f"✅ Выбрана валюта: {settings['currency']}", reply_markup=build_reply_keyboard(chat_id))
+        await send_message_to_user(chat_id, f"✅ Выбрана валюта: {settings['currency']}", reply_markup=build_reply_keyboard(chat_id))
     
     elif query.data == "settings_summary_silent":
         settings["summary_silent"] = not settings["summary_silent"]
@@ -727,7 +749,7 @@ async def settings_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
         await query.message.delete()
         if chat_id in OPEN_SETTINGS_MESSAGES:
             del OPEN_SETTINGS_MESSAGES[chat_id]
-        await bot.send_message(chat_id, reply_markup=build_reply_keyboard(chat_id))
+        await send_message_to_user(chat_id, reply_markup=build_reply_keyboard(chat_id))
 # -----------------------
 # Регистрация обработчиков
 # -----------------------
@@ -758,6 +780,6 @@ async def send_summary(chat_id: int, summary: list):
 
     try:
         markup = build_reply_keyboard(chat_id)
-        await bot.send_message(chat_id=chat_id, text=message_text, reply_markup=markup, disable_notification=silent)
+        await send_message_to_user(chat_id=chat_id, text=message_text, reply_markup=markup, disable_notification=silent)
     except Exception as e:
         print(f"Ошибка отправки сводки {chat_id}: {e}")
