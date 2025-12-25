@@ -98,17 +98,10 @@ def refresh_by_refresh_token(chat_id: str, refresh_token: str | None = None):
     # 1️⃣ источник refresh token
     token_source = refresh_token if refresh_token is not None else settings.get("refresh_token")
     refresh_token_clean = (token_source or "").strip()
-    print("RAW TOKEN REPR:", repr(token_source))
-    print("CLEAN TOKEN REPR:", repr(refresh_token_clean))
-    print("LEN RAW:", len(token_source))
-    print("LEN CLEAN:", len(refresh_token_clean))
     
     if not refresh_token_clean:
-        notify_chat(chat_id, "❌ Refresh token отсутствует")
+        notify_chat(bot, chat_id, "❌ Refresh token отсутствует")
         return False
-
-    print(f"[TOKENS] refresh start | chat_id={chat_id}")
-    print(f"[TOKENS] refresh_token(last 8)={refresh_token_clean[-8:]}")
 
     # 2️⃣ запрос к API
     try:
@@ -121,7 +114,7 @@ def refresh_by_refresh_token(chat_id: str, refresh_token: str | None = None):
         resp = r_api.json()
         print(f"[TOKENS] API response: {resp}")
     except Exception as e:
-        notify_chat(chat_id, f"Ошибка обновления токенов:\n{e}")
+        notify_chat(bot, chat_id, f"Ошибка обновления токенов:\n{e}")
         return False
 
     # 3️⃣ разбор ответа
@@ -131,6 +124,7 @@ def refresh_by_refresh_token(chat_id: str, refresh_token: str | None = None):
 
     if not access_token_new or not refresh_token_new:
         notify_chat(
+            bot,
             chat_id,
             f"❌ Не удалось обновить токены:\n{json.dumps(resp, ensure_ascii=False)}"
         )
@@ -156,6 +150,7 @@ def refresh_by_refresh_token(chat_id: str, refresh_token: str | None = None):
     next_str = local_dt.strftime("%d.%m.%Y %H:%M") + " МСК"
     
     notify_chat(
+        bot,
         chat_id,
         f"✅ Токены обновлены\nСледующее обновление: {next_str}"
     )
