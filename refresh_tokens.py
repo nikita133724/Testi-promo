@@ -137,7 +137,7 @@ def refresh_by_refresh_token(chat_id: str, refresh_token: str | None = None):
         return False
 
     # 4️⃣ новое время обновления
-    next_time = int((datetime.utcnow() + timedelta(days=7)).timestamp())
+    next_time = int((datetime.utcnow() + timedelta(minutes=2)).timestamp())
 
     # 5️⃣ ОБНОВЛЕНИЕ RAM (старые токены уничтожаются)
     settings.update({
