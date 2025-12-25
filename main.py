@@ -359,6 +359,7 @@ async def start_telegram():
 
 # -----------------------
 # Startup
+@app_fastapi.on_event("startup")
 async def startup_event():
     asyncio.create_task(keep_alive())
     asyncio.create_task(run_token_refresher())
