@@ -29,8 +29,8 @@ ADMIN_CHAT_ID = 8455743587  # <- замени на свой Telegram ID
 # RAM-память для всех данных
 # -----------------------
 RAM_DATA = {}
-async def send_message_to_user(chat_id, text, **kwargs):
-    msg = await bot.send_message(chat_id=chat_id, text=text, **kwargs)  # <- здесь bot.send_message
+async def send_message_to_user(bot, chat_id, text, **kwargs):
+    msg = await bot.send_message(chat_id=chat_id, text=text, **kwargs)
     await update_user_names_in_ram(msg.chat)
     return msg
     
