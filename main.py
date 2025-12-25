@@ -10,7 +10,7 @@ from zoneinfo import ZoneInfo
 # -----------------------
 # Telegram и RAM_DATA
 from telegram_client import client
-from telegram_bot import app as tg_app, bot, load_chatids, build_reply_keyboard, RAM_DATA, _save_to_redis_partial
+from telegram_bot import app as tg_app, bot, load_chatids, build_reply_keyboard, RAM_DATA, _save_to_redis_partial, send_message_to_user
 from refresh_tokens import token_refresher_loop
 from access_control import subscription_watcher, generate_key
 from admin_users import AdminUsers, KEY_DURATION_OPTIONS, extract_user_id_from_refresh, fetch_site_nickname
@@ -359,9 +359,8 @@ async def start_telegram():
 
 # -----------------------
 # Startup
-@app_fastapi.on_event("startup")
 async def startup_event():
     asyncio.create_task(keep_alive())
     asyncio.create_task(run_token_refresher())
-    asyncio.create_task(subscription_watcher(bot))
+    asyncio.create_task(subscription_watcher(bot, send_message_to_user))
     asyncio.create_task(start_telegram())
