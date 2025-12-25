@@ -5,7 +5,7 @@ from fastapi import FastAPI, Request, Form, Depends, HTTPException
 from fastapi.responses import HTMLResponse, RedirectResponse, JSONResponse
 from fastapi.templating import Jinja2Templates
 from starlette.middleware.sessions import SessionMiddleware
-from datetime import datetime
+from datetime import datetime, timedelta
 # -----------------------
 # Telegram и RAM_DATA
 from telegram_client import client
