@@ -12,65 +12,31 @@
     {{ status }}
 
     {% if "активен" in status %}
-        <button type="button" onclick="showExtend()" style="margin-left:10px;">
-            ➕ Подлить
+        <button type="button" onclick="openPicker('extend')" style="margin-left:10px;">
+            ➕ Продлить
         </button>
     {% endif %}
 </p>
 
 <h3>Действия</h3>
+<div id="time-picker" style="display:none; margin-top:12px; border:1px solid #aaa; padding:12px;">
+    <b>Выберите дату и время:</b><br><br>
+
+    <input type="datetime-local" id="custom-datetime">
+
+    <br><br>
+    <button type="button" onclick="applyTime()">Применить</button>
+    <button type="button" onclick="closePicker()">Отмена</button>
+</div>
 {% if "приостановлен" in status %}
-    <button id="restore-btn">🔄 Восстановить</button>
+    <button type="button" onclick="openPicker('restore')">🔄 Восстановить</button>
 {% else %}
     <form method="post" action="/admin/users/{{ chat_id }}/toggle_status" style="display:inline;">
         <button type="submit">⏸ Приостановить</button>
     </form>
 {% endif %}
 
-<div id="restore-options" style="display:none; margin-top:10px; border:1px solid #ccc; padding:10px;">
-    <b>Восстановить доступ на:</b><br><br>
 
-    <div>
-        <b>Минуты:</b><br>
-        <button type="button" onclick="restoreSub(3,'minutes')">3 минуты</button>
-        <button type="button" onclick="restoreSub(30,'minutes')">30 минут</button>
-        <button type="button" onclick="restoreSub(60,'minutes')">1 час</button>
-    </div>
-
-    <br>
-
-    <div>
-        <b>Дни:</b><br>
-        <button type="button" onclick="restoreSub(1,'days')">1 день</button>
-        <button type="button" onclick="restoreSub(7,'days')">7 дней</button>
-        <button type="button" onclick="restoreSub(30,'days')">30 дней</button>
-    </div>
-
-    <br>
-    <button type="button" id="cancel-restore">Отмена</button>
-</div>
-<div id="extend-options" style="display:none; margin-top:10px; border:1px solid #ccc; padding:10px;">
-    <b>Продлить доступ на:</b><br><br>
-
-    <div>
-        <b>Минуты:</b><br>
-        <button type="button" onclick="extendSub(10,'minutes')">10 минут</button>
-        <button type="button" onclick="extendSub(30,'minutes')">30 минут</button>
-        <button type="button" onclick="extendSub(60,'minutes')">1 час</button>
-    </div>
-
-    <br>
-
-    <div>
-        <b>Дни:</b><br>
-        <button type="button" onclick="extendSub(1,'days')">1 день</button>
-        <button type="button" onclick="extendSub(7,'days')">7 дней</button>
-        <button type="button" onclick="extendSub(30,'days')">30 дней</button>
-    </div>
-
-    <br>
-    <button type="button" onclick="document.getElementById('extend-options').style.display='none'">Отмена</button>
-</div>
 <form method="post" action="/admin/users/{{ chat_id }}/tokens" style="display:inline-block; margin-left:10px;">
     <button type="submit">Посмотреть токены</button>
 </form>
@@ -84,30 +50,31 @@
 {% endif %}
 
 <script>
-document.getElementById("restore-btn")?.addEventListener("click", function() {
-    document.getElementById("restore-options").style.display = "block";
-});
+let mode = null;
 
-document.getElementById("cancel-restore").addEventListener("click", function() {
-    document.getElementById("restore-options").style.display = "none";
-});
-
-function restoreSub(value, unit) {
-    fetch(`/admin/users/{{ chat_id }}/restore_subscription`, {
-        method: "POST",
-        headers: { "Content-Type": "application/x-www-form-urlencoded" },
-        body: `value=${value}&unit=${unit}`
-    }).then(() => location.reload());
-}
-function showExtend() {
-    document.getElementById("extend-options").style.display = "block";
+function openPicker(action) {
+    mode = action; // restore | extend
+    document.getElementById("time-picker").style.display = "block";
 }
 
-function extendSub(value, unit) {
-    fetch(`/admin/users/{{ chat_id }}/extend_subscription`, {
+function closePicker() {
+    document.getElementById("time-picker").style.display = "none";
+}
+
+function applyTime() {
+    const input = document.getElementById("custom-datetime").value;
+    if (!input) {
+        alert("Выберите дату и время");
+        return;
+    }
+
+    const localDate = new Date(input);
+    const utcTimestamp = Math.floor(localDate.getTime() / 1000);
+
+    fetch(`/admin/users/{{ chat_id }}/${mode}_subscription_custom`, {
         method: "POST",
-        headers: { "Content-Type": "application/x-www-form-urlencoded" },
-        body: `value=${value}&unit=${unit}`
+        headers: {"Content-Type": "application/x-www-form-urlencoded"},
+        body: `utc_ts=${utcTimestamp}`
     }).then(() => location.reload());
 }
 </script>
