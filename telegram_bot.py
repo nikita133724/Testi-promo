@@ -179,22 +179,22 @@ async def open_user_profile(chat_id):
     # если профиль уже открыт — удаляем старый
     if chat_id in OPEN_SETTINGS_MESSAGES:
         old = OPEN_SETTINGS_MESSAGES[chat_id]
-    
         try:
             await bot.delete_message(chat_id, old["message_id"])
         except:
             pass
-    
+
         task = old.get("task")
         if task:
             task.cancel()
-    
+
         OPEN_SETTINGS_MESSAGES.pop(chat_id, None)
 
     from admin_users import extract_user_id_from_refresh
 
     settings = get_user_settings(chat_id)
     currency = settings.get("currency", "USD")
+
     # Проверка подписки
     if settings.get("suspended", True):
         keyboard = ReplyKeyboardMarkup([["Активировать доступ"]], resize_keyboard=True)
@@ -206,7 +206,6 @@ async def open_user_profile(chat_id):
         return
 
     # Никнейм пользователя
-    nickname = ""
     try:
         user = await bot.get_chat(chat_id)
         nickname = user.username if user.username else (user.full_name if user.full_name else "Неизвестно")
@@ -214,31 +213,33 @@ async def open_user_profile(chat_id):
         nickname = "Неизвестно"
 
     # ID профиля из refresh_token
-    user_id = None
-    if settings.get("refresh_token"):
-        user_id = extract_user_id_from_refresh(settings["refresh_token"])
+    user_id = extract_user_id_from_refresh(settings["refresh_token"]) if settings.get("refresh_token") else None
 
-    # Время окончания подписки
+    # Подписка
     subscription_until_ts = settings.get("subscription_until")
-
     if isinstance(subscription_until_ts, (int, float)):
-        subscription_text = datetime.fromtimestamp(
-            subscription_until_ts
-        ).strftime("%d.%m.%Y %H:%M")
+        subscription_text = datetime.fromtimestamp(subscription_until_ts).strftime("%d.%m.%Y %H:%M")
     else:
         subscription_text = "Неизвестно"
-    
-    
+
+    # Следующий refresh
+    refresh_ts = settings.get("next_refresh_time")
+    if isinstance(refresh_ts, (int, float)):
+        refresh_text = datetime.fromtimestamp(refresh_ts).strftime("%d.%m.%Y %H:%M")
+    else:
+        refresh_text = "не задано"
+
     # Формируем текст профиля
     text = (
         f"👤 Профиль пользователя\n\n"
         f"Никнейм TG: {nickname}\n"
         f"ID профиля run'a: {user_id}\n\n"
         f"Валюта: {currency}\n\n"
-        f"Подписка активна до:\n🕒 {subscription_text}"
+        f"Подписка активна до:\n🕒 {subscription_text}\n\n"
+        f"Следующее обновление токенов:\n🔄 {refresh_text}"
     )
 
-    # Кнопки внутри профиля
+    # Кнопки
     keyboard = [
         [InlineKeyboardButton("⚙️ Настройки", callback_data="profile_settings")],
         [InlineKeyboardButton("❌ Закрыть", callback_data="profile_exit")]
@@ -250,8 +251,8 @@ async def open_user_profile(chat_id):
         "message_id": msg.message_id,
         "menu_type": "profile"
     }
-    
-    # ⏱ таймер авто-закрытия профиля (2 минуты)
+
+    # таймер авто-закрытия
     reset_menu_timer(chat_id, 120)
     
 # -----------------------
