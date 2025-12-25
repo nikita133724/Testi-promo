@@ -160,6 +160,11 @@ init_yourun(
 # -----------------------
 def build_reply_keyboard(chat_id):
     settings = get_user_settings(chat_id)
+
+    # ⛔ если доступ закрыт — только кнопка активации
+    if settings.get("suspended", True):
+        return ReplyKeyboardMarkup([["Активировать доступ"]], resize_keyboard=True)
+
     rows, row = [], []
     for n in ACTIVE_NOMINALS:
         key = Decimal(str(n))
@@ -170,8 +175,9 @@ def build_reply_keyboard(chat_id):
             row = []
     if row:
         rows.append(row)
+
     rows.append(["👤 Профиль"])
-    return ReplyKeyboardMarkup(rows, resize_keyboard=True, one_time_keyboard=False)
+    return ReplyKeyboardMarkup(rows, resize_keyboard=True)
 # -----------------------
 # Профиль пользователя
 # -----------------------
