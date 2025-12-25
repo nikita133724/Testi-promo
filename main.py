@@ -5,7 +5,7 @@ from fastapi import FastAPI, Request, Form, Depends, HTTPException
 from fastapi.responses import HTMLResponse, RedirectResponse, JSONResponse
 from fastapi.templating import Jinja2Templates
 from starlette.middleware.sessions import SessionMiddleware
-
+from datetime import datetime
 # -----------------------
 # Telegram и RAM_DATA
 from telegram_client import client
@@ -108,8 +108,13 @@ async def admin_user_detail(
             profile_link = f"https://csgoyz.run/profile/{user_id}"
 
     status = "приостановлен" if user_data.get("suspended") else "активен"
-
-    return templates.TemplateResponse(
+    subscription_until = user_data.get("subscription_until")
+    if isinstance(subscription_until, (int, float)):
+        subscription_until_text = datetime.fromtimestamp(subscription_until).strftime("%d.%m.%Y %H:%M")
+    else:
+        subscription_until_text = "нет активной подписки"
+        
+        return templates.TemplateResponse(
         "admin/user_detail.html",
         {
             "request": request,
@@ -119,6 +124,7 @@ async def admin_user_detail(
             "site_name": site_name,
             "profile_link": profile_link,
             "status": status,
+            "subscription_until": subscription_until_text,
             "button_text": "🔄 Восстановить" if user_data.get("suspended") else "⏸ Приостановить",
             "tokens": None,
             "is_admin": True
