@@ -116,7 +116,7 @@ def load_chatids():
         RAM_DATA[chat_id] = {
             "access_token": obj.get("access_token"),
             "refresh_token": obj.get("refresh_token"),
-            "next_refresh_time": datetime.fromisoformat(obj["next_refresh_time"]) if obj.get("next_refresh_time") else None,
+            "next_refresh_time": int(obj["next_refresh_time"]) if obj.get("next_refresh_time") else None,
             "active_nominals": {Decimal(str(k)): v for k, v in obj.get("active_nominals", {}).items()} 
                                if obj.get("active_nominals") else {Decimal(str(n)): True for n in ACTIVE_NOMINALS},
             "waiting_for_refresh": False,
