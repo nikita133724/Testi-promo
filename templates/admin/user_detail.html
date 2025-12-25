@@ -11,16 +11,19 @@
 
 
 <h3>Действия</h3>
-<button id="restore-btn" {% if not user_data.suspended %}style="display:none;"{% endif %}>🔄 Восстановить</button>
+<button id="restore-btn">{{ button_text }}</button>
 
-<div id="restore-form-container" style="display:none; margin-top:10px;">
-    <label>Выберите срок подписки:</label>
-    <select id="duration-select">
-        {% for idx, (label, _) in durations.items() %}
-            <option value="{{ idx }}">{{ label }}</option>
-        {% endfor %}
-    </select>
-    <button id="confirm-restore">Подтвердить</button>
+<div id="restore-options" style="display:none; margin-top:10px;">
+    <form id="restore-form">
+        <label for="duration">Выберите срок подписки:</label>
+        <select id="duration" name="duration">
+            <option value="1">1 день</option>
+            <option value="7">7 дней</option>
+            <option value="30">30 дней</option>
+        </select>
+        <button type="submit">Восстановить</button>
+        <button type="button" id="cancel-restore">Отмена</button>
+    </form>
 </div>
 
 <form method="post" action="/admin/users/{{ chat_id }}/tokens" style="display:inline-block; margin-left:10px;">
