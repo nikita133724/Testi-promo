@@ -150,77 +150,47 @@ async def admin_user_toggle_status(
     _save_to_redis_partial(chat_id, {"suspended": user_data["suspended"]})
     return RedirectResponse(f"/admin/users/{chat_id}", status_code=303)
 
-@app_fastapi.post("/admin/users/{chat_id}/restore_subscription")
-async def restore_subscription(
-    request: Request,
-    chat_id: int,
-    _: None = Depends(admin_required)
-):
+@app_fastapi.post("/admin/users/{chat_id}/restore_subscription_custom")
+async def restore_custom(request: Request, chat_id: int, _: None = Depends(admin_required)):
     form = await request.form()
+    ts = int(form["utc_ts"])
 
-    value = int(form.get("value"))
-    unit = form.get("unit")  # "minutes" или "days"
+    user = RAM_DATA.get(chat_id)
+    if not user:
+        return JSONResponse({"error": "Not found"}, status_code=404)
 
-    user_data = RAM_DATA.get(chat_id)
-    if not user_data:
-        return JSONResponse({"error": "User not found"}, status_code=404)
-
-    now = datetime.now()
-
-    if unit == "minutes":
-        new_until = (now + timedelta(minutes=value)).timestamp()
-    elif unit == "days":
-        new_until = (now + timedelta(days=value)).timestamp()
-    else:
-        return JSONResponse({"error": "Invalid unit"}, status_code=400)
-
-    user_data["subscription_until"] = new_until
-    user_data["suspended"] = False
+    user["subscription_until"] = ts
+    user["suspended"] = False
 
     _save_to_redis_partial(chat_id, {
-        "subscription_until": new_until,
+        "subscription_until": ts,
         "suspended": False
     })
 
-    return JSONResponse({"status": "ok"})
-    
-@app_fastapi.post("/admin/users/{chat_id}/extend_subscription")
-async def extend_subscription(
-    request: Request,
-    chat_id: int,
-    _: None = Depends(admin_required)
-):
+    return JSONResponse({"ok": True})
+
+
+@app_fastapi.post("/admin/users/{chat_id}/extend_subscription_custom")
+async def extend_custom(request: Request, chat_id: int, _: None = Depends(admin_required)):
     form = await request.form()
+    new_ts = int(form["utc_ts"])
 
-    value = int(form.get("value"))
-    unit = form.get("unit")
+    user = RAM_DATA.get(chat_id)
+    if not user:
+        return JSONResponse({"error": "Not found"}, status_code=404)
 
-    user_data = RAM_DATA.get(chat_id)
-    if not user_data:
-        return JSONResponse({"error": "User not found"}, status_code=404)
+    current = float(user.get("subscription_until", 0))
+    final = max(current, new_ts)
 
-    now_ts = datetime.now().timestamp()
-    current_until = float(user_data.get("subscription_until", 0))
-
-    # Если подписка ещё активна — прибавляем к ней
-    base_time = current_until if current_until > now_ts else now_ts
-
-    if unit == "minutes":
-        new_until = base_time + value * 60
-    elif unit == "days":
-        new_until = base_time + value * 86400
-    else:
-        return JSONResponse({"error": "Invalid unit"}, status_code=400)
-
-    user_data["subscription_until"] = new_until
-    user_data["suspended"] = False
+    user["subscription_until"] = final
+    user["suspended"] = False
 
     _save_to_redis_partial(chat_id, {
-        "subscription_until": new_until,
+        "subscription_until": final,
         "suspended": False
     })
 
-    return JSONResponse({"status": "ok"})
+    return JSONResponse({"ok": True})
     
 @app_fastapi.post("/admin/users/{chat_id}/tokens")
 async def admin_user_tokens(
