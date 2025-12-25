@@ -68,13 +68,10 @@ function applyTime() {
         return;
     }
 
-    const localDate = new Date(input);
-    const utcTimestamp = Math.floor(localDate.getTime() / 1000);
-
     fetch(`/admin/users/{{ chat_id }}/${mode}_subscription_custom`, {
         method: "POST",
         headers: {"Content-Type": "application/x-www-form-urlencoded"},
-        body: `utc_ts=${utcTimestamp}`
+        body: `local_datetime=${encodeURIComponent(input)}`
     }).then(() => location.reload());
 }
 </script>
