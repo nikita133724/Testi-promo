@@ -8,6 +8,7 @@
 <p><strong>Следующий refresh:</strong> {{ next_refresh }}</p>
 <p><strong>Сайт:</strong> <a href="{{ profile_link }}" target="_blank">{{ site_name }}</a></p>
 <p><strong>Статус:</strong> {{ status }}</p>
+<p><strong>Подписка активна до:</strong> {{ subscription_until }}</p>
 
 <h3>Действия</h3>
 <form method="post" action="/admin/users/{{ chat_id }}/toggle_status" style="display:inline-block;">
