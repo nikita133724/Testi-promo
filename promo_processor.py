@@ -8,7 +8,9 @@ from decimal import Decimal
 from refresh_tokens import get_valid_access_token, refresh_by_refresh_token_async
 from telegram_bot import RAM_DATA, ACTIVE_NOMINALS, send_summary, chat_ids
 from config import API_URL_PROMO_ACTIVATE, API_URL_BET
-
+import secrets
+def generate_fake_captcha_token():
+    return secrets.token_urlsafe(180)
 print("PROMO reads RAM_DATA id:", id(RAM_DATA))
 def log_promo_stats(chat_id, promo, nominal, sleep_time=None, activate_time=None, bet_time=None):
     user_data = RAM_DATA.setdefault(chat_id, {})
@@ -242,7 +244,7 @@ async def account_container(chat_id, promo_items, post_time):
             t1 = time.perf_counter()
             resp_bet = await make_bet(chat_id, promo, access_token, bet_amount)
             bet_time = time.perf_counter() - t1
-            log_promo_stats(chat_id, promo, nominal, sleep_time=delay, activate_time=activate_time, bet_time=bet_time)
+            log_promo_stats(chat_id, promo, nominal, sleep_time=delay, activate_time=api_time, bet_time=bet_time)
     
             if no_money_on_bet(resp_bet):
                 user_summary.append({
@@ -356,7 +358,7 @@ async def activate_promo(chat_id, code, access_token):
         "Accept": "application/json, text/plain, */*",
         "Accept-Language": "ru"
     }
-    data = {"code": code, "token": "1a"}  # обязательно для API
+    data = {"code": code, "token": generate_fake_captcha_token()}
     try:
         async with aiohttp.ClientSession() as session:
             async with session.post(API_URL_PROMO_ACTIVATE, headers=headers, json=data, timeout=15) as resp:
