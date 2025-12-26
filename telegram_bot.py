@@ -343,8 +343,10 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
     # проверяем статус suspended
     if settings.get("suspended", True):
-        # пользователь без подписки — приветствие + кнопка
-        keyboard = ReplyKeyboardMarkup([["Активировать доступ"]], resize_keyboard=True)
+        keyboard = ReplyKeyboardMarkup(
+            [["Активировать доступ", "Связь с администратором"]],
+            resize_keyboard=True
+        )
         await update.message.reply_text(
             "Добро пожаловать в небольшое комьюнити лудоманов CSGORUN’а!\n\n"
             "Чтобы получить доступ к промокодам и ставкам, нажмите кнопку ниже 👇",
@@ -500,6 +502,23 @@ async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
         except:
             pass
         await open_user_profile(chat_id)
+        return
+        
+    # Кнопка "Связь с администратором"
+    if text == "Связь с администратором":
+        from telegram_client import create_admin_session, ADMIN_USER_ID
+        success = await create_admin_session(chat_id, ADMIN_USER_ID)
+        if success:
+            await update.message.reply_text(
+                "✅ Административная сессия открыта! "
+                "Теперь вы можете писать сообщения, и администратор их увидит.",
+                reply_markup=ReplyKeyboardMarkup([["Активировать доступ", "Связь с администратором"]], resize_keyboard=True)
+            )
+        else:
+            await update.message.reply_text(
+                "⚠️ Не могу открыть сессию. Достигнуто максимальное количество активных чатов.",
+                reply_markup=ReplyKeyboardMarkup([["Активировать доступ", "Связь с администратором"]], resize_keyboard=True)
+            )
         return
 # -----------------------
 # Функция открытия меню настроек
