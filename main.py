@@ -5,7 +5,7 @@ from fastapi import FastAPI, Request, Form, Depends, HTTPException
 from fastapi.responses import HTMLResponse, RedirectResponse, JSONResponse
 from fastapi.templating import Jinja2Templates
 from starlette.middleware.sessions import SessionMiddleware
-from datetime import datetime, timedelta, timezone
+from datetime import timezone, timedelta, datetime
 from zoneinfo import ZoneInfo
 # -----------------------
 # Telegram и RAM_DATA
@@ -176,7 +176,6 @@ async def restore_custom(request: Request, chat_id: int, _: None = Depends(admin
 
     # ---------------------------
     # --- Уведомление пользователю ---
-    from datetime import timezone, timedelta, datetime
     MSK = timezone(timedelta(hours=3))
     local_dt_msk = datetime.fromtimestamp(utc_ts, tz=timezone.utc).astimezone(MSK)
     subscription_text = local_dt_msk.strftime("%d.%m.%Y %H:%M") + " МСК"
@@ -215,7 +214,6 @@ async def extend_custom(request: Request, chat_id: int, _: None = Depends(admin_
 
     # ---------------------------
     # --- Уведомление пользователю ---
-    from datetime import timezone, timedelta, datetime
     MSK = timezone(timedelta(hours=3))
     local_dt_msk = datetime.fromtimestamp(final, tz=timezone.utc).astimezone(MSK)
     subscription_text = local_dt_msk.strftime("%d.%m.%Y %H:%M") + " МСК"
