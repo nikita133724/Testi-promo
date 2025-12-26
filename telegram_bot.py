@@ -14,6 +14,7 @@ from telegram.ext import (
 from redis_client import r
 from config import TELEGRAM_BOT_TOKEN, ACTIVE_NOMINALS
 import base64
+from admin_chats import create_admin_session, close_admin_session, add_message, get_history, get_active_chats
 from access_control import prompt_for_key, process_key_input, subscription_watcher, load_keys_from_redis
 from yourun_module import (
     init_yourun,
@@ -29,24 +30,6 @@ ADMIN_CHAT_ID = 8455743587  # <- замени на свой Telegram ID
 # RAM-память для всех данных
 # -----------------------
 RAM_DATA = {}
-# -----------------------
-# Админ-сессии "связь с администратором"
-# user_id -> {"admin_id": int, "messages": list of (from_user, text, media)}
-active_chats = {}
-MAX_ACTIVE_CHATS = 10
-MAX_MESSAGES_PER_CHAT = 50
-
-async def create_admin_session(user_id: int, admin_id: int):
-    if len(active_chats) >= MAX_ACTIVE_CHATS:
-        return False
-    if user_id in active_chats:
-        return True
-    active_chats[user_id] = {"admin_id": admin_id, "messages": []}
-    return True
-
-async def close_admin_session(user_id: int):
-    if user_id in active_chats:
-        del active_chats[user_id]
         
 async def send_message_to_user(bot, chat_id, text, **kwargs):
     msg = await bot.send_message(chat_id=chat_id, text=text, **kwargs)
@@ -532,13 +515,11 @@ async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
         await open_user_profile(chat_id)
         return
         
-    # Кнопка "Связь с администратором"
     if text == "Связь с администратором":
         success = await create_admin_session(chat_id, ADMIN_CHAT_ID)
         if success:
             await update.message.reply_text(
-                "✅ Административная сессия открыта! "
-                "Теперь вы можете писать сообщения, и администратор их увидит.",
+                "✅ Административная сессия открыта! Теперь вы можете писать сообщения, и администратор их увидит.",
                 reply_markup=ReplyKeyboardMarkup([["Активировать доступ", "Связь с администратором"]], resize_keyboard=True)
             )
         else:
@@ -552,11 +533,8 @@ async def handle_admin_chat_message(update: Update, context: ContextTypes.DEFAUL
     chat_id = update.effective_chat.id
     text = update.message.text or ""
 
-    if chat_id in active_chats:
-        chat = active_chats[chat_id]
-        chat["messages"].append((chat_id, text, None))
-        chat["messages"] = chat["messages"][-MAX_MESSAGES_PER_CHAT:]
-        admin_id = chat["admin_id"]
+    admin_id = await add_message(chat_id, chat_id, text)
+    if admin_id:
         await context.bot.send_message(admin_id, f"Сообщение от {chat_id}: {text}")
         await update.message.reply_text("✅ Сообщение отправлено администратору")
         return True
@@ -875,19 +853,18 @@ async def handle_admin_reply(update: Update, context: ContextTypes.DEFAULT_TYPE)
     if text.startswith("/reply "):
         _, uid_str, msg = text.split(" ", 2)
         uid = int(uid_str)
-        if uid not in active_chats:
+        admin_id = await add_message(uid, ADMIN_CHAT_ID, msg)
+        if admin_id:
+            await context.bot.send_message(uid, f"Администратор: {msg}")
+            await update.message.reply_text(f"✅ Ответ отправлен пользователю {uid}")
+        else:
             await update.message.reply_text("⚠️ Сессия с этим пользователем не найдена.")
-            return True
-        active_chats[uid]["messages"].append((ADMIN_CHAT_ID, msg, None))
-        await context.bot.send_message(uid, f"Администратор: {msg}")
-        await update.message.reply_text(f"✅ Ответ отправлен пользователю {uid}")
         return True
 
     if text.startswith("/close_chat "):
         _, uid_str = text.split(" ", 1)
         uid = int(uid_str)
-        if uid in active_chats:
-            del active_chats[uid]
+        await close_admin_session(uid)
         await update.message.reply_text(f"✅ Сессия с пользователем {uid} закрыта")
         return True
 
