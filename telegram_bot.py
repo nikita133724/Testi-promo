@@ -82,9 +82,14 @@ def _save_to_redis_partial(chat_id: str, fields: dict):
         data = json.loads(raw)
     else:
         data = {}
-    data.update(fields)
-    r.hset(CHATID_KEY, key, json.dumps(data))
 
+    # Создаём копию, чтобы преобразовать Decimal в str
+    fields_copy = fields.copy()
+    if "active_nominals" in fields_copy:
+        fields_copy["active_nominals"] = {str(k): v for k, v in fields_copy["active_nominals"].items()}
+
+    data.update(fields_copy)
+    r.hset(CHATID_KEY, key, json.dumps(data))
 # -----------------------
 # Настройки пользователя
 # -----------------------
@@ -134,7 +139,7 @@ def load_chatids():
             "access_token": obj.get("access_token"),
             "refresh_token": obj.get("refresh_token"),
             "next_refresh_time": nxt_timestamp,
-            "active_nominals": {Decimal(str(k)): v for k, v in obj.get("active_nominals", {}).items()} 
+            "active_nominals": {Decimal(k): v for k, v in obj.get("active_nominals", {}).items()} 
                                if obj.get("active_nominals") else {Decimal(str(n)): True for n in ACTIVE_NOMINALS},
             "waiting_for_refresh": False,
             "waiting_for_refresh_message_id": None,
