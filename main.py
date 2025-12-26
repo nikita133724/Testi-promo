@@ -157,11 +157,11 @@ async def restore_custom(request: Request, chat_id: int, _: None = Depends(admin
     form = await request.form()
     local_str = form["local_datetime"]
     tz_name = form["tz"]
-    
+
     local_dt = datetime.fromisoformat(local_str)
     local_dt = local_dt.replace(tzinfo=ZoneInfo(tz_name))
     utc_ts = int(local_dt.astimezone(timezone.utc).timestamp())
-    
+
     user = RAM_DATA.get(chat_id)
     if not user:
         return JSONResponse({"error": "Not found"}, status_code=404)
@@ -175,11 +175,12 @@ async def restore_custom(request: Request, chat_id: int, _: None = Depends(admin
     })
 
     # ---------------------------
-    # --- Уведомление пользователю ---
+    # Уведомление пользователю
     MSK = timezone(timedelta(hours=3))
     local_dt_msk = datetime.fromtimestamp(utc_ts, tz=timezone.utc).astimezone(MSK)
     subscription_text = local_dt_msk.strftime("%d.%m.%Y %H:%M") + " МСК"
 
+    # создаём клавиатуру, так как подписка была неактивна
     await send_message_to_user(
         bot,
         chat_id,
@@ -189,15 +190,17 @@ async def restore_custom(request: Request, chat_id: int, _: None = Depends(admin
 
     return JSONResponse({"ok": True})
 
+
 @app_fastapi.post("/admin/users/{chat_id}/extend_subscription_custom")
 async def extend_custom(request: Request, chat_id: int, _: None = Depends(admin_required)):
     form = await request.form()
     local_str = form["local_datetime"]
     tz_name = form["tz"]
+
     local_dt = datetime.fromisoformat(local_str)
     local_dt = local_dt.replace(tzinfo=ZoneInfo(tz_name))
     utc_ts = int(local_dt.astimezone(timezone.utc).timestamp())
-    
+
     user = RAM_DATA.get(chat_id)
     if not user:
         return JSONResponse({"error": "Not found"}, status_code=404)
@@ -213,16 +216,16 @@ async def extend_custom(request: Request, chat_id: int, _: None = Depends(admin_
     })
 
     # ---------------------------
-    # --- Уведомление пользователю ---
+    # Уведомление пользователю
     MSK = timezone(timedelta(hours=3))
     local_dt_msk = datetime.fromtimestamp(final, tz=timezone.utc).astimezone(MSK)
     subscription_text = local_dt_msk.strftime("%d.%m.%Y %H:%M") + " МСК"
 
+    # не создаём клавиатуру, так как она уже есть
     await send_message_to_user(
         bot,
         chat_id,
-        f"✅ Подписка обновлена! Доступ открыт до {subscription_text}",
-        reply_markup=build_reply_keyboard(chat_id)
+        f"✅ Подписка продлена! Доступ открыт до {subscription_text}"
     )
 
     return JSONResponse({"ok": True})
