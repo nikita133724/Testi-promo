@@ -345,7 +345,7 @@ async def keep_alive():
             print(f"Keep-alive error: {e}")
 
 async def run_token_refresher():
-    asyncio.create_task(token_refresher_loop())
+    asyncio.create_task(token_refresher_loop(bot))
     print("Фоновый таймер обновления токенов запущен.")
 
 async def start_telegram():
