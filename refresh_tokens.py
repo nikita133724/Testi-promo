@@ -46,7 +46,7 @@ def get_user_settings(chat_id: int):
 # --------------------------------------------------
 # Получение валидного access_token
 # --------------------------------------------------
-def get_valid_access_token(chat_id: str):
+async def get_valid_access_token(chat_id: str, bot):
     settings = get_user_settings(int(chat_id))
     access_token = settings.get("access_token")
     refresh_token = settings.get("refresh_token")
@@ -57,12 +57,11 @@ def get_valid_access_token(chat_id: str):
         return None
 
     if next_refresh and refresh_token and now >= next_refresh:
-        ok = refresh_by_refresh_token(chat_id)
+        ok = await refresh_by_refresh_token_async(chat_id, refresh_token, bot)
         if not ok:
             return None
 
     return settings["access_token"]
-
 # --------------------------------------------------
 # ПРОГРЕВ АККАУНТА (promo)
 # --------------------------------------------------
@@ -92,81 +91,49 @@ async def warmup_promo(access_token, chat_id=None):
 # --------------------------------------------------
 # ОБНОВЛЕНИЕ ТОКЕНОВ (ручное И таймер)
 # --------------------------------------------------
-def refresh_by_refresh_token(chat_id: str, refresh_token: str | None = None):
-    settings = get_user_settings(int(chat_id))
-
-    # 1️⃣ источник refresh token
-    token_source = refresh_token if refresh_token is not None else settings.get("refresh_token")
-    refresh_token_clean = (token_source or "").strip()
-    
-    if not refresh_token_clean:
-        notify_chat(bot, chat_id, "❌ Refresh token отсутствует")
+async def refresh_by_refresh_token_async(chat_id, refresh_token=None, bot=None):
+    settings = get_user_settings(chat_id)
+    token_source = refresh_token or settings.get("refresh_token")
+    if not token_source:
+        await notify_chat(bot, chat_id, "❌ Refresh token отсутствует")
         return False
 
-    # 2️⃣ запрос к API
+    refresh_token_clean = token_source.strip()
+
     try:
-        r_api = requests.post(
-            API_URL_REFRESH,
-            headers={"Content-Type": "application/json"},
-            json={"refreshToken": refresh_token_clean},
-            timeout=10
-        )
-        resp = r_api.json()
-        print(f"[TOKENS] API response: {resp}")
+        async with aiohttp.ClientSession() as session:
+            async with session.post(API_URL_REFRESH, json={"refreshToken": refresh_token_clean}) as r:
+                resp = await r.json()
     except Exception as e:
-        notify_chat(bot, chat_id, f"Ошибка обновления токенов:\n{e}")
+        await notify_chat(bot, chat_id, f"Ошибка обновления токенов:\n{e}")
         return False
 
-    # 3️⃣ разбор ответа
     data = resp.get("data") or {}
-    access_token_new = (data.get("token") or "").strip()
-    refresh_token_new = (data.get("refreshToken") or "").strip()
+    access_token_new = data.get("token")
+    refresh_token_new = data.get("refreshToken")
 
     if not access_token_new or not refresh_token_new:
-        notify_chat(
-            bot,
-            chat_id,
-            f"❌ Не удалось обновить токены:\n{json.dumps(resp, ensure_ascii=False)}"
-        )
+        await notify_chat(bot, chat_id, f"❌ Не удалось обновить токены:\n{resp}")
         return False
 
-    # 4️⃣ новое время обновления
     next_time = int((datetime.utcnow() + timedelta(minutes=2)).timestamp())
-
-    # 5️⃣ ОБНОВЛЕНИЕ RAM (старые токены уничтожаются)
     settings.update({
         "access_token": access_token_new,
         "refresh_token": refresh_token_new,
         "next_refresh_time": next_time
     })
-    
-    _save_to_redis_partial(chat_id, {
-        "access_token": access_token_new,
-        "refresh_token": refresh_token_new,
-        "next_refresh_time": next_time
-    })
+    _save_to_redis_partial(chat_id, settings)
 
-    local_dt = datetime.fromtimestamp(next_time, tz=timezone.utc).astimezone(MSK)
-    next_str = local_dt.strftime("%d.%m.%Y %H:%M") + " МСК"
-    
-    notify_chat(
-        bot,
-        chat_id,
-        f"✅ Токены обновлены\nСледующее обновление: {next_str}"
-    )
+    next_str = datetime.fromtimestamp(next_time, tz=MSK).strftime("%d.%m.%Y %H:%M") + " МСК"
+    await notify_chat(bot, chat_id, f"✅ Токены обновлены\nСледующее обновление: {next_str}")
 
-    # 7️⃣ запуск прогрева в фоне (promo)
-    try:
-        asyncio.create_task(warmup_promo(access_token_new, chat_id))
-    except Exception as e:
-        print(f"[WARMUP] Error starting warmup: {e}")
-    
+    asyncio.create_task(warmup_promo(access_token_new, chat_id))
     return True
 
 # --------------------------------------------------
 # ТАЙМЕР
 # --------------------------------------------------
-async def token_refresher_loop():
+async def token_refresher_loop(bot):
     print("[TOKENS] запуск таймера для токенов")
 
     while True:
@@ -178,6 +145,7 @@ async def token_refresher_loop():
 
             if next_refresh and now >= next_refresh:
                 print(f"[TOKENS] timer refresh chat_id={chat_id}")
-                refresh_by_refresh_token(str(chat_id))
+                # запускаем обновление в отдельной таске
+                asyncio.create_task(refresh_by_refresh_token_async(chat_id, refresh_token, bot))
 
         await asyncio.sleep(60)
