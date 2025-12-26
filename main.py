@@ -364,17 +364,45 @@ async def send_notification(
 
     return JSONResponse({"status": "ok"})
     
+
+def is_active(user_data):
+    """
+    Определяет, активна ли подписка пользователя.
+    """
+    # Если подписка приостановлена явно — неактивен
+    if user_data.get("suspended", True):
+        return False
+
+    # Если есть временная метка окончания подписки, проверяем её
+    sub_until = user_data.get("subscription_until")
+    if not sub_until:
+        return False
+
+    try:
+        return datetime.now(timezone.utc).timestamp() < float(sub_until)
+    except Exception:
+        return False
+
+
 @app_fastapi.get("/admin/users/filter")
 async def filter_users(status: str = "all", _: None = Depends(admin_required)):
     filtered_users = []
     for chat_id, user_data in admin_users.RAM_DATA.items():
         username = await admin_users.get_username(chat_id)
-        suspended = user_data.get("suspended", True)
-        if status == "active" and suspended:
+        active = is_active(user_data)
+
+        # Фильтрация
+        if status == "active" and not active:
             continue
-        if status == "inactive" and not suspended:
+        if status == "inactive" and active:
             continue
-        filtered_users.append({"chat_id": chat_id, "username": username, "suspended": suspended})
+
+        filtered_users.append({
+            "chat_id": chat_id,
+            "username": username,
+            "active": active
+        })
+
     return JSONResponse(filtered_users)
 # -----------------------
 # Фоновые задачи
