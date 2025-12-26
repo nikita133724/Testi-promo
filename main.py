@@ -10,7 +10,7 @@ from zoneinfo import ZoneInfo
 # -----------------------
 # Telegram и RAM_DATA
 from telegram_client import client
-from telegram_bot import app as tg_app, bot, load_chatids, build_reply_keyboard, RAM_DATA, _save_to_redis_partial, send_message_to_user
+from telegram_bot import app as tg_app, bot, load_chatids, build_reply_keyboard, RAM_DATA, _save_to_redis_partial, send_message_to_user, ReplyKeyboardMarkup
 from refresh_tokens import token_refresher_loop
 from access_control import subscription_watcher, generate_key
 from admin_users import AdminUsers, KEY_DURATION_OPTIONS, extract_user_id_from_refresh, fetch_site_nickname
@@ -157,8 +157,8 @@ async def admin_user_toggle_status(
         await send_message_to_user(
             bot,
             chat_id,
-            "⏸ Ваша подписка приостановлена! Доступ закрыт. Чтобы активировать подписку снова, используйте кнопку активации.",
-            reply_markup=build_activation_keyboard(chat_id)  # Клавиатура только с активацией
+            "⏸ Ваша подписка приостановлена! Доступ закрыт.\n\n Для решения данных вопросов обращайтесь к администратору.",
+            reply_markup=ReplyKeyboardMarkup([["Активировать доступ"]], resize_keyboard=True)
         )
     except Exception as e:
         print(f"Ошибка при уведомлении пользователя {chat_id}: {e}")
