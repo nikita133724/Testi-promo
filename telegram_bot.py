@@ -345,7 +345,7 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
     # проверяем статус suspended
     if settings.get("suspended", True):
         keyboard = ReplyKeyboardMarkup(
-            [["Активировать доступ", "Связь с администратором"]],
+            [["Активировать доступ"]],
             resize_keyboard=True
         )
         await update.message.reply_text(
