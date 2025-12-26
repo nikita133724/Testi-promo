@@ -39,11 +39,11 @@ def log_promo_stats(chat_id, promo, nominal, sleep_time=None, activate_time=None
 
 
 PROMO_DELAY_BY_NOMINAL = {
-    Decimal("20"): (0.5, 0.6),
-    Decimal("5"):  (0.5, 0.57),
-    Decimal("3"):  (0.5, 0.65),
-    Decimal("2"):  (0.5, 0.65),
-    Decimal("1"):  (0.50, 0.7),
+    Decimal("20"): (0.7, 0.73),
+    Decimal("5"):  (0.7, 0.75),
+    Decimal("3"):  (0.6, 0.65),
+    Decimal("2"):  (0.55, 0.6),
+    Decimal("1"):  (0.6, 0.65),
     Decimal("0.5"): (1.00, 1.25),
     Decimal("0.25"): (1.00, 1.25),
 }
