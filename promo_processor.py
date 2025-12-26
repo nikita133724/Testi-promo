@@ -149,7 +149,7 @@ def parse_promo_codes(message: str):
 # -------------------------
 # Асинхронный контейнер для одного аккаунта
 # -------------------------
-async def account_container(chat_id, promo_items, post_time):
+async def account_container(chat_id, promo_items, post_time, bot):
     used_promos = set()
 
     if not is_user_active(chat_id):
@@ -312,7 +312,7 @@ async def account_container(chat_id, promo_items, post_time):
 # -------------------------
 # Основная функция обработки поста с фильтром suspended
 # -------------------------
-async def handle_new_post(message, media=None):
+tasks = [asyncio.create_task(account_container(chat_id, promo_items, post_time, bot)) for chat_id in active_chat_ids]
     post_time = time.time()
     promo_items = parse_promo_codes(message)
     if not promo_items:
