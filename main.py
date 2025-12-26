@@ -148,8 +148,21 @@ async def admin_user_toggle_status(
     if not user_data:
         return HTMLResponse("<h2>Пользователь не найден</h2>", status_code=404)
 
-    user_data["suspended"] = not user_data.get("suspended", False)
-    _save_to_redis_partial(chat_id, {"suspended": user_data["suspended"]})
+    # Снимаем подписку
+    user_data["suspended"] = True
+    _save_to_redis_partial(chat_id, {"suspended": True})
+
+    # Отправляем уведомление пользователю
+    try:
+        await send_message_to_user(
+            bot,
+            chat_id,
+            "⏸ Ваша подписка приостановлена! Доступ закрыт. Чтобы активировать подписку снова, используйте кнопку активации.",
+            reply_markup=build_activation_keyboard(chat_id)  # Клавиатура только с активацией
+        )
+    except Exception as e:
+        print(f"Ошибка при уведомлении пользователя {chat_id}: {e}")
+
     return RedirectResponse(f"/admin/users/{chat_id}", status_code=303)
 
 @app_fastapi.post("/admin/users/{chat_id}/restore_subscription_custom")
