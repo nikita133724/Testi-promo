@@ -3,7 +3,7 @@
 {% block content %}
 <h1>Информация о пользователе</h1>
 
-<p><strong>Username:</strong> {{ username }}</p>
+<p><strong>Username:</strong> <span id="username">{{ username }}</span></p>
 <p><strong>chat_id:</strong> {{ chat_id }}</p>
 <p><strong>Следующий refresh:</strong> 
     <span id="refresh-text"></span>
@@ -12,44 +12,32 @@
 <p>
     <strong>Статус:</strong> 
     <span id="status-text"></span>
-
+    <button type="button" id="toggle-subscription">
+        {% if status == "приостановлен" %}🔄 Восстановить{% else %}⏸ Приостановить{% endif %}
+    </button>
     {% if status == "активен" %}
-        <button type="button" onclick="openPicker('extend')" style="margin-left:10px;">
-            ➕ Продлить
-        </button>
+        <button type="button" onclick="openPicker('extend')" style="margin-left:10px;">➕ Продлить</button>
     {% endif %}
 </p>
 
 <h3>Действия</h3>
 <div id="time-picker" style="display:none; margin-top:12px; border:1px solid #aaa; padding:12px;">
     <b>Выберите дату и время:</b><br><br>
-
-    <input type="datetime-local" id="custom-datetime">
-
-    <br><br>
+    <input type="datetime-local" id="custom-datetime"><br><br>
     <button type="button" onclick="applyTime()">Применить</button>
     <button type="button" onclick="closePicker()">Отмена</button>
 </div>
-{% if "приостановлен" in status %}
-    <button type="button" onclick="openPicker('restore')">🔄 Восстановить</button>
-{% else %}
-    <form method="post" action="/admin/users/{{ chat_id }}/toggle_status" style="display:inline;">
-        <button type="submit">⏸ Приостановить</button>
-    </form>
-{% endif %}
 
-
-<form method="post" action="/admin/users/{{ chat_id }}/tokens" style="display:inline-block; margin-left:10px;">
-    <button type="submit">Посмотреть токены</button>
+<form id="tokens-form" style="display:inline-block; margin-top:10px;">
+    <button type="button" id="toggle-tokens">Посмотреть токены</button>
 </form>
 
-<a href="/admin/users" style="margin-left:20px;">⬅️ Назад к списку</a>
+<div id="tokens-container" style="display:none; margin-top:10px;">
+    <p><strong>Access Token:</strong> <span id="access-token"></span></p>
+    <p><strong>Refresh Token:</strong> <span id="refresh-token" style="cursor:pointer; user-select: all;"></span></p>
+</div>
 
-{% if tokens %}
-<h3>Токены пользователя</h3>
-<p><strong>Access Token:</strong> {{ tokens.access_token }}</p>
-<p><strong>Refresh Token:</strong> {{ tokens.refresh_token }}</p>
-{% endif %}
+<a href="/admin/users" style="display:inline-block; margin-left:20px;">⬅️ Назад к списку</a>
 
 <script>
 let mode = null;
@@ -63,39 +51,92 @@ function closePicker() {
     document.getElementById("time-picker").style.display = "none";
 }
 
-function applyTime() {
+async function applyTime() {
     const input = document.getElementById("custom-datetime").value;
-    if (!input) {
-        alert("Выберите дату и время");
-        return;
-    }
+    if (!input) { alert("Выберите дату и время"); return; }
 
     const tz = Intl.DateTimeFormat().resolvedOptions().timeZone;
 
-    fetch(`/admin/users/{{ chat_id }}/${mode}_subscription_custom`, {
+    const resp = await fetch(`/admin/users/{{ chat_id }}/${mode}_subscription_custom`, {
         method: "POST",
         headers: {"Content-Type": "application/x-www-form-urlencoded"},
         body: `local_datetime=${encodeURIComponent(input)}&tz=${encodeURIComponent(tz)}`
-    }).then(() => location.reload());
+    });
+    const data = await resp.json();
+
+    if (data.ok) {
+        const msTime = new Date(input).getTime();
+        document.getElementById("status-text").innerText = "активен до " + new Date(msTime).toLocaleString();
+        closePicker();
+        alert(mode === 'restore' ? "Подписка восстановлена!" : "Подписка продлена!");
+    } else {
+        alert("Ошибка при обновлении подписки");
+    }
 }
-</script>
-<script>
+
+// -------------------- Toggle подписки --------------------
+const toggleSubBtn = document.getElementById("toggle-subscription");
+toggleSubBtn.addEventListener("click", async () => {
+    const resp = await fetch(`/admin/users/{{ chat_id }}/toggle_status`, {
+        method: "POST",
+        headers: {"x-requested-with": "XMLHttpRequest"}
+    });
+    if (resp.ok) {
+        document.getElementById("status-text").innerText = "приостановлен";
+        toggleSubBtn.innerText = "🔄 Восстановить";
+        alert("Подписка приостановлена!");
+    }
+});
+
+// -------------------- Токены --------------------
+const toggleTokensBtn = document.getElementById("toggle-tokens");
+const tokensContainer = document.getElementById("tokens-container");
+const accessTokenEl = document.getElementById("access-token");
+const refreshTokenEl = document.getElementById("refresh-token");
+
+let tokensVisible = false;
+
+toggleTokensBtn.addEventListener("click", async () => {
+    if (!tokensVisible) {
+        const resp = await fetch(`/admin/users/{{ chat_id }}/tokens`, {
+            method: "POST",
+            headers: {"x-requested-with": "XMLHttpRequest"}
+        });
+        const data = await resp.json();
+        accessTokenEl.textContent = data.access_token;
+        refreshTokenEl.textContent = data.refresh_token;
+
+        tokensContainer.style.display = "block";
+        toggleTokensBtn.textContent = "Скрыть токены";
+        tokensVisible = true;
+    } else {
+        tokensContainer.style.display = "none";
+        toggleTokensBtn.textContent = "Посмотреть токены";
+        tokensVisible = false;
+    }
+});
+
+// -------------------- Автокопирование --------------------
+refreshTokenEl.addEventListener("click", () => {
+    navigator.clipboard.writeText(refreshTokenEl.textContent)
+        .then(() => alert("Refresh-токен скопирован!"))
+        .catch(err => console.error(err));
+});
+
+// -------------------- Статус и refresh --------------------
 const status = "{{ status }}";
 const displayUntilTs = {{ display_until if display_until else "null" }};
 const nextRefreshTs = {{ next_refresh if next_refresh else "null" }};
-
 const statusEl = document.getElementById("status-text");
 const refreshEl = document.getElementById("refresh-text");
 
-// Статус подписки
 if (status === "приостановлен" || !displayUntilTs) {
     statusEl.innerText = "приостановлен";
 } else {
-    const d = new Date(displayUntilTs * 1000); // JS использует миллисекунды
+    const d = new Date(displayUntilTs * 1000);
     statusEl.innerText = "активен до " + d.toLocaleString();
 }
 
-// Следующий refresh токена
 if (!nextRefreshTs) {
     refreshEl.innerText = "не задано";
 } else {
