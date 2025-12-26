@@ -5,7 +5,9 @@
 
 <p><strong>Username:</strong> {{ username }}</p>
 <p><strong>chat_id:</strong> {{ chat_id }}</p>
-<p><strong>Следующий refresh:</strong> {{ next_refresh }}</p>
+<p><strong>Следующий refresh:</strong> 
+    <span id="refresh-text"></span>
+</p>
 <p><strong>Сайт:</strong> <a href="{{ profile_link }}" target="_blank">{{ site_name }}</a></p>
 <p>
     <strong>Статус:</strong> 
@@ -79,15 +81,26 @@ function applyTime() {
 </script>
 <script>
 const status = "{{ status }}";
-const ts = {{ display_until if display_until else "null" }};
+const displayUntilTs = {{ display_until if display_until else "null" }};
+const nextRefreshTs = {{ next_refresh if next_refresh else "null" }};
 
 const statusEl = document.getElementById("status-text");
+const refreshEl = document.getElementById("refresh-text");
 
-if (status === "приостановлен" || !ts) {
+// Статус подписки
+if (status === "приостановлен" || !displayUntilTs) {
     statusEl.innerText = "приостановлен";
 } else {
-    const d = new Date(ts * 1000);
+    const d = new Date(displayUntilTs * 1000); // JS использует миллисекунды
     statusEl.innerText = "активен до " + d.toLocaleString();
+}
+
+// Следующий refresh токена
+if (!nextRefreshTs) {
+    refreshEl.innerText = "не задано";
+} else {
+    const d = new Date(nextRefreshTs * 1000);
+    refreshEl.innerText = d.toLocaleString();
 }
 </script>
 {% endblock %}
