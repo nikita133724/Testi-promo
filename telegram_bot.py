@@ -587,7 +587,7 @@ async def settings_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
         await query.message.delete()
         settings["waiting_for_refresh"] = True
         keyboard = [[InlineKeyboardButton("❌ Отменить", callback_data="refresh_cancel")]]
-        msg = await send_message_to_user(chat_id, "Отправьте Refresh Token", reply_markup=InlineKeyboardMarkup(keyboard))
+        msg = await send_message_to_user(bot, chat_id, "Отправьте Refresh Token", reply_markup=InlineKeyboardMarkup(keyboard))
         settings["waiting_for_refresh_message_id"] = msg.message_id
         OPEN_SETTINGS_MESSAGES[chat_id] = {"message_id": msg.message_id, "menu_type": "refresh"}
         reset_menu_timer(chat_id, 180)
