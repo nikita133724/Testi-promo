@@ -161,6 +161,7 @@ async def restore_custom(request: Request, chat_id: int, _: None = Depends(admin
     local_dt = datetime.fromisoformat(local_str)
     local_dt = local_dt.replace(tzinfo=ZoneInfo(tz_name))
     utc_ts = int(local_dt.astimezone(timezone.utc).timestamp())
+    
     user = RAM_DATA.get(chat_id)
     if not user:
         return JSONResponse({"error": "Not found"}, status_code=404)
@@ -173,6 +174,20 @@ async def restore_custom(request: Request, chat_id: int, _: None = Depends(admin
         "suspended": False
     })
 
+    # ---------------------------
+    # --- Уведомление пользователю ---
+    from datetime import timezone, timedelta, datetime
+    MSK = timezone(timedelta(hours=3))
+    local_dt_msk = datetime.fromtimestamp(utc_ts, tz=timezone.utc).astimezone(MSK)
+    subscription_text = local_dt_msk.strftime("%d.%m.%Y %H:%M") + " МСК"
+
+    await send_message_to_user(
+        bot,
+        chat_id,
+        f"✅ Подписка активирована! Доступ открыт до {subscription_text}",
+        reply_markup=build_reply_keyboard(chat_id)
+    )
+
     return JSONResponse({"ok": True})
 
 @app_fastapi.post("/admin/users/{chat_id}/extend_subscription_custom")
@@ -183,6 +198,7 @@ async def extend_custom(request: Request, chat_id: int, _: None = Depends(admin_
     local_dt = datetime.fromisoformat(local_str)
     local_dt = local_dt.replace(tzinfo=ZoneInfo(tz_name))
     utc_ts = int(local_dt.astimezone(timezone.utc).timestamp())
+    
     user = RAM_DATA.get(chat_id)
     if not user:
         return JSONResponse({"error": "Not found"}, status_code=404)
@@ -196,6 +212,20 @@ async def extend_custom(request: Request, chat_id: int, _: None = Depends(admin_
         "subscription_until": final,
         "suspended": False
     })
+
+    # ---------------------------
+    # --- Уведомление пользователю ---
+    from datetime import timezone, timedelta, datetime
+    MSK = timezone(timedelta(hours=3))
+    local_dt_msk = datetime.fromtimestamp(final, tz=timezone.utc).astimezone(MSK)
+    subscription_text = local_dt_msk.strftime("%d.%m.%Y %H:%M") + " МСК"
+
+    await send_message_to_user(
+        bot,
+        chat_id,
+        f"✅ Подписка обновлена! Доступ открыт до {subscription_text}",
+        reply_markup=build_reply_keyboard(chat_id)
+    )
 
     return JSONResponse({"ok": True})
     
