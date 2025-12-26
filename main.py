@@ -363,6 +363,19 @@ async def send_notification(
             return JSONResponse({"error": "Не удалось отправить сообщение"}, status_code=500)
 
     return JSONResponse({"status": "ok"})
+    
+@app_fastapi.get("/admin/users/filter")
+async def filter_users(status: str = "all", _: None = Depends(admin_required)):
+    filtered_users = []
+    for chat_id, user_data in admin_users.RAM_DATA.items():
+        username = await admin_users.get_username(chat_id)
+        suspended = user_data.get("suspended", True)
+        if status == "active" and suspended:
+            continue
+        if status == "inactive" and not suspended:
+            continue
+        filtered_users.append({"chat_id": chat_id, "username": username, "suspended": suspended})
+    return JSONResponse(filtered_users)
 # -----------------------
 # Фоновые задачи
 async def keep_alive():
