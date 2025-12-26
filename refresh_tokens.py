@@ -105,7 +105,7 @@ async def refresh_by_refresh_token_async(chat_id, refresh_token=None, bot=None):
             async with session.post(API_URL_REFRESH, json={"refreshToken": refresh_token_clean}) as r:
                 resp = await r.json()
     except Exception as e:
-        notify_chat(bot, chat_id, f"Ошибка обновления токенов:\n{e}")
+        notify_chat(chat_id, f"Ошибка обновления токенов:\n{e}")
         return False
 
     data = resp.get("data") or {}
@@ -125,7 +125,7 @@ async def refresh_by_refresh_token_async(chat_id, refresh_token=None, bot=None):
     _save_to_redis_partial(chat_id, settings)
 
     next_str = datetime.fromtimestamp(next_time, tz=MSK).strftime("%d.%m.%Y %H:%M") + " МСК"
-    notify_chat(bot, chat_id, f"✅ Токены обновлены\nСледующее обновление: {next_str}")
+    notify_chat(chat_id, f"✅ Токены обновлены\nСледующее обновление: {next_str}")
 
     asyncio.create_task(warmup_promo(access_token_new, chat_id))
     return True
