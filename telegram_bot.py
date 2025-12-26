@@ -362,8 +362,8 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
 # Асинхронная обёртка для refresh_by_refresh_token
 # -----------------------
 async def async_refresh_token(chat_id, token):
-    from refresh_tokens import refresh_by_refresh_token
-    refresh_by_refresh_token(str(chat_id), token)
+    from refresh_tokens import refresh_by_refresh_token_async
+    await refresh_by_refresh_token_async(chat_id, refresh_token=token, bot=bot)
 # -----------------------
 # Обработчик сообщений
 # -----------------------
