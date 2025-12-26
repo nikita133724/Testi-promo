@@ -244,32 +244,33 @@ async def extend_custom(request: Request, chat_id: int, _: None = Depends(admin_
     return JSONResponse({"ok": True})
     
 @app_fastapi.post("/admin/users/{chat_id}/tokens")
-async def admin_user_tokens(
-    request: Request,
-    chat_id: int,
-    _: None = Depends(admin_required)
-):
+async def admin_user_tokens(request: Request, chat_id: int, _: None = Depends(admin_required)):
     user_data = admin_users.RAM_DATA.get(chat_id)
     if not user_data:
-        return HTMLResponse("<h2>Пользователь не найден</h2>", status_code=404)
+        return JSONResponse({"error": "Not found"}, status_code=404)
 
     tokens = {
         "access_token": user_data.get("access_token", "не задан"),
         "refresh_token": user_data.get("refresh_token", "не задан")
     }
 
+    # Определяем, это AJAX-запрос?
+    if request.headers.get("x-requested-with") == "XMLHttpRequest":
+        return JSONResponse(tokens)
+
+    # Старый HTML-рендер
     return templates.TemplateResponse(
         "admin/user_detail.html",
         {
             "request": request,
             "chat_id": chat_id,
-            "username": str(chat_id),
+            "username": await admin_users.get_username(chat_id),
             "next_refresh": user_data.get("next_refresh_time", "не задано"),
             "site_name": "Неизвестно",
             "profile_link": "#",
             "status": "приостановлен" if user_data.get("suspended") else "активен",
             "button_text": "🔄 Восстановить" if user_data.get("suspended") else "⏸ Приостановить",
-            "tokens": tokens,
+            "tokens": None,
             "is_admin": True
         }
     )
