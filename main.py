@@ -95,7 +95,7 @@ async def admin_user_detail(
 
     username = await admin_users.get_username(chat_id)  # Вот здесь
 
-    next_refresh = user_data.get("next_refresh_time", "не задано")
+    next_refresh = user_data.get("next_refresh_time")  
     refresh_token = user_data.get("refresh_token")
     site_name = "Неизвестно"
     profile_link = "#"
