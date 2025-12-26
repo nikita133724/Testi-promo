@@ -161,7 +161,7 @@ async def account_container(chat_id, promo_items, post_time):
         if user_nominals.get(item["nominal"], True)
     ]
 
-    access_token = get_valid_access_token(str(chat_id))
+    access_token = await get_valid_access_token(str(chat_id), bot)
     if not access_token:
         print(f"[PROMO] chat_id {chat_id} — нет access токена")
         return
@@ -210,9 +210,11 @@ async def account_container(chat_id, promo_items, post_time):
         # 🔁 токен умер → обновляем
         if resp.get("error") == "Auth token not found!":
             tokens = RAM_DATA.get(chat_id)
-            if tokens and refresh_by_refresh_token(str(chat_id), tokens.get("refresh_token")):
-                access_token = get_valid_access_token(str(chat_id))
-                continue
+            if tokens:
+                ok = await refresh_by_refresh_token_async(str(chat_id), tokens.get("refresh_token"), bot)
+                if ok:
+                    access_token = await get_valid_access_token(str(chat_id), bot)
+                    continue
             break
 
         # -------------------------
