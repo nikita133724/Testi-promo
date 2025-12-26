@@ -113,7 +113,7 @@ async def refresh_by_refresh_token_async(chat_id, refresh_token=None, bot=None):
     refresh_token_new = data.get("refreshToken")
 
     if not access_token_new or not refresh_token_new:
-        await notify_chat(bot, chat_id, f"❌ Не удалось обновить токены:\n{resp}")
+        await notify_chat(chat_id, f"❌ Не удалось обновить токены:\n{resp}")
         return False
 
     next_time = int((datetime.utcnow() + timedelta(minutes=2)).timestamp())
