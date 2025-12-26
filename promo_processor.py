@@ -324,7 +324,7 @@ async def handle_new_post(message, media=None, bot=None):
     # Фильтруем приостановленных пользователей
     active_chat_ids = [chat_id for chat_id in chat_ids if is_user_active(chat_id)]
 
-    tasks = [asyncio.create_task(account_container(chat_id, promo_items, post_time)) for chat_id in active_chat_ids]
+    tasks = [asyncio.create_task(account_container(chat_id, promo_items, post_time, bot)) for chat_id in active_chat_ids]
     await asyncio.gather(*tasks)
     # Собираем stats для /stats
     RAM_DATA["last_post_stats"] = []
