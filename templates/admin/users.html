@@ -3,76 +3,22 @@
 {% block content %}
 <h1>Пользователи</h1>
 
-<div style="margin-bottom: 10px;">
-    <button class="filter-btn active" data-status="all">Все</button>
-    <button class="filter-btn" data-status="active">Активные</button>
-    <button class="filter-btn" data-status="inactive">Неактивные</button>
-</div>
+{% if users %}
+<table border="1" cellpadding="8" cellspacing="0">
+    <tr>
+        <th>ID пользователя</th>
+    </tr>
+    {% for user in users %}
+    <tr>
+        <td>
+            <a href="/admin/users/{{ user.chat_id }}">{{ user.username }}</a>
+        </td>
+    </tr>
+    {% endfor %}
 
-<div id="users-table">
-    <table border="1" cellpadding="8" cellspacing="0">
-        <tr>
-            <th>ID пользователя</th>
-            <th>Статус</th>
-        </tr>
-        {% for user in users %}
-        <tr>
-            <td><a href="/admin/users/{{ user.chat_id }}">{{ user.username }}</a></td>
-            <td>{{ "Активен" if not user.suspended else "Неактивен" }}</td>
-        </tr>
-        {% endfor %}
-    </table>
-</div>
-
-<script>
-const buttons = document.querySelectorAll(".filter-btn");
-const tableContainer = document.getElementById("users-table");
-
-// Функция обновления таблицы
-async function updateUsersTable(status) {
-    const res = await fetch(`/admin/users/filter?status=${status}`);
-    const users = await res.json();
-
-    let html = `<table border="1" cellpadding="8" cellspacing="0">
-        <tr>
-            <th>ID пользователя</th>
-            <th>Статус</th>
-        </tr>`;
-
-    users.forEach(u => {
-        html += `<tr>
-            <td><a href="/admin/users/${u.chat_id}">${u.username}</a></td>
-            <td>${u.active ? "Активен" : "Неактивен"}</td>
-        </tr>`;
-    });
-
-    html += "</table>";
-    tableContainer.innerHTML = html;
-}
-
-// Обработчики кнопок
-buttons.forEach(btn => {
-    btn.addEventListener("click", () => {
-        // Подсветка активной кнопки
-        buttons.forEach(b => b.classList.remove("active"));
-        btn.classList.add("active");
-
-        const status = btn.dataset.status;
-        updateUsersTable(status);
-    });
-});
-</script>
-
-<style>
-.filter-btn.active {
-    background-color: #4CAF50;
-    color: white;
-}
-.filter-btn {
-    margin-right: 5px;
-    padding: 5px 10px;
-    cursor: pointer;
-}
-</style>
+</table>
+{% else %}
+<p>Пользователей нет</p>
+{% endif %}
 
 {% endblock %}
