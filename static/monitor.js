@@ -101,7 +101,7 @@ async function initMonitor() {
     ramChart.update();
 
     sendPing();
-    setInterval(sendPing, 20000);
+    setInterval(sendPing, 3000);
 }
 
 // ----------------------------
