@@ -460,8 +460,8 @@ async def monitor_presence_loop():
     while True:
         try:
             members_page = await metrics_channel.presence.get()  # PaginatedResult
-    members = members_page.items  # это уже список присутствующих клиентов
-    current_clients = set(m.client_id for m in members)
+            members = members_page.items  # это уже список присутствующих клиентов
+            current_clients = set(m.client_id for m in members)
             # Вошедшие зрители
             entered = current_clients - last_clients
             if entered:
