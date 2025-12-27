@@ -290,24 +290,24 @@ async def admin_generate_key(
         {"request": request, "durations": KEY_DURATION_OPTIONS, "key": key, "is_admin": True}
     )
 
+from stats_storage import POST_STATS  # <- импортируем новый словарь
+
 @app_fastapi.get("/admin/stats", response_class=HTMLResponse)
 async def get_post_stats(
     request: Request,
     _: None = Depends(admin_required)
 ):
-    stats = RAM_DATA.get("last_post_stats")
+    stats = POST_STATS  # <- используем POST_STATS
     if not stats:
         return HTMLResponse("<h2>Данных нет</h2>", status_code=404)
 
     # Пробегаем по каждому пользователю и обновляем username
-    for user in stats:
-        chat_id = user.get("chat_id")
+    for chat_id, user in stats.items():  # теперь ключ — chat_id
         user["username"] = await admin_users.get_username(chat_id)
 
     return templates.TemplateResponse(
         "admin/stats.html",
-        {"request": request, "stats": stats}
-    )
+        {"request": request, "stats": stats.values()}
 
 from fastapi.responses import HTMLResponse
 
