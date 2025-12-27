@@ -420,13 +420,15 @@ async def metrics_collector():
     while True:
         data = get_metrics()
         push(data)
+
         try:
-            # Проверяем, есть ли кто-то на канале
+            # Получаем список подключенных клиентов (Presence)
             presence_info = await metrics_channel.presence.get()
-            if len(presence_info.items) > 0:
+            if hasattr(presence_info, "items") and len(presence_info.items) > 0:
                 await metrics_channel.publish("metrics", data)
         except Exception as e:
             print(f"Ошибка при отправке метрик: {e}")
+
         await asyncio.sleep(1)
         
 @app_fastapi.get("/admin/monitor/history")
