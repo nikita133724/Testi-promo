@@ -17,7 +17,9 @@ const ramChart = new Chart(ramCtx, {
     options: { animation: false }
 });
 
-const ably = new Ably.Realtime(ABLY_PUBLIC_KEY);
+// Генерируем уникальный client_id
+const client_id = Math.random().toString(36).substring(2);
+const ably = new Ably.Realtime({ key: ABLY_PUBLIC_KEY, clientId: client_id });
 const channel = ably.channels.get('system-metrics');
 
 async function initMonitor() {
@@ -31,11 +33,14 @@ async function initMonitor() {
     cpuChart.update();
     ramChart.update();
 
-    // 2. Подключение Ably
+    // 2. Когда Ably подключен
     ably.connection.on('connected', () => {
-        console.log("Ably подключен");
+        console.log("Ably подключен, отправляем пинги");
 
-        // 3. Отправляем ping каждые 20 секунд
+        // Первый ping сразу
+        channel.publish('ping', { viewing: true });
+
+        // 3. Отправляем ping каждые 20 сек
         setInterval(() => {
             channel.publish('ping', { viewing: true });
         }, 20000);
