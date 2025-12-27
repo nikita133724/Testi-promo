@@ -418,18 +418,23 @@ from metrics_buffer import push, get_last
 
 async def metrics_collector():
     while True:
-        data = get_metrics()
-        push(data)
-
         try:
-            # Получаем список подключенных клиентов (Presence)
+            # Получаем список активных клиентов на странице мониторинга
             presence_info = await metrics_channel.presence.get()
-            if hasattr(presence_info, "items") and len(presence_info.items) > 0:
+            active_viewers = 0
+            if hasattr(presence_info, "items"):
+                active_viewers = sum(1 for item in presence_info.items if item.client_id)
+
+            # Только если есть хотя бы один зритель, шлем данные
+            if active_viewers > 0:
+                data = get_metrics()
+                push(data)
                 await metrics_channel.publish("metrics", data)
+
         except Exception as e:
             print(f"Ошибка при отправке метрик: {e}")
 
-        await asyncio.sleep(1)
+        await asyncio.sleep(1)  # частота обновления
         
 @app_fastapi.get("/admin/monitor/history")
 async def monitor_history(_: None = Depends(admin_required)):
