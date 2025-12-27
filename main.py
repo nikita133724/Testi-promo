@@ -30,6 +30,7 @@ templates = Jinja2Templates(directory="templates")
 ABLY_KEY = os.environ.get("ABLY_API_KEY")
 ably = AblyRest(ABLY_KEY)
 metrics_channel = ably.channels.get("system-metrics")
+active_monitors = 0
 # -----------------------
 # Настройки админа
 ADMIN_LOGIN = "сахар"
@@ -419,10 +420,11 @@ async def metrics_collector():
     while True:
         data = get_metrics()
         push(data)
-        try:
-            await metrics_channel.publish("metrics", data)
-        except:
-            pass
+        if active_monitors > 0:
+            try:
+                await metrics_channel.publish("metrics", data)
+            except:
+                pass
         await asyncio.sleep(1)
         
 @app_fastapi.get("/admin/monitor/history")
@@ -435,14 +437,14 @@ async def monitor_data(_: None = Depends(admin_required)):
     
 @app_fastapi.get("/admin/monitor", response_class=HTMLResponse)
 async def monitor_page(request: Request, _: None = Depends(admin_required)):
-    return templates.TemplateResponse(
-        "admin/monitor.html",
-        {
-            "request": request,
-            "is_admin": True,
-            "ably_public": os.environ.get("ABLY_PUBLIC_KEY")
-        }
-    )
+    global active_monitors
+    active_monitors += 1
+    return templates.TemplateResponse("admin/monitor.html", {"request": request, "is_admin": True, "ably_public": os.environ.get("ABLY_PUBLIC_KEY")})
+    
+@app_fastapi.post("/admin/monitor/leave")
+async def monitor_leave(_: None = Depends(admin_required)):
+    global active_monitors
+    active_monitors = max(0, active_monitors - 1)
 # -----------------------
 # Фоновые задачи
 async def keep_alive():
