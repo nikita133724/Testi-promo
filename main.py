@@ -26,11 +26,6 @@ from fastapi.staticfiles import StaticFiles
 app_fastapi.mount("/static", StaticFiles(directory="static"), name="static")
 templates = Jinja2Templates(directory="templates")
 
-import ably
-from ably import AblyRealtime
-ABLY_KEY = os.environ.get("ABLY_API_KEY")
-ably_client = AblyRealtime(ABLY_KEY)
-metrics_channel = ably_client.channels.get("system-metrics")
 # -----------------------
 # Настройки админа
 ADMIN_LOGIN = "сахар"
@@ -414,28 +409,39 @@ async def filter_users(status: str = "all", _: None = Depends(admin_required)):
     
 #--------------------------------------
 from system_metrics import get_metrics
-from metrics_buffer import push, get_last
+from metrics_buffer import push
+from ably import AblyRealtime
+
+
+ABLY_KEY = os.environ.get("ABLY_API_KEY")
+ably_client = AblyRealtime(ABLY_KEY)
+metrics_channel = ably_client.channels.get("system-metrics")
+
+# client_id -> timestamp последнего пинга
+active_clients = {}
+
+# Функция обработки ping от клиента
+def handle_ping(msg):
+    client_id = msg.client_id
+    active_clients[client_id] = datetime.now(timezone.utc).timestamp()
+
+metrics_channel.subscribe("ping", handle_ping)
 
 async def metrics_collector():
     while True:
-        try:
+        now = datetime.now(timezone.utc).timestamp()
+        # удаляем ушедших клиентов (>30 сек)
+        for client_id in list(active_clients.keys()):
+            if now - active_clients[client_id] > 30:
+                del active_clients[client_id]
+
+        if active_clients:
             data = get_metrics()
-            push(data)  # сохраняем в буфер истории
-
-            # Получаем список активных клиентов
-            presence_info = await metrics_channel.presence.get()
-            active_viewers = 0
-            if hasattr(presence_info, "items"):
-                active_viewers = sum(1 for item in presence_info.items if item.client_id)
-
-            if active_viewers > 0:
-                await metrics_channel.publish("metrics", data)
-                print(f"Отправлено метрик клиентам: {active_viewers}")
-            else:
-                print("Нет активных зрителей, метрики не отправляются")
-
-        except Exception as e:
-            print(f"Ошибка при отправке метрик: {e}")
+            push(data)
+            await metrics_channel.publish("metrics", data)
+            print(f"Отправлено метрик {len(active_clients)} клиентам")
+        else:
+            print("Нет активных зрителей, метрики не отправляются")
 
         await asyncio.sleep(1)
         
