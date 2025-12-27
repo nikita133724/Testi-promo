@@ -403,6 +403,16 @@ async def filter_users(status: str = "all", _: None = Depends(admin_required)):
         })
 
     return JSONResponse(filtered_users)
+    
+from system_metrics import get_metrics
+
+@app_fastapi.get("/admin/monitor/data")
+async def monitor_data(_: None = Depends(admin_required)):
+    return JSONResponse(get_metrics())
+    
+@app_fastapi.get("/admin/monitor", response_class=HTMLResponse)
+async def monitor_page(request: Request, _: None = Depends(admin_required)):
+    return templates.TemplateResponse("admin/monitor.html", {"request": request, "is_admin": True})
 # -----------------------
 # Фоновые задачи
 async def keep_alive():
