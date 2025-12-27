@@ -7,7 +7,6 @@ from fastapi.templating import Jinja2Templates
 from starlette.middleware.sessions import SessionMiddleware
 from datetime import timezone, timedelta, datetime
 from zoneinfo import ZoneInfo
-from ably import AblyRest
 # -----------------------
 # Telegram и RAM_DATA
 from telegram_client import client
@@ -27,10 +26,11 @@ from fastapi.staticfiles import StaticFiles
 app_fastapi.mount("/static", StaticFiles(directory="static"), name="static")
 templates = Jinja2Templates(directory="templates")
 
+import ably
+from ably import AblyRealtime
 ABLY_KEY = os.environ.get("ABLY_API_KEY")
-ably = AblyRest(ABLY_KEY)
-metrics_channel = ably.channels.get("system-metrics")
-active_monitors = 0
+ably_client = AblyRealtime(ABLY_KEY)
+metrics_channel = ably_client.channels.get("system-metrics")
 # -----------------------
 # Настройки админа
 ADMIN_LOGIN = "сахар"
@@ -422,7 +422,7 @@ async def metrics_collector():
             data = get_metrics()
             push(data)  # сохраняем в буфер истории
 
-            # Проверяем, есть ли кто-то на странице
+            # Получаем список активных клиентов
             presence_info = await metrics_channel.presence.get()
             active_viewers = 0
             if hasattr(presence_info, "items"):
@@ -430,11 +430,14 @@ async def metrics_collector():
 
             if active_viewers > 0:
                 await metrics_channel.publish("metrics", data)
+                print(f"Отправлено метрик клиентам: {active_viewers}")
+            else:
+                print("Нет активных зрителей, метрики не отправляются")
 
         except Exception as e:
             print(f"Ошибка при отправке метрик: {e}")
 
-        await asyncio.sleep(1)  # обновление каждые 1 сек
+        await asyncio.sleep(1)
         
 @app_fastapi.get("/admin/monitor/history")
 async def monitor_history(_: None = Depends(admin_required)):
