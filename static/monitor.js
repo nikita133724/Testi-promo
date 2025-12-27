@@ -21,7 +21,7 @@ const ably = new Ably.Realtime(ABLY_PUBLIC_KEY);
 const channel = ably.channels.get('system-metrics');
 
 async function initMonitor() {
-    // 🔹 1. Получаем историю
+    // 1. Загружаем историю
     const history = await fetch('/admin/monitor/history').then(r => r.json());
     history.forEach(p => {
         labels.push('');
@@ -31,17 +31,16 @@ async function initMonitor() {
     cpuChart.update();
     ramChart.update();
 
-    // 🔹 2. Ждём подключения Ably
-    ably.connection.on('connected', async () => {
-        console.log("Ably подключен, регистрируем presence...");
-        try {
-            await channel.presence.enter({ viewing: true });
-            console.log("Presence успешно зарегистрирован");
-        } catch (err) {
-            console.error("Ошибка при вступлении в presence:", err);
-        }
+    // 2. Подключение Ably
+    ably.connection.on('connected', () => {
+        console.log("Ably подключен");
 
-        // 🔹 3. Подписка на новые метрики
+        // 3. Отправляем ping каждые 20 секунд
+        setInterval(() => {
+            channel.publish('ping', { viewing: true });
+        }, 20000);
+
+        // 4. Подписка на метрики
         channel.subscribe('metrics', msg => {
             const d = msg.data;
 
@@ -76,5 +75,4 @@ window.addEventListener("beforeunload", () => {
     channel.presence.leave().catch(err => console.error(err));
 });
 
-// Запуск
 initMonitor();
