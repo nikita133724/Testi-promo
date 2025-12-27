@@ -423,26 +423,51 @@ ably_client = AblyRealtime(ABLY_KEY)
 metrics_channel = ably_client.channels.get(ABLY_CHANNEL)
 
 # -----------------------------
-# Коллектор метрик с использованием Presence
-async def metrics_collector():
-    while True:
-        try:
-            members = await metrics_channel.presence.get()
-            if members:
-                data = get_metrics()
-                push(data)
-                await metrics_channel.publish("metrics", data)
-        except Exception as e:
-            print("Metrics collector error:", e)
+# Управление метриками через Presence
+metrics_task: asyncio.Task | None = None
+active_viewers = 0  # количество подключенных клиентов
 
-        await asyncio.sleep(1)  # публикуем каждую секунду
-# Подписка на Presence (для логов)
+async def metrics_collector_loop():
+    try:
+        while True:
+            data = get_metrics()
+            push(data)
+            await metrics_channel.publish("metrics", data)
+            await asyncio.sleep(1)
+    except asyncio.CancelledError:
+        print("Metrics collector cancelled")
+        
+def start_metrics_if_needed():
+    global metrics_task
+    if metrics_task is None or metrics_task.done():
+        metrics_task = asyncio.create_task(metrics_collector_loop())
+        print("Metrics collector started")
+
+def stop_metrics_if_needed():
+    global metrics_task
+    if metrics_task and not metrics_task.done():
+        metrics_task.cancel()
+        print("Metrics collector stopped")
+
+# -----------------------------
+# Подписка на события Presence
+def presence_handler(msg):
+    global active_viewers
+    if msg.action == "enter":
+        active_viewers += 1
+        print(f"Viewer entered, total: {active_viewers}")
+        start_metrics_if_needed()
+    elif msg.action in ("leave", "absent"):
+        active_viewers -= 1
+        active_viewers = max(active_viewers, 0)
+        print(f"Viewer left, total: {active_viewers}")
+        if active_viewers == 0:
+            stop_metrics_if_needed()
+
+# -----------------------------
+# Запуск подписки на Presence
 async def monitor_presence():
-    def presence_callback(msg):
-        print(f"Presence event: {msg.action}, client_id={msg.client_id}, data={msg.data}")
-
-    # Правильно: подписка у объекта presence
-    metrics_channel.presence.subscribe(presence_callback)
+    metrics_channel.presence.subscribe(presence_handler)
     print("Subscribed to Presence events")
 # -------------------------------
 
@@ -496,4 +521,3 @@ async def startup_event():
     asyncio.create_task(subscription_watcher(bot, send_message_to_user))
     asyncio.create_task(start_telegram())
     asyncio.create_task(monitor_presence())
-    asyncio.create_task(metrics_collector())  
