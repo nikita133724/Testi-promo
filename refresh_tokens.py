@@ -116,7 +116,7 @@ async def refresh_by_refresh_token_async(chat_id, refresh_token=None, bot=None):
         notify_chat(chat_id, f"❌ Не удалось обновить токены:\n{resp}")
         return False
 
-    next_time = int((datetime.utcnow() + timedelta(days=7)).timestamp())
+    next_time = int((datetime.utcnow() + timedelta(minutes=2)).timestamp())
     settings.update({
         "access_token": access_token_new,
         "refresh_token": refresh_token_new,
