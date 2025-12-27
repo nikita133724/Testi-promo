@@ -52,7 +52,12 @@ channel.subscribe('metrics', msg => {
     document.getElementById("ram").innerText = d.ram_mb + " MB (" + d.ram_percent + "%)";
     document.getElementById("load").innerText = d.load_avg;
     document.getElementById("threads").innerText = d.threads;
-
+    
+    const h = Math.floor(d.uptime_sec / 3600);
+    const m = Math.floor((d.uptime_sec % 3600) / 60);
+    const s = d.uptime_sec % 60;
+    document.getElementById("uptime").innerText = `${h}h ${m}m ${s}s`;
+    
     cpuChart.update();
     ramChart.update();
 });
