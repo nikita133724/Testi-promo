@@ -52,5 +52,5 @@ async function updateMetrics() {
     }
 }
 
-setInterval(updateMetrics, 2000);
+setInterval(updateMetrics, 800);
 updateMetrics();
