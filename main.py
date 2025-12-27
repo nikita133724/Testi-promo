@@ -21,6 +21,9 @@ SELF_URL = os.environ.get("SELF_URL", "https://promo-zq59.onrender.com")
 
 app_fastapi = FastAPI()
 app_fastapi.add_middleware(SessionMiddleware, secret_key=SECRET_KEY)
+from fastapi.staticfiles import StaticFiles
+
+app_fastapi.mount("/static", StaticFiles(directory="static"), name="static")
 templates = Jinja2Templates(directory="templates")
 
 # -----------------------
