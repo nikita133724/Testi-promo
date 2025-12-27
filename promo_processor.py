@@ -339,6 +339,7 @@ async def handle_new_post(message, media=None, bot=None):
                 for log in user_data["current_post_stats"]
             )
             POST_STATS[chat_id] = {
+                "chat_id": chat_id, 
                 "username": user_data.get("username", f"user_{chat_id}"),
                 "logs": user_data["current_post_stats"],
                 "total_time": total_time
