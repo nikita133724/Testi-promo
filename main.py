@@ -408,7 +408,13 @@ async def filter_users(status: str = "all", _: None = Depends(admin_required)):
     return JSONResponse(filtered_users)
     
 from system_metrics import get_metrics
+from metrics_buffer import push
 
+async def metrics_collector():
+    while True:
+        push(get_metrics())
+        await asyncio.sleep(1)
+        
 @app_fastapi.get("/admin/monitor/data")
 async def monitor_data(_: None = Depends(admin_required)):
     return JSONResponse(get_metrics())
