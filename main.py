@@ -420,11 +420,13 @@ async def metrics_collector():
     while True:
         data = get_metrics()
         push(data)
-        if active_monitors > 0:
-            try:
+        try:
+            # Проверяем, есть ли кто-то на канале
+            presence_info = metrics_channel.presence.get()
+            if len(presence_info.items) > 0:
                 await metrics_channel.publish("metrics", data)
-            except:
-                pass
+        except Exception as e:
+            print(f"Ошибка при отправке метрик: {e}")
         await asyncio.sleep(1)
         
 @app_fastapi.get("/admin/monitor/history")
@@ -437,14 +439,10 @@ async def monitor_data(_: None = Depends(admin_required)):
     
 @app_fastapi.get("/admin/monitor", response_class=HTMLResponse)
 async def monitor_page(request: Request, _: None = Depends(admin_required)):
-    global active_monitors
-    active_monitors += 1
-    return templates.TemplateResponse("admin/monitor.html", {"request": request, "is_admin": True, "ably_public": os.environ.get("ABLY_PUBLIC_KEY")})
-    
-@app_fastapi.post("/admin/monitor/leave")
-async def monitor_leave(_: None = Depends(admin_required)):
-    global active_monitors
-    active_monitors = max(0, active_monitors - 1)
+    return templates.TemplateResponse(
+        "admin/monitor.html",
+        {"request": request, "is_admin": True, "ably_public": os.environ.get("ABLY_PUBLIC_KEY")}
+    )
 # -----------------------
 # Фоновые задачи
 async def keep_alive():
