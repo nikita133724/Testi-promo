@@ -32,7 +32,7 @@ const ramChart = new Chart(ramCtx, {
 })();
 
 // 🔴 Realtime через Ably
-const ably = new Ably.Realtime('pjF_2g.92jjrw:4nEHxXJ-LzPl5A58beJY1PlRU8XSCuYNDOWr36IAHKs');
+const ably = new Ably.Realtime(ABLY_PUBLIC_KEY);
 const channel = ably.channels.get('system-metrics');
 
 channel.subscribe('metrics', msg => {
