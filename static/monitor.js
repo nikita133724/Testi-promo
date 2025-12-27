@@ -23,14 +23,37 @@ const ramChart = new Chart(ramCtx, {
 
 // ----------------------------
 // Входим в Presence после подключения
-ably.connection.on('connected', () => {
-    console.log("Ably connected, entering Presence...");
-    channel.presence.enter({ viewing: true }).catch(console.error);
-});
+async function enterPresence() {
+    try {
+        await channel.presence.enter({ viewing: true });
+        console.log("Entered Presence (monitoring active)");
+    } catch (err) {
+        console.error("Error entering presence:", err);
+    }
+}
 
 // Выходим из Presence при уходе со страницы
-window.addEventListener("beforeunload", () => {
-    channel.presence.leave().catch(console.error);
+async function leavePresence() {
+    try {
+        await channel.presence.leave();
+        console.log("Left Presence (monitoring stopped)");
+    } catch (err) {
+        console.error("Error leaving presence:", err);
+    }
+}
+
+ably.connection.on('connected', enterPresence);
+
+// Обработка закрытия вкладки / перехода / потери соединения
+window.addEventListener("beforeunload", leavePresence);
+window.addEventListener("pagehide", leavePresence);
+
+// ----------------------------
+// Подписка на метрики
+channel.subscribe('metrics', msg => {
+    let d = msg.data;
+    if (typeof d === 'string') d = JSON.parse(d);
+    pendingMetrics.push(d);
 });
 
 // ----------------------------
@@ -62,26 +85,22 @@ function updateCharts() {
     const s = last.uptime_sec % 60;
     document.getElementById("uptime").innerText = `${h}h ${m}m ${s}s`;
 
-    // Очистка буфера
     pendingMetrics = [];
 }
 
 // ----------------------------
-// Подписка на метрики
-channel.subscribe('metrics', msg => {
-    let d = msg.data;
-    if (typeof d === 'string') d = JSON.parse(d);
-    pendingMetrics.push(d);
-});
-
 // Интервал обновления графиков
 setInterval(updateCharts, 500);
 
 // ----------------------------
-// Загрузка истории
+// Загрузка истории метрик при заходе на страницу
 async function initMonitor() {
-    const history = await fetch('/admin/monitor/history').then(r => r.json());
-    history.forEach(p => pendingMetrics.push(p));
+    try {
+        const history = await fetch('/admin/monitor/history').then(r => r.json());
+        history.forEach(p => pendingMetrics.push(p));
+    } catch (err) {
+        console.error("Failed to load monitor history:", err);
+    }
 }
 
 initMonitor();
