@@ -62,6 +62,7 @@ channel.subscribe('metrics', msg => {
     ramChart.update();
 });
 // Отмечаем, что вкладка мониторинга открыта
+channel.presence.enter({ viewing: true });
 window.addEventListener("beforeunload", () => {
-    channel.presence.leave().catch(err => console.error("Presence leave error:", err));
+    channel.presence.leave();
 });
