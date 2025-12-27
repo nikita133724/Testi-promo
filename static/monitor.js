@@ -17,24 +17,22 @@ const ramChart = new Chart(ramCtx, {
     options: { animation: false }
 });
 
-// Ably
 const ably = new Ably.Realtime(ABLY_PUBLIC_KEY);
 const channel = ably.channels.get('system-metrics');
 
 async function initMonitor() {
-    // 🔹 1. Enter presence (отмечаем, что пользователь на странице)
-    await channel.presence.enter({ viewing: true }).catch(err => console.error("Presence enter error:", err));
-
-    // 🔹 2. Получаем историю метрик
+    // 🔹 1. Получаем историю
     const history = await fetch('/admin/monitor/history').then(r => r.json());
     history.forEach(p => {
         labels.push('');
         cpuData.push(p.cpu);
         ramData.push(p.ram_percent);
     });
-
     cpuChart.update();
     ramChart.update();
+
+    // 🔹 2. Отмечаем, что пользователь на странице
+    await channel.presence.enter({ viewing: true }).catch(err => console.error(err));
 
     // 🔹 3. Подписка на новые метрики
     channel.subscribe('metrics', msg => {
@@ -50,7 +48,6 @@ async function initMonitor() {
         cpuData.push(d.cpu);
         ramData.push(d.ram_percent);
 
-        // Обновляем текстовые значения
         document.getElementById("cpu").innerText = d.cpu + " %";
         document.getElementById("ram").innerText = d.ram_mb + " MB (" + d.ram_percent + "%)";
         document.getElementById("load").innerText = d.load_avg;
@@ -66,10 +63,8 @@ async function initMonitor() {
     });
 }
 
-// 🔹 Уходим со страницы — оставляем Presence чистым
 window.addEventListener("beforeunload", () => {
-    channel.presence.leave().catch(err => console.error("Presence leave error:", err));
+    channel.presence.leave().catch(err => console.error(err));
 });
 
-// Запуск мониторинга
 initMonitor();
