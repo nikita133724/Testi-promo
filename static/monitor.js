@@ -17,40 +17,42 @@ const ramChart = new Chart(ramCtx, {
     options: { animation: false }
 });
 
-async function updateMetrics() {
-    try {
-        const res = await fetch('/admin/monitor/data');
-        const data = await res.json();
+// 🔹 Получаем историю
+(async () => {
+    const history = await fetch('/admin/monitor/history').then(r => r.json());
 
-        if (!data || data.cpu === undefined) return;
-
-        document.getElementById("cpu").innerText = data.cpu + " %";
-        document.getElementById("ram").innerText = data.ram_mb + " MB (" + data.ram_percent + "%)";
-        document.getElementById("load").innerText = data.load_avg;
-        document.getElementById("threads").innerText = data.threads;
-
-        const h = Math.floor(data.uptime_sec / 3600);
-        const m = Math.floor((data.uptime_sec % 3600) / 60);
-        const s = data.uptime_sec % 60;
-        document.getElementById("uptime").innerText = `${h}h ${m}m ${s}s`;
-
-        if (labels.length > 60) {
-            labels.shift();
-            cpuData.shift();
-            ramData.shift();
-        }
-
+    history.forEach(p => {
         labels.push('');
-        cpuData.push(data.cpu);
-        ramData.push(data.ram_percent);
+        cpuData.push(p.cpu);
+        ramData.push(p.ram_percent);
+    });
 
-        cpuChart.update();
-        ramChart.update();
+    cpuChart.update();
+    ramChart.update();
+})();
 
-    } catch (e) {
-        console.error(e);
+// 🔴 Realtime через Ably
+const ably = new Ably.Realtime('pjF_2g.92jjrw:4nEHxXJ-LzPl5A58beJY1PlRU8XSCuYNDOWr36IAHKs');
+const channel = ably.channels.get('system-metrics');
+
+channel.subscribe('metrics', msg => {
+    const d = msg.data;
+
+    if (labels.length > 300) {
+        labels.shift();
+        cpuData.shift();
+        ramData.shift();
     }
-}
 
-setInterval(updateMetrics, 800);
-updateMetrics();
+    labels.push('');
+    cpuData.push(d.cpu);
+    ramData.push(d.ram_percent);
+
+    document.getElementById("cpu").innerText = d.cpu + " %";
+    document.getElementById("ram").innerText = d.ram_mb + " MB (" + d.ram_percent + "%)";
+    document.getElementById("load").innerText = d.load_avg;
+    document.getElementById("threads").innerText = d.threads;
+
+    cpuChart.update();
+    ramChart.update();
+});
