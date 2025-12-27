@@ -409,32 +409,28 @@ async def filter_users(status: str = "all", _: None = Depends(admin_required)):
     
 #--------------------------------------
 from system_metrics import get_metrics
-from metrics_buffer import push, get_last
+from metrics_buffer import push
 from ably import AblyRealtime
 
 ABLY_KEY = os.environ.get("ABLY_API_KEY")
 ably_client = AblyRealtime(ABLY_KEY)
 metrics_channel = ably_client.channels.get("system-metrics")
 
-app = FastAPI()
-
 # client_id -> timestamp последнего пинга
 active_clients = {}
 
-# -------------------------------
-# Сервер обрабатывает ping от клиента
+# Обработчик ping от клиента
 def handle_ping(msg):
-    client_id = msg.client_id
-    active_clients[client_id] = datetime.now(timezone.utc).timestamp()
+    client_id = msg.data.get("client_id")  # теперь берем из данных
+    if client_id:
+        active_clients[client_id] = datetime.now(timezone.utc).timestamp()
 
 metrics_channel.subscribe("ping", handle_ping)
 
-# -------------------------------
-# Фоновая задача — сбор метрик
 async def metrics_collector():
     while True:
         now = datetime.now(timezone.utc).timestamp()
-        # удаляем клиентов, которые не пинганули >30 сек
+        # удаляем "ушедших" клиентов (>30 сек)
         for client_id in list(active_clients.keys()):
             if now - active_clients[client_id] > 30:
                 del active_clients[client_id]
