@@ -450,7 +450,7 @@ async def metrics_collector():
 
         # Удаляем "ушедших" клиентов (>30 сек)
         for client_id in list(active_clients.keys()):
-            if now_ts - active_clients[client_id] > 30:
+            if now_ts - active_clients[client_id] > 17:
                 del active_clients[client_id]
 
         if active_clients:
