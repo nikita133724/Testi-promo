@@ -7,6 +7,7 @@ from fastapi.templating import Jinja2Templates
 from starlette.middleware.sessions import SessionMiddleware
 from datetime import timezone, timedelta, datetime
 from zoneinfo import ZoneInfo
+from ably import AblyRest
 # -----------------------
 # Telegram и RAM_DATA
 from telegram_client import client
@@ -26,6 +27,9 @@ from fastapi.staticfiles import StaticFiles
 app_fastapi.mount("/static", StaticFiles(directory="static"), name="static")
 templates = Jinja2Templates(directory="templates")
 
+ABLY_KEY = os.environ.get("ABLY_API_KEY")
+ably = AblyRest(ABLY_KEY)
+metrics_channel = ably.channels.get("system-metrics")
 # -----------------------
 # Настройки админа
 ADMIN_LOGIN = "сахар"
@@ -407,16 +411,20 @@ async def filter_users(status: str = "all", _: None = Depends(admin_required)):
 
     return JSONResponse(filtered_users)
     
+#--------------------------------------
 from system_metrics import get_metrics
-from metrics_buffer import push
+from metrics_buffer import push, get_last
 
 async def metrics_collector():
     while True:
-        push(get_metrics())
+        data = get_metrics()
+        push(data)
+        try:
+            await metrics_channel.publish("metrics", data)
+        except:
+            pass
         await asyncio.sleep(1)
         
-from metrics_buffer import get_last
-
 @app_fastapi.get("/admin/monitor/history")
 async def monitor_history(_: None = Depends(admin_required)):
     return JSONResponse(get_last())
