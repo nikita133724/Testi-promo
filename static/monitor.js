@@ -1,4 +1,4 @@
-const ably = new Ably.Realtime(ABLY_PUBLIC_KEY);
+const ably = new Ably.Realtime({ key: ABLY_PUBLIC_KEY, clientId: CLIENT_ID });
 const channel = ably.channels.get('system-metrics');
 
 const cpuCtx = document.getElementById('cpuChart').getContext('2d');
@@ -42,9 +42,12 @@ async function leavePresence() {
     }
 }
 
+// Подключение
 ably.connection.on('connected', enterPresence);
+ably.connection.on('disconnected', leavePresence);
 
-// Обработка закрытия вкладки / перехода / потери соединения
+// ----------------------------
+// Обработка закрытия вкладки / перехода
 window.addEventListener("beforeunload", leavePresence);
 window.addEventListener("pagehide", leavePresence);
 
