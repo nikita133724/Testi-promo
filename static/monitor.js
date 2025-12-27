@@ -56,3 +56,6 @@ channel.subscribe('metrics', msg => {
     cpuChart.update();
     ramChart.update();
 });
+window.addEventListener("beforeunload", () => {
+    navigator.sendBeacon("/admin/monitor/leave");
+});
