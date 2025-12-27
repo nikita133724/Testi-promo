@@ -415,6 +415,12 @@ async def metrics_collector():
         push(get_metrics())
         await asyncio.sleep(1)
         
+from metrics_buffer import get_last
+
+@app_fastapi.get("/admin/monitor/history")
+async def monitor_history(_: None = Depends(admin_required)):
+    return JSONResponse(get_last())
+    
 @app_fastapi.get("/admin/monitor/data")
 async def monitor_data(_: None = Depends(admin_required)):
     return JSONResponse(get_metrics())
@@ -456,4 +462,3 @@ async def startup_event():
     asyncio.create_task(run_token_refresher())
     asyncio.create_task(subscription_watcher(bot, send_message_to_user))
     asyncio.create_task(start_telegram())
-    asyncio.create_task(metrics_collector())
