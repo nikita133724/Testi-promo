@@ -4,11 +4,11 @@
 <h2>System Monitor</h2>
 
 <table>
-<tr><th>CPU</th><td id="cpu">--</td></tr>
-<tr><th>RAM</th><td id="ram">--</td></tr>
+<tr><th>цпу</th><td id="cpu">--</td></tr>
+<tr><th>рам</th><td id="ram">--</td></tr>
 <tr><th>Load</th><td id="load">--</td></tr>
 <tr><th>Threads</th><td id="threads">--</td></tr>
-<tr><th>Uptime</th><td id="uptime">--</td></tr>
+<tr><th>время работы</th><td id="uptime">--</td></tr>
 </table>
 
 <canvas id="cpuChart" height="120"></canvas>
@@ -17,9 +17,12 @@
 
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 <script src="https://cdn.ably.io/lib/ably.min-1.js"></script>
+
 <script>
     const ABLY_PUBLIC_KEY = "{{ ably_public }}";
+    const CLIENT_ID = "{{ client_id }}";  // уникальный идентификатор для этой вкладки
 </script>
+
 <script src="/static/monitor.js"></script>
 
 {% endblock %}
