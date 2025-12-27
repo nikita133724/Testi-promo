@@ -1,33 +1,40 @@
 import psutil
 import time
-import os
 
 START_TIME = time.time()
 
+def read_value(path):
+    try:
+        with open(path) as f:
+            return int(f.read().strip())
+    except:
+        return None
+
+def get_container_memory():
+    # cgroup v2 (используется на Render)
+    limit = read_value("/sys/fs/cgroup/memory.max")
+    usage = read_value("/sys/fs/cgroup/memory.current")
+
+    if limit and usage and limit > 0 and limit < 10**15:
+        return usage, limit
+
+    # fallback — если вдруг не контейнер
+    vm = psutil.virtual_memory()
+    return vm.used, vm.total
+
 def get_metrics():
-    try:
-        cpu = psutil.cpu_percent(interval=0.3)
-    except:
-        cpu = 0
+    cpu = psutil.cpu_percent(interval=0.2)
+
+    used, total = get_container_memory()
+    ram_mb = round(used / 1024 / 1024, 1)
+    ram_percent = round((used / total) * 100, 1)
 
     try:
-        vm = psutil.virtual_memory()
-        ram_mb = round(vm.used / 1024 / 1024, 1)
-        ram_percent = round(vm.percent, 1)
-    except:
-        ram_mb = 0
-        ram_percent = 0
-
-    try:
-        load = round(os.getloadavg()[0], 2)
+        load = round(psutil.getloadavg()[0], 2)
     except:
         load = 0
 
-    try:
-        threads = psutil.Process().num_threads()
-    except:
-        threads = 0
-
+    threads = psutil.Process().num_threads()
     uptime = int(time.time() - START_TIME)
 
     return {
