@@ -435,7 +435,14 @@ async def monitor_data(_: None = Depends(admin_required)):
     
 @app_fastapi.get("/admin/monitor", response_class=HTMLResponse)
 async def monitor_page(request: Request, _: None = Depends(admin_required)):
-    return templates.TemplateResponse("admin/monitor.html", {"request": request, "is_admin": True})
+    return templates.TemplateResponse(
+        "admin/monitor.html",
+        {
+            "request": request,
+            "is_admin": True,
+            "ably_public": os.environ.get("ABLY_PUBLIC_KEY")
+        }
+    )
 # -----------------------
 # Фоновые задачи
 async def keep_alive():
@@ -470,3 +477,4 @@ async def startup_event():
     asyncio.create_task(run_token_refresher())
     asyncio.create_task(subscription_watcher(bot, send_message_to_user))
     asyncio.create_task(start_telegram())
+    asyncio.create_task(metrics_collector())  
