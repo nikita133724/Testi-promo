@@ -34,7 +34,7 @@ const ramChart = new Chart(ramCtx, {
 // 🔴 Realtime через Ably
 const ably = new Ably.Realtime(ABLY_PUBLIC_KEY);
 const channel = ably.channels.get('system-metrics');
-
+channel.presence.enter({ viewing: true }).catch(err => console.error("Presence enter error:", err));
 channel.subscribe('metrics', msg => {
     const d = msg.data;
 
@@ -61,6 +61,7 @@ channel.subscribe('metrics', msg => {
     cpuChart.update();
     ramChart.update();
 });
+// Отмечаем, что вкладка мониторинга открыта
 window.addEventListener("beforeunload", () => {
-    navigator.sendBeacon("/admin/monitor/leave");
+    channel.presence.leave().catch(err => console.error("Presence leave error:", err));
 });
