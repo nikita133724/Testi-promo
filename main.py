@@ -412,13 +412,6 @@ from system_metrics import get_metrics
 from metrics_buffer import push, get_last
 from ably import AblyRealtime
 
-import asyncio
-import os
-from datetime import datetime, timezone
-from ably import AblyRealtime
-from system_metrics import get_metrics
-from metrics_buffer import push
-
 ABLY_KEY = os.environ.get("ABLY_API_KEY")
 ABLY_CHANNEL = "system-metrics"
 
@@ -499,5 +492,5 @@ async def startup_event():
     asyncio.create_task(run_token_refresher())
     asyncio.create_task(subscription_watcher(bot, send_message_to_user))
     asyncio.create_task(start_telegram())
-    asyncio.create_task(subscribe_metrics())
+    asyncio.create_task(monitor_presence())
     asyncio.create_task(metrics_collector())  
