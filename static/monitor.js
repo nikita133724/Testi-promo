@@ -17,8 +17,11 @@ const ramChart = new Chart(ramCtx, {
     options: { animation: false }
 });
 
-// 🔹 Получаем историю
-(async () => {
+const ably = new Ably.Realtime(ABLY_PUBLIC_KEY);
+const channel = ably.channels.get('system-metrics');
+
+async function initMonitor() {
+    // 🔹 1. Получаем историю
     const history = await fetch('/admin/monitor/history').then(r => r.json());
 
     history.forEach(p => {
@@ -29,40 +32,43 @@ const ramChart = new Chart(ramCtx, {
 
     cpuChart.update();
     ramChart.update();
-})();
 
-// 🔴 Realtime через Ably
-const ably = new Ably.Realtime(ABLY_PUBLIC_KEY);
-const channel = ably.channels.get('system-metrics');
-channel.presence.enter({ viewing: true }).catch(err => console.error("Presence enter error:", err));
-channel.subscribe('metrics', msg => {
-    const d = msg.data;
+    // 🔹 2. Подписка на Realtime
+    channel.subscribe('metrics', msg => {
+        const d = msg.data;
 
-    if (labels.length > 300) {
-        labels.shift();
-        cpuData.shift();
-        ramData.shift();
-    }
+        if (labels.length > 300) {
+            labels.shift();
+            cpuData.shift();
+            ramData.shift();
+        }
 
-    labels.push('');
-    cpuData.push(d.cpu);
-    ramData.push(d.ram_percent);
+        labels.push('');
+        cpuData.push(d.cpu);
+        ramData.push(d.ram_percent);
 
-    document.getElementById("cpu").innerText = d.cpu + " %";
-    document.getElementById("ram").innerText = d.ram_mb + " MB (" + d.ram_percent + "%)";
-    document.getElementById("load").innerText = d.load_avg;
-    document.getElementById("threads").innerText = d.threads;
-    
-    const h = Math.floor(d.uptime_sec / 3600);
-    const m = Math.floor((d.uptime_sec % 3600) / 60);
-    const s = d.uptime_sec % 60;
-    document.getElementById("uptime").innerText = `${h}h ${m}m ${s}s`;
-    
-    cpuChart.update();
-    ramChart.update();
-});
-// Отмечаем, что вкладка мониторинга открыта
-channel.presence.enter({ viewing: true });
+        document.getElementById("cpu").innerText = d.cpu + " %";
+        document.getElementById("ram").innerText = d.ram_mb + " MB (" + d.ram_percent + "%)";
+        document.getElementById("load").innerText = d.load_avg;
+        document.getElementById("threads").innerText = d.threads;
+        
+        const h = Math.floor(d.uptime_sec / 3600);
+        const m = Math.floor((d.uptime_sec % 3600) / 60);
+        const s = d.uptime_sec % 60;
+        document.getElementById("uptime").innerText = `${h}h ${m}m ${s}s`;
+        
+        cpuChart.update();
+        ramChart.update();
+    });
+
+    // 🔹 3. Отмечаем, что на странице мониторинга есть пользователь
+    channel.presence.enter({ viewing: true }).catch(err => console.error("Presence enter error:", err));
+}
+
+// Запуск
+initMonitor();
+
+// Уходим со страницы
 window.addEventListener("beforeunload", () => {
-    channel.presence.leave();
+    channel.presence.leave().catch(err => console.error("Presence leave error:", err));
 });
