@@ -17,10 +17,11 @@ const ramChart = new Chart(ramCtx, {
     options: { animation: false }
 });
 
-// Генерируем уникальный client_id
-const client_id = Math.random().toString(36).substring(2);
-const ably = new Ably.Realtime({ key: ABLY_PUBLIC_KEY, clientId: client_id });
+const ably = new Ably.Realtime(ABLY_PUBLIC_KEY);
 const channel = ably.channels.get('system-metrics');
+
+// генерируем уникальный client_id для этого браузера
+const client_id = Math.random().toString(36).substring(2);
 
 async function initMonitor() {
     // 1. Загружаем историю
@@ -33,17 +34,16 @@ async function initMonitor() {
     cpuChart.update();
     ramChart.update();
 
-    // 2. Когда Ably подключен
+    // 2. Подключение Ably
     ably.connection.on('connected', () => {
-        console.log("Ably подключен, отправляем пинги");
+        console.log("Ably подключен");
 
-        // Первый ping сразу
-        channel.publish('ping', { viewing: true });
-
-        // 3. Отправляем ping каждые 20 сек
-        setInterval(() => {
-            channel.publish('ping', { viewing: true });
-        }, 20000);
+        // 3. Отправляем ping каждые 20 секунд
+        function sendPing() {
+            channel.publish('ping', { viewing: true, client_id });
+        }
+        setInterval(sendPing, 20000);
+        sendPing(); // сразу один раз
 
         // 4. Подписка на метрики
         channel.subscribe('metrics', msg => {
@@ -80,4 +80,5 @@ window.addEventListener("beforeunload", () => {
     channel.presence.leave().catch(err => console.error(err));
 });
 
+// Запуск
 initMonitor();
