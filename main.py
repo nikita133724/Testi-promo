@@ -423,38 +423,46 @@ ably_client = AblyRealtime(ABLY_KEY)
 metrics_channel = ably_client.channels.get(ABLY_CHANNEL)
 
 # -----------------------------
-# Управление метриками через Presence
+# -----------------------------
+# Глобальные переменные
 metrics_task: asyncio.Task | None = None
 presence_task: asyncio.Task | None = None
-active_viewers = 0  # количество подключенных клиентов
+active_viewers = 0  # количество подключенных клиентов на странице мониторинга
+metrics_enabled = False  # включен ли сбор метрик
 
+# -----------------------------
 async def metrics_collector_loop():
     """Цикл публикации метрик каждую секунду."""
+    global metrics_enabled
     try:
-        while True:
+        while metrics_enabled:
             data = get_metrics()
-            push(data)
+            push(data)  # буфер истории
             await metrics_channel.publish("metrics", data)
             await asyncio.sleep(1)
     except asyncio.CancelledError:
         print("Metrics collector cancelled")
 
 def start_metrics_if_needed():
-    global metrics_task
+    """Запустить сбор метрик, если еще не запущен."""
+    global metrics_task, metrics_enabled
+    if not metrics_enabled:
+        metrics_enabled = True
     if metrics_task is None or metrics_task.done():
         metrics_task = asyncio.create_task(metrics_collector_loop())
         print("Metrics collector started")
 
 def stop_metrics_if_needed():
-    global metrics_task
+    """Остановить сбор метрик, если активных клиентов нет."""
+    global metrics_task, metrics_enabled
+    metrics_enabled = False
     if metrics_task and not metrics_task.done():
         metrics_task.cancel()
         print("Metrics collector stopped")
 
 # -----------------------------
-# Цикл мониторинга присутствия
 async def monitor_presence_loop():
-    """Опрашиваем текущее присутствие каждую секунду и считаем активных зрителей."""
+    """Отслеживаем Presence на канале Ably и управляем сбором метрик."""
     global active_viewers
     last_clients = set()
     while True:
@@ -462,11 +470,12 @@ async def monitor_presence_loop():
             members_page = await metrics_channel.presence.get()  # PaginatedResult
             members = members_page.items  # это уже список присутствующих клиентов
             current_clients = set(m.client_id for m in members)
+
             # Вошедшие зрители
             entered = current_clients - last_clients
             if entered:
                 active_viewers += len(entered)
-                print(f"Viewer(s) entered, total: {active_viewers}")
+                print(f"Viewer(s) entered: {entered}, total: {active_viewers}")
                 start_metrics_if_needed()
 
             # Ушедшие зрители
@@ -474,7 +483,7 @@ async def monitor_presence_loop():
             if left:
                 active_viewers -= len(left)
                 active_viewers = max(active_viewers, 0)
-                print(f"Viewer(s) left, total: {active_viewers}")
+                print(f"Viewer(s) left: {left}, total: {active_viewers}")
                 if active_viewers == 0:
                     stop_metrics_if_needed()
 
@@ -485,8 +494,8 @@ async def monitor_presence_loop():
         await asyncio.sleep(1)
 
 # -----------------------------
-# Запуск Presence в стартапе
 async def monitor_presence():
+    """Запуск мониторинга Presence на стартапе приложения."""
     global presence_task
     if presence_task is None or presence_task.done():
         presence_task = asyncio.create_task(monitor_presence_loop())
