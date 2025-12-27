@@ -1,18 +1,20 @@
+const cpuCtx = document.getElementById('cpuChart').getContext('2d');
+const ramCtx = document.getElementById('ramChart').getContext('2d');
+
 const cpuData = [];
 const ramData = [];
 const labels = [];
 
-const ctx = document.getElementById('chart').getContext('2d');
-
-const chart = new Chart(ctx, {
+const cpuChart = new Chart(cpuCtx, {
     type: 'line',
-    data: {
-        labels,
-        datasets: [
-            { label: 'CPU %', data: cpuData },
-            { label: 'RAM %', data: ramData }
-        ]
-    }
+    data: { labels, datasets: [{ label: 'CPU %', data: cpuData }] },
+    options: { animation: false }
+});
+
+const ramChart = new Chart(ramCtx, {
+    type: 'line',
+    data: { labels, datasets: [{ label: 'RAM %', data: ramData }] },
+    options: { animation: false }
 });
 
 async function updateMetrics() {
@@ -27,9 +29,9 @@ async function updateMetrics() {
         document.getElementById("load").innerText = data.load_avg;
         document.getElementById("threads").innerText = data.threads;
 
-        let h = Math.floor(data.uptime_sec / 3600);
-        let m = Math.floor((data.uptime_sec % 3600) / 60);
-        let s = data.uptime_sec % 60;
+        const h = Math.floor(data.uptime_sec / 3600);
+        const m = Math.floor((data.uptime_sec % 3600) / 60);
+        const s = data.uptime_sec % 60;
         document.getElementById("uptime").innerText = `${h}h ${m}m ${s}s`;
 
         if (labels.length > 60) {
@@ -38,13 +40,16 @@ async function updateMetrics() {
             ramData.shift();
         }
 
-        labels.push("");
+        labels.push('');
         cpuData.push(data.cpu);
         ramData.push(data.ram_percent);
 
-        chart.update();
+        cpuChart.update();
+        ramChart.update();
 
-    } catch (e) {}
+    } catch (e) {
+        console.error(e);
+    }
 }
 
 setInterval(updateMetrics, 2000);
