@@ -1,7 +1,9 @@
 import psutil
 import time
+from collections import deque
 
 START_TIME = time.time()
+CPU_WINDOW = deque(maxlen=5)
 
 def read_value(path):
     try:
@@ -24,7 +26,9 @@ def get_container_memory():
 
 def get_metrics():
     cpu = psutil.cpu_percent(interval=0.2)
-
+    CPU_WINDOW.append(cpu)
+    cpu_smooth = round(sum(CPU_WINDOW) / len(CPU_WINDOW), 1)
+    
     used, total = get_container_memory()
     ram_mb = round(used / 1024 / 1024, 1)
     ram_percent = round((used / total) * 100, 1)
@@ -38,7 +42,7 @@ def get_metrics():
     uptime = int(time.time() - START_TIME)
 
     return {
-        "cpu": cpu,
+        "cpu": cpu_smooth,
         "ram_mb": ram_mb,
         "ram_percent": ram_percent,
         "load_avg": load,
