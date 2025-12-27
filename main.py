@@ -412,57 +412,41 @@ from system_metrics import get_metrics
 from metrics_buffer import push, get_last
 from ably import AblyRealtime
 
+import asyncio
+import os
+from datetime import datetime, timezone
+from ably import AblyRealtime
+from system_metrics import get_metrics
+from metrics_buffer import push
+
 ABLY_KEY = os.environ.get("ABLY_API_KEY")
 ABLY_CHANNEL = "system-metrics"
 
 ably_client = AblyRealtime(ABLY_KEY)
 metrics_channel = ably_client.channels.get(ABLY_CHANNEL)
 
-# client_id -> timestamp последнего пинга
-active_clients = {}
-
 # -----------------------------
-# Обработчик ping от клиента
-async def handle_ping(msg):
-    try:
-        data = msg.data
-        # Ably иногда присылает строку JSON
-        if isinstance(data, str):
-            import json
-            data = json.loads(data)
-        client_id = data.get("client_id")
-        if client_id:
-            active_clients[client_id] = datetime.now(timezone.utc).timestamp()
-    except Exception as e:
-        print("handle_ping error:", e, msg.data)
-
-# -----------------------------
-# Асинхронная подписка на ping
-async def subscribe_metrics():
-    await metrics_channel.subscribe("ping", handle_ping)
-    print(f"Subscribed to {ABLY_CHANNEL}/ping")
-
-# -----------------------------
-# Коллектор метрик
+# Коллектор метрик с использованием Presence
 async def metrics_collector():
     while True:
-        now_ts = datetime.now(timezone.utc).timestamp()
+        try:
+            members = await metrics_channel.presence.get()
+            if members:
+                data = get_metrics()
+                push(data)
+                await metrics_channel.publish("metrics", data)
+        except Exception as e:
+            # можно просто логировать, если нужно
+            print("Metrics collector error:", e)
 
-        # Удаляем "ушедших" клиентов (>30 сек)
-        for client_id in list(active_clients.keys()):
-            if now_ts - active_clients[client_id] > 17:
-                del active_clients[client_id]
-
-        if active_clients:
-            data = get_metrics()
-            push(data)
-            # Отправляем только если есть клиенты
-            await metrics_channel.publish("metrics", data)
-            print(f"Отправлено метрик {len(active_clients)} клиентам")
-        else:
-            print("Нет активных зрителей, метрики не отправляются")
-
-        await asyncio.sleep(1)
+        await asyncio.sleep(1)  # публикуем каждую секунду
+# -----------------------------
+# Подписка на Presence (для логов, если нужно)
+async def monitor_presence():
+    def presence_callback(msg):
+        print(f"Presence event: {msg.action}, client_id={msg.client_id}")
+    await metrics_channel.presence.subscribe(presence_callback)
+    print("Subscribed to Presence events")
 
 # -------------------------------
 
