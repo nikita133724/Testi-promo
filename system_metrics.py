@@ -3,7 +3,7 @@ import time
 from collections import deque
 
 START_TIME = time.time()
-CPU_WINDOW = deque(maxlen=5)
+CPU_WINDOW = deque(maxlen=10)
 
 def read_value(path):
     try:
