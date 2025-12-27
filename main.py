@@ -433,18 +433,17 @@ async def metrics_collector():
                 push(data)
                 await metrics_channel.publish("metrics", data)
         except Exception as e:
-            # можно просто логировать, если нужно
             print("Metrics collector error:", e)
 
         await asyncio.sleep(1)  # публикуем каждую секунду
-# -----------------------------
-# Подписка на Presence (для логов, если нужно)
+# Подписка на Presence (для логов)
 async def monitor_presence():
     def presence_callback(msg):
-        print(f"Presence event: {msg.action}, client_id={msg.client_id}")
-    await metrics_channel.presence.subscribe(presence_callback)
-    print("Subscribed to Presence events")
+        print(f"Presence event: {msg.action}, client_id={msg.client_id}, data={msg.data}")
 
+    # Подписка через channel.subscribe с event="presence"
+    await metrics_channel.subscribe(presence_callback, event="presence")
+    print("Subscribed to Presence events")
 # -------------------------------
 
         
