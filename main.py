@@ -422,7 +422,7 @@ async def metrics_collector():
         push(data)
         try:
             # Проверяем, есть ли кто-то на канале
-            presence_info = metrics_channel.presence.get()
+            presence_info = await metrics_channel.presence.get()
             if len(presence_info.items) > 0:
                 await metrics_channel.publish("metrics", data)
         except Exception as e:
