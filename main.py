@@ -413,31 +413,50 @@ from metrics_buffer import push, get_last
 from ably import AblyRealtime
 
 ABLY_KEY = os.environ.get("ABLY_API_KEY")
+ABLY_CHANNEL = "system-metrics"
+
 ably_client = AblyRealtime(ABLY_KEY)
-metrics_channel = ably_client.channels.get("system-metrics")
+metrics_channel = ably_client.channels.get(ABLY_CHANNEL)
 
 # client_id -> timestamp последнего пинга
 active_clients = {}
 
+# -----------------------------
 # Обработчик ping от клиента
-def handle_ping(msg):
-    client_id = msg.data.get("client_id")  # теперь берем из данных
-    if client_id:
-        active_clients[client_id] = datetime.now(timezone.utc).timestamp()
+async def handle_ping(msg):
+    try:
+        data = msg.data
+        # Ably иногда присылает строку JSON
+        if isinstance(data, str):
+            import json
+            data = json.loads(data)
+        client_id = data.get("client_id")
+        if client_id:
+            active_clients[client_id] = datetime.now(timezone.utc).timestamp()
+    except Exception as e:
+        print("handle_ping error:", e, msg.data)
 
-metrics_channel.subscribe("ping", handle_ping)
+# -----------------------------
+# Асинхронная подписка на ping
+async def subscribe_metrics():
+    await metrics_channel.subscribe("ping", handle_ping)
+    print(f"Subscribed to {ABLY_CHANNEL}/ping")
 
+# -----------------------------
+# Коллектор метрик
 async def metrics_collector():
     while True:
-        now = datetime.now(timezone.utc).timestamp()
-        # удаляем "ушедших" клиентов (>30 сек)
+        now_ts = datetime.now(timezone.utc).timestamp()
+
+        # Удаляем "ушедших" клиентов (>30 сек)
         for client_id in list(active_clients.keys()):
-            if now - active_clients[client_id] > 30:
+            if now_ts - active_clients[client_id] > 30:
                 del active_clients[client_id]
 
         if active_clients:
             data = get_metrics()
             push(data)
+            # Отправляем только если есть клиенты
             await metrics_channel.publish("metrics", data)
             print(f"Отправлено метрик {len(active_clients)} клиентам")
         else:
@@ -496,4 +515,5 @@ async def startup_event():
     asyncio.create_task(run_token_refresher())
     asyncio.create_task(subscription_watcher(bot, send_message_to_user))
     asyncio.create_task(start_telegram())
+    asyncio.create_task(subscribe_metrics())
     asyncio.create_task(metrics_collector())  
