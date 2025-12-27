@@ -3,13 +3,23 @@ import time
 import os
 
 BOOT_TIME = time.time()
+process = psutil.Process(os.getpid())
 
 def get_metrics():
+    mem = psutil.virtual_memory()
+    app_mem = process.memory_info().rss / 1024 / 1024  # реальная память ТВОЕГО приложения
+
     return {
         "cpu": psutil.cpu_percent(interval=0.3),
-        "ram_mb": round(psutil.virtual_memory().used / 1024 / 1024, 1),
-        "ram_percent": psutil.virtual_memory().percent,
+
+        # общая память системы
+        "ram_mb": round(mem.used / 1024 / 1024, 1),
+        "ram_percent": mem.percent,
+
+        # 🔥 главное — сколько ест ТВОЙ процесс
+        "app_ram_mb": round(app_mem, 1),
+
         "load_avg": os.getloadavg()[0],
-        "threads": psutil.Process().num_threads(),
+        "threads": process.num_threads(),
         "uptime_sec": int(time.time() - BOOT_TIME)
     }
