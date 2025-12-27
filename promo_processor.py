@@ -9,6 +9,7 @@ from refresh_tokens import get_valid_access_token, refresh_by_refresh_token_asyn
 from telegram_bot import RAM_DATA, ACTIVE_NOMINALS, send_summary, chat_ids
 from config import API_URL_PROMO_ACTIVATE, API_URL_BET
 import secrets
+from stats_storage import POST_STATS
 def generate_fake_captcha_token():
     return secrets.token_urlsafe(180)
 print("PROMO reads RAM_DATA id:", id(RAM_DATA))
@@ -327,27 +328,23 @@ async def handle_new_post(message, media=None, bot=None):
     tasks = [asyncio.create_task(account_container(chat_id, promo_items, post_time, bot)) for chat_id in active_chat_ids]
     await asyncio.gather(*tasks)
     # Собираем stats для /stats
-    RAM_DATA["last_post_stats"] = []
+    POST_STATS.clear()  # очищаем прошлую статистику
     for chat_id in chat_ids:
         user_data = RAM_DATA.get(chat_id)
         if user_data and "current_post_stats" in user_data:
-            # Считаем суммарное время активации всех промо
-            total_time = 0
-            for log in user_data["current_post_stats"]:
-                total_time += (log.get("sleep_time") or 0)
-                total_time += (log.get("activate_time") or 0)
-                total_time += (log.get("bet_time") or 0)
-    
-            RAM_DATA["last_post_stats"].append({
-                "chat_id": chat_id,
+            total_time = sum(
+                (log.get("sleep_time") or 0) +
+                (log.get("activate_time") or 0) +
+                (log.get("bet_time") or 0)
+                for log in user_data["current_post_stats"]
+            )
+            POST_STATS[chat_id] = {
                 "username": user_data.get("username", f"user_{chat_id}"),
                 "logs": user_data["current_post_stats"],
                 "total_time": total_time
-            })
-            # очищаем временные данные
+            }
             user_data.pop("current_post_stats", None)
-    
-    
+        
 # -------------------------
 # Асинхронный HTTP запрос активации промокода
 # -------------------------
