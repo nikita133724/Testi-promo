@@ -409,7 +409,7 @@ async def filter_users(status: str = "all", _: None = Depends(admin_required)):
     
 #--------------------------------------
 from system_metrics import get_metrics
-from metrics_buffer import push
+from metrics_buffer import push, get_last
 from ably import AblyRealtime
 
 ABLY_KEY = os.environ.get("ABLY_API_KEY")
