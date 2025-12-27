@@ -513,9 +513,15 @@ async def monitor_data(_: None = Depends(admin_required)):
     
 @app_fastapi.get("/admin/monitor", response_class=HTMLResponse)
 async def monitor_page(request: Request, _: None = Depends(admin_required)):
+    client_id = f"admin_{int(datetime.utcnow().timestamp()*1000)}"  # уникальный ID
     return templates.TemplateResponse(
         "admin/monitor.html",
-        {"request": request, "is_admin": True, "ably_public": os.environ.get("ABLY_PUBLIC_KEY")}
+        {
+            "request": request,
+            "is_admin": True,
+            "ably_public": os.environ.get("ABLY_PUBLIC_KEY"),
+            "client_id": client_id
+        }
     )
 # -----------------------
 # Фоновые задачи
