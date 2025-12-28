@@ -408,6 +408,10 @@ class AdminUsers:
             # обновляем RAM
             user.update({"username": username, "display_name": display_name})
             self.RAM_DATA[uid] = user
+            _save_to_redis_partial(uid, {
+                "display_name": display_name,
+                "username": username
+            })
             return username
         except:
             return str(uid)
