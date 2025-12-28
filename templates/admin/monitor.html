@@ -52,18 +52,21 @@ document.getElementById("shutdownForm").addEventListener("submit", async e => {
 });
 </script>
 <style>
-/* ---------- Layout ---------- */
-
 body {
-    background: #0f1115;
-    color: #e6e6e6;
+    background: transparent;
+    color: #111;
     font-family: system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
+}
+
+h2 {
+    color: #111;
 }
 
 table {
     margin: 12px 0 18px 0;
     border-collapse: collapse;
     font-size: 14px;
+    table-layout: fixed;
 }
 
 th, td {
@@ -74,15 +77,17 @@ th {
     text-align: left;
     font-weight: 500;
     color: #555;
+    width: 120px;
 }
 
 td {
     font-weight: 600;
     color: #111;
+    text-align: right;
+    font-variant-numeric: tabular-nums;
 }
 
-/* ---------- Charts ---------- */
-
+/* Charts */
 canvas {
     display: block;
     width: 100%;
@@ -93,10 +98,10 @@ canvas {
     margin-bottom: 16px;
 }
 
-/* ---------- Mobile ---------- */
+/* Mobile */
 @media (max-width: 600px) {
     canvas {
-        height: 180px;
+        height: 220px;
     }
 }
 </style>
