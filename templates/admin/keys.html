@@ -1,0 +1,21 @@
+{% extends "admin/layout.html" %}
+
+{% block content %}
+<h1>Генерация ключей</h1>
+
+<form method="post" action="/admin/keys/generate">
+    <label for="duration">Срок действия ключа:</label>
+    <select name="duration" id="duration">
+        {% for label, _ in durations %}
+        <option value="{{ loop.index0 }}">{{ label }}</option>
+        {% endfor %}
+    </select>
+    <button type="submit">Сгенерировать</button>
+</form>
+
+{% if key %}
+<h3>Сгенерированный ключ:</h3>
+<p>{{ key }}</p>
+{% endif %}
+
+{% endblock %}

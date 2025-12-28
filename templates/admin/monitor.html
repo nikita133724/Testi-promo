@@ -1,0 +1,111 @@
+{% extends "admin/layout.html" %}
+{% block content %}
+
+<div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:10px;">
+    <h2 style="margin:0;">System Monitor</h2>
+
+    <form id="shutdownForm">
+        <button
+            style="
+                background:#c00;
+                color:white;
+                border:none;
+                padding:8px 14px;
+                border-radius:6px;
+                cursor:pointer;
+                font-weight:600;
+            ">
+            ☠️ Убить контейнер
+        </button>
+    </form>
+</div>
+
+<table>
+<tr><th>цпу</th><td id="cpu">--</td></tr>
+<tr><th>рам</th><td id="ram">--</td></tr>
+<tr><th>Load</th><td id="load">--</td></tr>
+<tr><th>Threads</th><td id="threads">--</td></tr>
+<tr><th>время работы</th><td id="uptime">--</td></tr>
+</table>
+
+<canvas id="cpuChart"></canvas>
+<br>
+<canvas id="ramChart"></canvas>
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script src="https://cdn.ably.io/lib/ably.min-1.js"></script>
+
+<script>
+    const ABLY_PUBLIC_KEY = "{{ ably_public }}";
+    const CLIENT_ID = "{{ client_id }}";
+</script>
+
+<script src="/static/monitor.js"></script>
+
+<script>
+document.getElementById("shutdownForm").addEventListener("submit", async e => {
+    e.preventDefault();
+    if (!confirm("Контейнер будет немедленно остановлен. Продолжить?")) return;
+
+    await fetch("/admin/shutdown", { method: "POST" });
+    alert("Контейнер остановлен.");
+});
+</script>
+<style>
+body {
+    background: transparent;
+    color: #111;
+    font-family: system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
+}
+
+h2 {
+    color: #111;
+}
+
+table {
+    margin: 12px 0 18px 0;
+    border-collapse: collapse;
+    font-size: 14px;
+    table-layout: fixed;
+}
+
+th, td {
+    padding: 6px 12px;
+}
+
+th {
+    text-align: left;
+    font-weight: 500;
+    color: #555;
+    width: 120px;
+}
+
+td {
+    font-weight: 600;
+    color: #111;
+    text-align: right;
+    font-variant-numeric: tabular-nums;
+}
+
+table th {
+    color: #111 !important;
+}
+/* Charts */
+canvas {
+    display: block;
+    width: 120%;
+    height: 220px;
+    background: #151820;
+    border-radius: 10px;
+    padding: 10px;
+    margin-bottom: 16px;
+}
+
+/* Mobile */
+@media (max-width: 600px) {
+    canvas {
+        height: 220px;
+    }
+}
+</style>
+{% endblock %}
