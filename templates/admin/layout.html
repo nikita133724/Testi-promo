@@ -46,6 +46,35 @@
         }
 
         h2, h3 { margin: 10px 0; }
+        
+        @media (max-width: 900px) {
+            .wrapper {
+                flex-direction: row;
+            }
+        
+            .sidebar {
+                width: 64px;
+                padding: 10px 6px;
+                align-items: center;
+            }
+        
+            .sidebar h2 {
+                display: none;
+            }
+        
+            .sidebar a {
+                font-size: 12px;
+                padding: 8px 6px;
+                margin: 6px 0;
+                text-align: center;
+                border-radius: 6px;
+                background: #374151;
+            }
+        
+            .content {
+                padding: 12px;
+            }
+        }
     </style>
 </head>
 <body>
