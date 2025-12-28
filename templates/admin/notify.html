@@ -64,11 +64,16 @@ document.getElementById('notify-form').addEventListener('submit', async (e) => {
     });
     const data = await res.json();
     const statusDiv = document.getElementById('status');
+
     if (data.status === 'ok') {
-        statusDiv.textContent = '✅ Уведомление отправлено';
+        statusDiv.style.color = 'green';
+        statusDiv.textContent = `✅ Уведомление отправлено (${data.sent} пользователей)`;
+    } else if (data.status === 'partial') {
+        statusDiv.style.color = 'orange';
+        statusDiv.textContent = `⚠ Отправлено ${data.sent}, не доставлено: ${data.failed.map(f => f.chat_id).join(", ")}`;
     } else {
-        statusDiv.textContent = '❌ ' + data.error;
         statusDiv.style.color = 'red';
+        statusDiv.textContent = '❌ ' + (data.error || 'Ошибка отправки');
     }
 });
 </script>
