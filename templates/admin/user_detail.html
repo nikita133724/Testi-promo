@@ -16,38 +16,38 @@
 
 <h3>Действия</h3>
 
-<div id="time-picker" style="display:none; margin-top:12px; border:1px solid #aaa; padding:12px;">
+<div id="time-picker" style="display:none; margin-top:12px; border:1px solid #aaa; padding:12px; background:#fff;">
     <b>Выберите дату и время:</b><br><br>
     <input type="datetime-local" id="custom-datetime"><br><br>
-    <button type="button" onclick="applyTime()">Применить</button>
-    <button type="button" onclick="closePicker()">Отмена</button>
+    <button type="button" onclick="applyTime()" style="padding:8px 16px; background:#4CAF50; color:white; border:none; border-radius:4px; cursor:pointer;">Применить</button>
+    <button type="button" onclick="closePicker()" style="padding:8px 16px; margin-left:10px; border:1px solid #ccc; background:white; border-radius:4px; cursor:pointer;">Отмена</button>
 </div>
 
-<div id="subscription-actions">
+<div id="subscription-actions" style="margin-top:15px;">
     {% if status == "приостановлен" %}
-        <button type="button" id="restore-subscription">🔄 Восстановить</button>
+        <button type="button" id="restore-subscription" style="padding:8px 16px; background:#4CAF50; color:white; border:none; border-radius:4px; cursor:pointer;">🔄 Восстановить</button>
     {% else %}
-        <button type="button" id="suspend-subscription">⏸ Приостановить</button>
-        <button type="button" id="extend-subscription" style="margin-left:10px;">➕ Продлить</button>
+        <button type="button" id="suspend-subscription" style="padding:8px 16px; background:#dc2626; color:white; border:none; border-radius:4px; cursor:pointer;">⏸ Приостановить</button>
+        <button type="button" id="extend-subscription" style="padding:8px 16px; margin-left:10px; background:#2563eb; color:white; border:none; border-radius:4px; cursor:pointer;">➕ Продлить</button>
     {% endif %}
 </div>
 
-<form id="tokens-form" style="display:inline-block; margin-top:10px;">
-    <button type="button" id="toggle-tokens">Посмотреть токены</button>
+<form id="tokens-form" style="margin-top:10px;">
+    <button type="button" id="toggle-tokens" style="padding:8px 16px; background:#666; color:white; border:none; border-radius:4px; cursor:pointer;">Посмотреть токены</button>
 </form>
 
-<div id="tokens-container" style="display:none; margin-top:10px;">
-    <p><strong>Access Token:</strong> <span id="access-token"></span></p>
-    <p><strong>Refresh Token:</strong> <span id="refresh-token" style="cursor:pointer; user-select: all;"></span></p>
+<div id="tokens-container" style="display:none; margin-top:10px; padding:10px; background:#f5f5f5; border-radius:4px;">
+    <p><strong>Access Token:</strong><br><span id="access-token" style="word-break:break-all; font-family:monospace;"></span></p>
+    <p><strong>Refresh Token:</strong><br><span id="refresh-token" style="word-break:break-all; font-family:monospace; cursor:pointer; user-select: all; padding:5px; background:white;"></span></p>
 </div>
 
-<a href="/admin/users" style="display:inline-block; margin-left:20px;">⬅️ Назад к списку</a>
+<a href="/admin/users" onclick="handleNavClick(event, '/admin/users')" style="display:inline-block; margin-top:20px; color:#2563eb; text-decoration:none;">⬅️ Назад к списку</a>
 
 <script>
 let mode = null;
 
 function openPicker(action) {
-    mode = action; // restore | extend
+    mode = action;
     document.getElementById("time-picker").style.display = "block";
 }
 
@@ -57,75 +57,53 @@ function closePicker() {
 
 async function applyTime() {
     const input = document.getElementById("custom-datetime").value;
-    if (!input) { alert("Выберите дату и время"); return; }
+    if (!input) { 
+        alert("Выберите дату и время"); 
+        return; 
+    }
 
     const tz = Intl.DateTimeFormat().resolvedOptions().timeZone;
+    const chatId = getChatIdFromUrl();
 
     const endpoint = mode === "restore" 
-        ? `/admin/users/{{ chat_id }}/restore_subscription_custom`
-        : `/admin/users/{{ chat_id }}/extend_subscription_custom`;
+        ? `/admin/users/${chatId}/restore_subscription_custom`
+        : `/admin/users/${chatId}/extend_subscription_custom`;
 
-    const resp = await fetch(endpoint, {
-        method: "POST",
-        headers: {"Content-Type": "application/x-www-form-urlencoded"},
-        body: `local_datetime=${encodeURIComponent(input)}&tz=${encodeURIComponent(tz)}`
-    });
-    const data = await resp.json();
-
-    if (data.ok) {
-        const msTime = new Date(input).getTime();
-        document.getElementById("status-text").innerText = "активен до " + new Date(msTime).toLocaleString();
-        closePicker();
-        alert(mode === 'restore' ? "Подписка восстановлена!" : "Подписка продлена!");
-        // Переключение кнопок после восстановления
-        if(mode === "restore") {
-            document.getElementById("subscription-actions").innerHTML = `
-                <button type="button" id="suspend-subscription">⏸ Приостановить</button>
-                <button type="button" id="extend-subscription" style="margin-left:10px;">➕ Продлить</button>
-            `;
-            bindSuspendExtendButtons();
-        }
-    } else {
-        alert("Ошибка при обновлении подписки");
-    }
-}
-
-// -------------------- Приостановить / Продлить --------------------
-function bindSuspendExtendButtons() {
-    const suspendBtn = document.getElementById("suspend-subscription");
-    if (suspendBtn) {
-        suspendBtn.addEventListener("click", async () => {
-            const resp = await fetch(`/admin/users/{{ chat_id }}/toggle_status`, {
-                method: "POST",
-                headers: {"x-requested-with": "XMLHttpRequest"}
-            });
-            if (resp.ok) {
-                document.getElementById("status-text").innerText = "приостановлен";
-                document.getElementById("subscription-actions").innerHTML = `<button type="button" id="restore-subscription">🔄 Восстановить</button>`;
-                bindRestoreButton();
-                alert("Подписка приостановлена!");
-            }
+    try {
+        const resp = await fetch(endpoint, {
+            method: "POST",
+            headers: {"Content-Type": "application/x-www-form-urlencoded"},
+            body: `local_datetime=${encodeURIComponent(input)}&tz=${encodeURIComponent(tz)}`
         });
-    }
+        const data = await resp.json();
 
-    const extendBtn = document.getElementById("extend-subscription");
-    if (extendBtn) {
-        extendBtn.addEventListener("click", () => openPicker('extend'));
+        if (data.ok) {
+            const msTime = new Date(input).getTime();
+            document.getElementById("status-text").innerText = "активен до " + new Date(msTime).toLocaleString();
+            closePicker();
+            alert(mode === 'restore' ? "Подписка восстановлена!" : "Подписка продлена!");
+            
+            if(mode === "restore") {
+                document.getElementById("subscription-actions").innerHTML = `
+                    <button type="button" id="suspend-subscription" style="padding:8px 16px; background:#dc2626; color:white; border:none; border-radius:4px; cursor:pointer;">⏸ Приостановить</button>
+                    <button type="button" id="extend-subscription" style="padding:8px 16px; margin-left:10px; background:#2563eb; color:white; border:none; border-radius:4px; cursor:pointer;">➕ Продлить</button>
+                `;
+                setupPageEventHandlers();
+            }
+        } else {
+            alert("Ошибка при обновлении подписки");
+        }
+    } catch (error) {
+        console.error('Error:', error);
+        alert('Ошибка при выполнении операции');
     }
 }
 
-// -------------------- Восстановить --------------------
-function bindRestoreButton() {
-    const restoreBtn = document.getElementById("restore-subscription");
-    if (restoreBtn) {
-        restoreBtn.addEventListener("click", () => openPicker('restore'));
-    }
+function getChatIdFromUrl() {
+    const match = window.location.pathname.match(/\/admin\/users\/(\d+)/);
+    return match ? match[1] : null;
 }
 
-bindSuspendExtendButtons();
-bindRestoreButton();
-
-// -------------------- Токены --------------------
 const toggleTokensBtn = document.getElementById("toggle-tokens");
 const tokensContainer = document.getElementById("tokens-container");
 const accessTokenEl = document.getElementById("access-token");
@@ -135,17 +113,22 @@ let tokensVisible = false;
 
 toggleTokensBtn.addEventListener("click", async () => {
     if (!tokensVisible) {
-        const resp = await fetch(`/admin/users/{{ chat_id }}/tokens`, {
-            method: "POST",
-            headers: {"x-requested-with": "XMLHttpRequest"}
-        });
-        const data = await resp.json();
-        accessTokenEl.textContent = data.access_token;
-        refreshTokenEl.textContent = data.refresh_token;
+        const chatId = getChatIdFromUrl();
+        try {
+            const resp = await fetch(`/admin/users/${chatId}/tokens`, {
+                method: "POST",
+                headers: {"x-requested-with": "XMLHttpRequest"}
+            });
+            const data = await resp.json();
+            accessTokenEl.textContent = data.access_token || "(пусто)";
+            refreshTokenEl.textContent = data.refresh_token || "(пусто)";
 
-        tokensContainer.style.display = "block";
-        toggleTokensBtn.textContent = "Скрыть токены";
-        tokensVisible = true;
+            tokensContainer.style.display = "block";
+            toggleTokensBtn.textContent = "Скрыть токены";
+            tokensVisible = true;
+        } catch (error) {
+            console.error('Error:', error);
+        }
     } else {
         tokensContainer.style.display = "none";
         toggleTokensBtn.textContent = "Посмотреть токены";
@@ -153,14 +136,12 @@ toggleTokensBtn.addEventListener("click", async () => {
     }
 });
 
-// -------------------- Автокопирование --------------------
 refreshTokenEl.addEventListener("click", () => {
     navigator.clipboard.writeText(refreshTokenEl.textContent)
         .then(() => alert("Refresh-токен скопирован!"))
         .catch(err => console.error(err));
 });
 
-// -------------------- Статус и refresh --------------------
 const status = "{{ status }}";
 const displayUntilTs = {{ display_until if display_until else "null" }};
 const nextRefreshTs = {{ next_refresh if next_refresh else "null" }};
@@ -180,5 +161,39 @@ if (!nextRefreshTs) {
     const d = new Date(nextRefreshTs * 1000);
     refreshEl.innerText = d.toLocaleString();
 }
+
+// Изначально привязываем события
+const suspendBtn = document.getElementById("suspend-subscription");
+const extendBtn = document.getElementById("extend-subscription");
+const restoreBtn = document.getElementById("restore-subscription");
+
+if (suspendBtn) {
+    suspendBtn.addEventListener("click", async () => {
+        const chatId = getChatIdFromUrl();
+        try {
+            const resp = await fetch(`/admin/users/${chatId}/toggle_status`, {
+                method: "POST",
+                headers: {"x-requested-with": "XMLHttpRequest"}
+            });
+            if (resp.ok) {
+                document.getElementById("status-text").innerText = "приостановлен";
+                document.getElementById("subscription-actions").innerHTML = `<button type="button" id="restore-subscription" style="padding:8px 16px; background:#4CAF50; color:white; border:none; border-radius:4px; cursor:pointer;">🔄 Восстановить</button>`;
+                setupPageEventHandlers();
+                alert("Подписка приостановлена!");
+            }
+        } catch (error) {
+            console.error('Error:', error);
+        }
+    });
+}
+
+if (extendBtn) {
+    extendBtn.addEventListener("click", () => openPicker('extend'));
+}
+
+if (restoreBtn) {
+    restoreBtn.addEventListener("click", () => openPicker('restore'));
+}
 </script>
+
 {% endblock %}
