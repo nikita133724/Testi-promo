@@ -30,14 +30,10 @@
             border: 1px solid rgba(148, 163, 184, 0.3);
         }
         .login-view h1 {
-            margin: 0 0 16px;
+            margin: 0 0 24px;
             font-size: 28px;
             letter-spacing: 0.02em;
-        }
-        .login-view p {
-            margin: 0 0 28px;
-            color: #cbd5f5;
-            line-height: 1.6;
+            text-align: center;
         }
         .field-group {
             margin-bottom: 18px;
@@ -113,7 +109,6 @@
 <body>
     <section class="login-view">
         <h1>Вход в админку</h1>
-        <p>Пожалуйста, введите логин и пароль, чтобы получить доступ к панели управления.</p>
         {% if error %}
             <div class="error">{{ error }}</div>
         {% endif %}
