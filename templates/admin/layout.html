@@ -18,6 +18,16 @@
             color: white;
             text-decoration: none;
             margin: 10px 0;
+            padding: 8px;
+            border-radius: 4px;
+            cursor: pointer;
+            transition: background-color 0.2s;
+        }
+        .sidebar a:hover {
+            background-color: #374151;
+        }
+        .sidebar a.active {
+            background-color: #4CAF50;
         }
         .content {
             flex: 1;
@@ -81,21 +91,242 @@
 <div class="wrapper">
     <aside class="sidebar">
         <h2>Admin</h2>
-        <a href="/admin/users">Пользователи</a>
-        <a href="/admin/keys">Генерация ключей</a>
-        <a href="/admin/stats">Статистика по посту</a>
-        <a href="/admin/notify">Уведомления</a>
-        
-        <a href="/admin/monitor">Мониторинг</a>
-        
-        {% if request.session.get("is_admin") %}
-            <a href="/logout">Выйти</a>
-        {% endif %}
+        <a href="/admin/users" class="nav-link">Пользователи</a>
+        <a href="/admin/keys" class="nav-link">Генерация ключей</a>
+        <a href="/admin/stats" class="nav-link">Статистика по посту</a>
+        <a href="/admin/notify" class="nav-link">Уведомления</a>
+        <a href="/admin/monitor" class="nav-link">Мониторинг</a>
+        <a href="/logout" class="nav-link" onclick="handleLogout(event)">Выйти</a>
     </aside>
 
-    <main class="content">
+    <main class="content" id="content">
         {% block content %}{% endblock %}
     </main>
 </div>
+
+<script>
+// Simple SPA loader - загрузка контента без перезагрузки
+const contentDiv = document.getElementById('content');
+const navLinks = document.querySelectorAll('.nav-link');
+
+// Функция для загрузки контента
+async function loadPage(url) {
+    try {
+        // Показываем, что загружается
+        contentDiv.style.opacity = '0.7';
+        
+        // Загружаем HTML страницы
+        const response = await fetch(url);
+        
+        // Если 401/403 (не авторизирован), перенаправляем на логин
+        if (response.status === 401 || response.status === 403) {
+            window.location.href = '/login';
+            return;
+        }
+        
+        if (!response.ok) {
+            throw new Error('Network error');
+        }
+        
+        const html = await response.text();
+        
+        // Парсим новый контент и извлекаем только block content
+        const parser = new DOMParser();
+        const doc = parser.parseFromString(html, 'text/html');
+        
+        // Ищем контент в новом документе
+        let newContent = doc.querySelector('main')?.innerHTML || 
+                        doc.body.innerHTML;
+        
+        // Заменяем контент
+        contentDiv.innerHTML = newContent;
+        contentDiv.style.opacity = '1';
+        
+        // Обновляем активную ссылку в sidebar
+        navLinks.forEach(link => link.classList.remove('active'));
+        const activeLink = document.querySelector(`a[href="${url}"]`);
+        if (activeLink) activeLink.classList.add('active');
+        
+        // Переподвязываем обработчики событий для новых элементов
+        setupPageEventHandlers();
+        
+        // Обновляем История браузера
+        window.history.pushState({ url }, '', url);
+        
+    } catch (error) {
+        console.error('Error loading page:', error);
+        contentDiv.innerHTML = '<p>Ошибка при загрузке страницы</p>';
+        contentDiv.style.opacity = '1';
+    }
+}
+
+// Функция для переподвязки обработчиков после загрузки контента
+function setupPageEventHandlers() {
+    // Для страницы пользователей - фильтры
+    const filterButtons = document.querySelectorAll('.filter-btn');
+    if (filterButtons.length > 0) {
+        filterButtons.forEach(btn => {
+            btn.addEventListener('click', async () => {
+                const status = btn.dataset.status;
+                const res = await fetch(`/admin/users/filter?status=${status}`);
+                const users = await res.json();
+                
+                let html = `<table border="1" cellpadding="8" cellspacing="0">
+                    <tr>
+                        <th>ID пользователя</th>
+                        <th>Статус</th>
+                    </tr>`;
+                
+                users.forEach(u => {
+                    html += `<tr>
+                        <td><a href="/admin/users/${u.chat_id}" onclick="handleNavClick(event, '/admin/users/${u.chat_id}')">${u.username}</a></td>
+                        <td>${u.active ? "Активен" : "Неактивен"}</td>
+                    </tr>`;
+                });
+                
+                html += "</table>";
+                document.getElementById('users-table').innerHTML = html;
+                
+                // Обновляем активную кнопку
+                filterButtons.forEach(b => b.classList.remove('active'));
+                btn.classList.add('active');
+            });
+        });
+    }
+    
+    // Для страницы деталей пользователя - кнопки действий
+    const suspendBtn = document.getElementById('suspend-subscription');
+    if (suspendBtn) {
+        suspendBtn.addEventListener('click', async () => {
+            const chatId = getChatIdFromUrl();
+            const resp = await fetch(`/admin/users/${chatId}/toggle_status`, {
+                method: "POST",
+                headers: {"x-requested-with": "XMLHttpRequest"}
+            });
+            if (resp.ok) {
+                document.getElementById("status-text").innerText = "приостановлен";
+                document.getElementById("subscription-actions").innerHTML = `<button type="button" id="restore-subscription">🔄 Восстановить</button>`;
+                setupPageEventHandlers();
+                alert("Подписка приостановлена!");
+            }
+        });
+    }
+    
+    // Для страницы генерации ключей
+    const keysForm = document.querySelector('form[action="/admin/keys/generate"]');
+    if (keysForm) {
+        keysForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const duration = document.getElementById('duration').value;
+            const formData = new FormData(keysForm);
+            
+            const resp = await fetch('/admin/keys/generate', {
+                method: 'POST',
+                body: formData,
+                headers: {"x-requested-with": "XMLHttpRequest"}
+            });
+            
+            if (resp.ok) {
+                const html = await resp.text();
+                const parser = new DOMParser();
+                const doc = parser.parseFromString(html, 'text/html');
+                const newContent = doc.querySelector('main')?.innerHTML || doc.body.innerHTML;
+                contentDiv.innerHTML = newContent;
+                setupPageEventHandlers();
+            }
+        });
+    }
+    
+    // Для страницы уведомлений
+    const notifyForm = document.getElementById('notify-form');
+    if (notifyForm) {
+        notifyForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const formData = new FormData(notifyForm);
+            const res = await fetch('/admin/notify', {
+                method: 'POST',
+                body: formData
+            });
+            const data = await res.json();
+            const statusDiv = document.getElementById('status');
+            if (data.status === 'ok') {
+                statusDiv.textContent = '✅ Уведомление отправлено';
+            } else {
+                statusDiv.textContent = '❌ ' + (data.error || 'Ошибка');
+                statusDiv.style.color = 'red';
+            }
+        });
+    }
+    
+    // Для поиска пользователей в уведомлениях
+    const searchInput = document.getElementById('user-search');
+    if (searchInput) {
+        searchInput.addEventListener('input', async () => {
+            clearTimeout(window.searchTimeout);
+            window.searchTimeout = setTimeout(async () => {
+                const query = searchInput.value.trim();
+                if (!query) {
+                    document.getElementById('search-results').innerHTML = '';
+                    return;
+                }
+                const res = await fetch(`/admin/search_users?q=${encodeURIComponent(query)}`);
+                const users = await res.json();
+                const searchResults = document.getElementById('search-results');
+                searchResults.innerHTML = users.map(u => `<li data-uid="${u.chat_id}" style="cursor:pointer;">${u.display_name || u.username || u.chat_id}</li>`).join('');
+                
+                // Добавляем обработчик для выбора
+                searchResults.addEventListener('click', (e) => {
+                    if (e.target.tagName === 'LI') {
+                        searchInput.value = e.target.dataset.uid;
+                        searchResults.innerHTML = '';
+                    }
+                });
+            }, 300);
+        });
+    }
+}
+
+// Обработчик клика на ссылку навигации
+function handleNavClick(event, url) {
+    event.preventDefault();
+    loadPage(url);
+}
+
+// Обработчик логаута
+function handleLogout(event) {
+    event.preventDefault();
+    fetch('/logout', { method: 'POST' }).then(() => {
+        window.location.href = '/login';
+    });
+}
+
+// Добавляем обработчики на все ссылки навигации
+navLinks.forEach(link => {
+    link.addEventListener('click', (e) => {
+        if (link.href.includes('/logout')) {
+            handleLogout(e);
+        } else {
+            e.preventDefault();
+            loadPage(link.href);
+        }
+    });
+});
+
+// Обработчик кнопки "назад" в браузере
+window.addEventListener('popstate', (e) => {
+    if (e.state && e.state.url) {
+        loadPage(e.state.url);
+    }
+});
+
+// Вспомогательная функция для извлечения chat_id из URL
+function getChatIdFromUrl() {
+    const match = window.location.pathname.match(/\/admin\/users\/(\d+)/);
+    return match ? match[1] : null;
+}
+
+// Инициализируем обработчики на странице загрузки
+setupPageEventHandlers();
+</script>
 </body>
 </html>
