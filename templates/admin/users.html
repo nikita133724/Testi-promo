@@ -17,51 +17,12 @@
         </tr>
         {% for user in users %}
         <tr>
-            <td><a href="/admin/users/{{ user.chat_id }}">{{ user.username }}</a></td>
+            <td><a href="/admin/users/{{ user.chat_id }}" onclick="handleNavClick(event, '/admin/users/{{ user.chat_id }}')">{{ user.username }}</a></td>
             <td>{{ "Активен" if user.active else "Неактивен" }}</td>
         </tr>
         {% endfor %}
     </table>
 </div>
-
-<script>
-const buttons = document.querySelectorAll(".filter-btn");
-const tableContainer = document.getElementById("users-table");
-
-// Функция обновления таблицы
-async function updateUsersTable(status) {
-    const res = await fetch(`/admin/users/filter?status=${status}`);
-    const users = await res.json();
-
-    let html = `<table border="1" cellpadding="8" cellspacing="0">
-        <tr>
-            <th>ID пользователя</th>
-            <th>Статус</th>
-        </tr>`;
-
-    users.forEach(u => {
-        html += `<tr>
-            <td><a href="/admin/users/${u.chat_id}">${u.username}</a></td>
-            <td>${u.active ? "Активен" : "Неактивен"}</td>
-        </tr>`;
-    });
-
-    html += "</table>";
-    tableContainer.innerHTML = html;
-}
-
-// Обработчики кнопок
-buttons.forEach(btn => {
-    btn.addEventListener("click", () => {
-        // Подсветка активной кнопки
-        buttons.forEach(b => b.classList.remove("active"));
-        btn.classList.add("active");
-
-        const status = btn.dataset.status;
-        updateUsersTable(status);
-    });
-});
-</script>
 
 <style>
 .filter-btn.active {
@@ -72,6 +33,13 @@ buttons.forEach(btn => {
     margin-right: 5px;
     padding: 5px 10px;
     cursor: pointer;
+    border: 1px solid #ccc;
+    background: white;
+    border-radius: 4px;
+    transition: all 0.2s;
+}
+.filter-btn:hover {
+    background-color: #e0e0e0;
 }
 </style>
 
