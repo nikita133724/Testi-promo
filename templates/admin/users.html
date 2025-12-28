@@ -18,7 +18,7 @@
         {% for user in users %}
         <tr>
             <td><a href="/admin/users/{{ user.chat_id }}">{{ user.username }}</a></td>
-            <td>{{ "Активен" if not user.suspended else "Неактивен" }}</td>
+            <td>{{ "Активен" if user.active else "Неактивен" }}</td>
         </tr>
         {% endfor %}
     </table>
