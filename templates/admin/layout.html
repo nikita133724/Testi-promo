@@ -123,6 +123,10 @@ document.addEventListener("DOMContentLoaded", () => {
 
         const scripts = Array.from(newContent.querySelectorAll("script"));
         scripts.forEach(script => script.remove());
+        if (window.__cleanupMonitor) {
+            window.__cleanupMonitor();
+            delete window.__cleanupMonitor;
+        }
         contentRoot.innerHTML = newContent.innerHTML;
 
         scripts.forEach(oldScript => {
