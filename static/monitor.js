@@ -1,3 +1,5 @@
+(function () {
+
 if (window.__monitorRunning) {
     console.warn("Monitor already running — skip reinit");
     return;
@@ -161,3 +163,4 @@ function cleanupMonitor() {
 }
 
 window.__cleanupMonitor = cleanupMonitor;
+})();
