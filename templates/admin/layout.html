@@ -48,20 +48,13 @@
         h2, h3 { margin: 10px 0; }
         
         @media (max-width: 900px) {
-            .wrapper {
-                flex-direction: row;
-            }
-        
+            .wrapper { flex-direction: row; }
             .sidebar {
                 width: 64px;
                 padding: 10px 6px;
                 align-items: center;
             }
-        
-            .sidebar h2 {
-                display: none;
-            }
-        
+            .sidebar h2 { display: none; }
             .sidebar a {
                 font-size: 12px;
                 padding: 8px 6px;
@@ -70,10 +63,7 @@
                 border-radius: 6px;
                 background: #374151;
             }
-        
-            .content {
-                padding: 12px;
-            }
+            .content { padding: 12px; }
         }
     </style>
 </head>
@@ -81,21 +71,61 @@
 <div class="wrapper">
     <aside class="sidebar">
         <h2>Admin</h2>
-        <a href="/admin/users">Пользователи</a>
-        <a href="/admin/keys">Генерация ключей</a>
-        <a href="/admin/stats">Статистика по посту</a>
-        <a href="/admin/notify">Уведомления</a>
-        
-        <a href="/admin/monitor">Мониторинг</a>
-        
+        <a href="/admin/users" class="nav-link">Пользователи</a>
+        <a href="/admin/keys" class="nav-link">Генерация ключей</a>
+        <a href="/admin/stats" class="nav-link">Статистика по посту</a>
+        <a href="/admin/notify" class="nav-link">Уведомления</a>
+        <a href="/admin/monitor" class="nav-link">Мониторинг</a>
         {% if request.session.get("is_admin") %}
             <a href="/logout">Выйти</a>
         {% endif %}
     </aside>
 
-    <main class="content">
+    <main class="content" id="admin-content">
         {% block content %}{% endblock %}
     </main>
 </div>
+
+<script>
+document.querySelectorAll(".nav-link").forEach(link => {
+    link.addEventListener("click", async (e) => {
+        e.preventDefault();
+        const url = link.getAttribute("href");
+
+        try {
+            const res = await fetch(url);
+            if (!res.ok) throw new Error('Ошибка загрузки страницы');
+
+            const html = await res.text();
+            document.getElementById("admin-content").innerHTML = html;
+
+            // Инициализация JS для загруженной страницы
+            if(url.includes("/users")) initUsersPage?.();
+            if(url.includes("/monitor")) initMonitorPage?.();
+            if(url.includes("/keys")) initKeysPage?.();
+            if(url.includes("/stats")) initStatsPage?.();
+            if(url.includes("/notify")) initNotifyPage?.();
+
+            history.pushState(null, "", url);
+        } catch (err) {
+            console.error(err);
+            alert("Не удалось загрузить страницу");
+        }
+    });
+});
+
+// Обработка кнопки "назад/вперед" в браузере
+window.addEventListener("popstate", async () => {
+    const url = location.pathname;
+    try {
+        const res = await fetch(url);
+        const html = await res.text();
+        document.getElementById("admin-content").innerHTML = html;
+        // Инициализация JS для загруженной страницы
+    } catch (err) {
+        console.error(err);
+    }
+});
+</script>
 </body>
 </html>
