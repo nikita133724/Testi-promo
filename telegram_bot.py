@@ -55,8 +55,8 @@ async def update_user_names_in_ram(chat):
 # -----------------------
 # Открытые меню с таймерами
 # -----------------------
-OPEN_SETTINGS_MESSAGES = {}  # chat_id -> {"message_id": int, "menu_type": str, "task": asyncio.Task}
-
+OPEN_SETTINGS_MESSAGES = {}
+MENU_TIMEOUT_SECONDS = 180
 # -----------------------
 # Callback для уведомлений
 # -----------------------
@@ -301,11 +301,12 @@ async def remove_open_menu(chat_id):
         pass
     del OPEN_SETTINGS_MESSAGES[chat_id]
 
-def reset_menu_timer(chat_id, delay):
+def reset_menu_timer(chat_id, delay=None):
     if chat_id in OPEN_SETTINGS_MESSAGES:
         task = OPEN_SETTINGS_MESSAGES[chat_id].get("task")
         if task:
             task.cancel()
+    delay = MENU_TIMEOUT_SECONDS if delay is None else delay
     task = asyncio.create_task(menu_timer_task(chat_id, delay))
     if chat_id in OPEN_SETTINGS_MESSAGES:
         OPEN_SETTINGS_MESSAGES[chat_id]["task"] = task
@@ -698,14 +699,11 @@ async def settings_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
         
         # Сохраняем меню
         OPEN_SETTINGS_MESSAGES[chat_id] = {
-            "message_id": msg_id,  # <- используем число напрямую
+            "message_id": msg_id,
             "menu_type": "yourun"
         }
         
-        reset_menu_timer(chat_id, 150)
-
-
-
+        reset_menu_timer(chat_id)
         
     # Пагинация пользователей
     elif query.data.startswith("users_next"):
@@ -795,7 +793,7 @@ async def settings_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
             if settings["summary_silent"]
             else "🔔 Сводка со звуком"
         )
-
+        reset_menu_timer(chat_id)
 
     # -----------------------
     # Отмена операций
