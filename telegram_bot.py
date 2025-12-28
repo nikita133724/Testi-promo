@@ -330,9 +330,8 @@ async def menu_timer_task(chat_id, delay):
 # -----------------------
 # /start
 # -----------------------
-async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
+async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
     chat_id = update.effective_chat.id
-    await update_user_names_in_ram(update.effective_chat, persist=True)
     settings = get_user_settings(chat_id)
     # если новый пользователь — добавляем его в chat_ids и выставляем suspended=True
     if chat_id not in chat_ids:
@@ -370,8 +369,6 @@ async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
             "Добро пожаловать обратно!",
             reply_markup=build_reply_keyboard(chat_id)
         )
-
-
 # -----------------------
 # Асинхронная обёртка для refresh_by_refresh_token
 # -----------------------
