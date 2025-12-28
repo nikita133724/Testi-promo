@@ -1,46 +1,101 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin Panel</title>
+    <style>
+        body { margin: 0; font-family: Arial, sans-serif; }
+        .wrapper { display: flex; height: 100vh; }
+        .sidebar {
+            width: 220px;
+            background: #1f2937;
+            color: white;
+            padding: 20px;
+        }
+        .sidebar a {
+            display: block;
+            color: white;
+            text-decoration: none;
+            margin: 10px 0;
+        }
+        .content {
+            flex: 1;
+            padding: 30px;
+            background: #f3f4f6;
+            overflow-y: auto;
+        }
+
+        /* Общие стили таблиц */
+        table {
+            border-collapse: collapse;
+            width: 100%;
+            margin-bottom: 30px;
+        }
+        th, td {
+            border: 1px solid #ccc;
+            padding: 8px 12px;
+            text-align: center;
+        }
+        th {
+            background-color: #556B2F;
+            color: white;
+        }
+        tr:nth-child(even) {
+            background-color: #f9f9f9;
+        }
+
+        h2, h3 { margin: 10px 0; }
+        
+        @media (max-width: 900px) {
+            .wrapper {
+                flex-direction: row;
+            }
+        
+            .sidebar {
+                width: 64px;
+                padding: 10px 6px;
+                align-items: center;
+            }
+        
+            .sidebar h2 {
+                display: none;
+            }
+        
+            .sidebar a {
+                font-size: 12px;
+                padding: 8px 6px;
+                margin: 6px 0;
+                text-align: center;
+                border-radius: 6px;
+                background: #374151;
+            }
+        
+            .content {
+                padding: 12px;
+            }
+        }
+    </style>
+</head>
+<body>
 <div class="wrapper">
-  <aside class="sidebar">
-    <h2>Admin</h2>
-    <a href="/admin/users" class="nav-link">Пользователи</a>
-    <a href="/admin/keys" class="nav-link">Генерация ключей</a>
-    <a href="/admin/stats" class="nav-link">Статистика</a>
-    <a href="/admin/notify" class="nav-link">Уведомления</a>
-    <a href="/admin/monitor" class="nav-link">Мониторинг</a>
-  </aside>
+    <aside class="sidebar">
+        <h2>Admin</h2>
+        <a href="/admin/users">Пользователи</a>
+        <a href="/admin/keys">Генерация ключей</a>
+        <a href="/admin/stats">Статистика по посту</a>
+        <a href="/admin/notify">Уведомления</a>
+        
+        <a href="/admin/monitor">Мониторинг</a>
+        
+        {% if request.session.get("is_admin") %}
+            <a href="/logout">Выйти</a>
+        {% endif %}
+    </aside>
 
-  <main class="content" id="admin-content">
-    <!-- контент загружается сюда -->
-  </main>
+    <main class="content">
+        {% block content %}{% endblock %}
+    </main>
 </div>
-
-<script>
-const adminContent = document.getElementById("admin-content");
-
-async function loadPage(url, pushState=true) {
-    try {
-        const res = await fetch(url, { headers: { "X-Requested-With": "XMLHttpRequest" } });
-        if (!res.ok) throw new Error("Ошибка загрузки");
-        const html = await res.text();
-        adminContent.innerHTML = html;
-
-        // Вызов JS для страницы
-        window.initPage?.();
-
-        if (pushState) history.pushState(null, "", url);
-    } catch(e) {
-        console.error(e);
-        adminContent.innerHTML = "<p>Ошибка загрузки страницы</p>";
-    }
-}
-
-// Навигация через sidebar
-document.querySelectorAll(".nav-link").forEach(link => {
-    link.addEventListener("click", e => {
-        e.preventDefault();
-        loadPage(link.href);
-    });
-});
-
-// Back/forward
-window.addEventListener("popstate", () => loadPage(location.pathname, false));
-</script>
+</body>
+</html>
