@@ -356,51 +356,6 @@ async def get_post_stats(
             "stats": stats.values()
         }
     )
-from fastapi.responses import HTMLResponse
-
-@app_fastapi.get("/admin/notify", response_class=HTMLResponse)
-async def notify_page(request: Request, _: None = Depends(admin_required)):
-    return templates.TemplateResponse("admin/notify.html", {"request": request, "is_admin": True})
-    
-@app_fastapi.get("/admin/search_users")
-async def search_users(q: str, _: None = Depends(admin_required)):
-    results = []
-    for uid, user in RAM_DATA.items():
-        if q.lower() in str(uid) or q.lower() in (user.get("username","").lower()) or q.lower() in (user.get("display_name","").lower()):
-            results.append({"chat_id": uid, "username": user.get("username"), "display_name": user.get("display_name")})
-    return JSONResponse(results)
-
-@app_fastapi.post("/admin/notify")
-def admin_notify():
-    recipient_type = request.form.get("recipient_type")
-    message = request.form.get("message")
-    target_user = request.form.get("target_user", "").strip()
-    
-    if recipient_type == "all":
-        sent = 0
-        for chat_id in RAM_DATA.keys():
-            try:
-                asyncio.create_task(telegram_notify(chat_id, message))
-                sent += 1
-            except Exception:
-                continue
-        return jsonify({"status": "ok", "sent": sent})
-    
-    elif recipient_type == "single":
-        # target_user содержит chat_id из JS
-        try:
-            chat_id = int(target_user)
-        except:
-            return jsonify({"status": "error", "error": "Неверный chat_id"})
-        
-        if chat_id not in RAM_DATA:
-            return jsonify({"status": "error", "error": "Пользователь не найден"})
-        
-        try:
-            asyncio.create_task(telegram_notify(chat_id, message))
-            return jsonify({"status": "ok", "sent": 1})
-        except Exception as e:
-            return jsonify({"status": "error", "error": str(e)})
 
     
 #--------------------------------------
