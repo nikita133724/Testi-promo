@@ -311,26 +311,25 @@ async def admin_user_tokens_json(
 # -----------------------
 @app_fastapi.get("/admin/keys", response_class=HTMLResponse)
 async def admin_keys_page(request: Request, _: None = Depends(admin_required)):
-    # Если AJAX
+    context = {"request": request, "durations": KEY_DURATION_OPTIONS, "key": None, "is_admin": True}
+
+    # Если AJAX — возвращаем только контент
     if request.headers.get("X-Requested-With") == "XMLHttpRequest":
-        return templates.TemplateResponse(
-            "admin/keys.html",
-            {"request": request, "durations": KEY_DURATION_OPTIONS, "key": None}
-        )
+        return templates.TemplateResponse("admin/keys_content.html", context)
 
 @app_fastapi.post("/admin/keys/generate", response_class=HTMLResponse)
-async def admin_generate_key(
-    request: Request,
-    duration: int = Form(...),
-    _: None = Depends(admin_required)
-):
+async def admin_generate_key(request: Request, duration: int = Form(...), _: None = Depends(admin_required)):
     label, delta = KEY_DURATION_OPTIONS[duration]
     key = generate_key(delta)
-    return templates.TemplateResponse(
-        "admin/keys.html",
-        {"request": request, "durations": KEY_DURATION_OPTIONS, "key": key, "is_admin": True}
-    )
+    context = {"request": request, "durations": KEY_DURATION_OPTIONS, "key": key, "is_admin": True}
 
+    # Если AJAX — возвращаем только блок с результатом
+    if request.headers.get("X-Requested-With") == "XMLHttpRequest":
+        # Возвращаем только контент блока <div id="key-result">
+        html_content = templates.get_template("admin/keys_content.html").render(context)
+        return HTMLResponse(html_content)
+
+    
 from stats_storage import POST_STATS  # <- импортируем новый словарь
 
 @app_fastapi.get("/admin/stats", response_class=HTMLResponse)
