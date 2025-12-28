@@ -309,16 +309,14 @@ async def admin_user_tokens_json(
     return JSONResponse(tokens)
 
 # -----------------------
-# Admin Keys
 @app_fastapi.get("/admin/keys", response_class=HTMLResponse)
-async def admin_keys_page(
-    request: Request,
-    _: None = Depends(admin_required)
-):
-    return templates.TemplateResponse(
-        "admin/keys.html",
-        {"request": request, "durations": KEY_DURATION_OPTIONS, "key": None, "is_admin": True}
-    )
+async def admin_keys_page(request: Request, _: None = Depends(admin_required)):
+    # Если AJAX
+    if request.headers.get("X-Requested-With") == "XMLHttpRequest":
+        return templates.TemplateResponse(
+            "admin/keys.html",
+            {"request": request, "durations": KEY_DURATION_OPTIONS, "key": None}
+        )
 
 @app_fastapi.post("/admin/keys/generate", response_class=HTMLResponse)
 async def admin_generate_key(
