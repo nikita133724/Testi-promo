@@ -3,36 +3,41 @@
 {% block content %}
 <h2>Статистика последнего поста с промокодами</h2>
 
-{% for user in stats %}
-    <h3>
-        Пользователь: {{ user.username }} |
-        chat_id: {{ user.chat_id }}
-    </h3>
+{% if stats %}
+    {% for user in stats %}
+        <h3>
+            Пользователь: {{ user.username }} |
+            chat_id: {{ user.chat_id }}
+        </h3>
 
-    <table>
-        <tr>
-            <th>Номинал</th>
-            <th>Промо</th>
-            <th>Ожидание (с)</th>
-            <th>API активация (с)</th>
-            <th>API ставка (с)</th>
-        </tr>
+        <table>
+            <tr>
+                <th>Номинал</th>
+                <th>Промо</th>
+                <th>Ожидание (с)</th>
+                <th>API активация (с)</th>
+                <th>API ставка (с)</th>
+            </tr>
 
-        {% for log in user.logs %}
-        <tr>
-            <td>{{ log.nominal }}</td>
-            <td>{{ log.promo_code }}</td>
-            <td>{{ "%.2f"|format(log.sleep_time) if log.sleep_time else "-" }}</td>
-            <td>{{ "%.2f"|format(log.activate_time) if log.activate_time else "-" }}</td>
-            <td>{{ "%.2f"|format(log.bet_time) if log.bet_time else "-" }}</td>
-        </tr>
-        {% endfor %}
+            {% for log in user.logs %}
+            <tr>
+                <td>{{ log.nominal }}</td>
+                <td>{{ log.promo_code }}</td>
+                <td>{{ "%.2f"|format(log.sleep_time) if log.sleep_time else "-" }}</td>
+                <td>{{ "%.2f"|format(log.activate_time) if log.activate_time else "-" }}</td>
+                <td>{{ "%.2f"|format(log.bet_time) if log.bet_time else "-" }}</td>
+            </tr>
+            {% endfor %}
 
-        <tr>
-            <td colspan="5">
-                <b>Время активации всех промо: {{ "%.2f"|format(user.total_time) }} сек</b>
-            </td>
-        </tr>
-    </table>
-{% endfor %}
+            <tr>
+                <td colspan="5">
+                    <b>Время активации всех промо: {{ "%.2f"|format(user.total_time) }} сек</b>
+                </td>
+            </tr>
+        </table>
+    {% endfor %}
+{% else %}
+    <p>Данных нет</p>
+{% endif %}
+
 {% endblock %}
