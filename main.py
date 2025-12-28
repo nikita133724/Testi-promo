@@ -370,7 +370,7 @@ async def search_users(q: str, _: None = Depends(admin_required)):
             results.append({"chat_id": uid, "username": user.get("username"), "display_name": user.get("display_name")})
     return JSONResponse(results)
 
-@app.route("/admin/notify", methods=["POST"])
+@app_fastapi.post("/admin/notify")
 def admin_notify():
     recipient_type = request.form.get("recipient_type")
     message = request.form.get("message")
