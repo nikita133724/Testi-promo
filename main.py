@@ -406,20 +406,19 @@ def stop_metrics_if_needed():
         metrics_task.cancel()
         print("Metrics collector stopped")
 
-async def monitor_presence():
+def on_presence_message(msg):
     global active_viewers
 
-    async for msg in metrics_channel.presence.subscribe():
-        if msg.action == "enter":
-            active_viewers += 1
-            print("Viewer entered:", msg.client_id)
-            start_metrics_if_needed()
+    if msg.action == "enter":
+        active_viewers += 1
+        print("Viewer entered:", msg.client_id)
+        start_metrics_if_needed()
 
-        elif msg.action == "leave":
-            active_viewers = max(active_viewers - 1, 0)
-            print("Viewer left:", msg.client_id)
-            if active_viewers == 0:
-                stop_metrics_if_needed()
+    elif msg.action == "leave":
+        active_viewers = max(active_viewers - 1, 0)
+        print("Viewer left:", msg.client_id)
+        if active_viewers == 0:
+            stop_metrics_if_needed()
 # -------------------------------
 
         
@@ -503,4 +502,4 @@ async def startup_event():
     asyncio.create_task(run_token_refresher())
     asyncio.create_task(subscription_watcher(bot, send_message_to_user))
     asyncio.create_task(start_telegram())
-    asyncio.create_task(monitor_presence())
+    metrics_channel.presence.subscribe(on_presence_message)
