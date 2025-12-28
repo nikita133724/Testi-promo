@@ -32,14 +32,10 @@ RAM_DATA = {}
         
 async def send_message_to_user(bot, chat_id, text, **kwargs):
     msg = await bot.send_message(chat_id=chat_id, text=text, **kwargs)
-    await update_user_names_in_ram(msg.chat)
+    await update_user_names_in_ram(msg.chat, persist=True)
     return msg
     
-async def update_user_names_in_ram(chat):
-    """
-    Сохраняет display_name и username только в RAM_DATA.
-    chat — объект telegram.Chat
-    """
+async def update_user_names_in_ram(chat, *, persist=False):
     chat_id = chat.id
     display_name = chat.first_name or ""
     if getattr(chat, "last_name", None):
@@ -47,11 +43,20 @@ async def update_user_names_in_ram(chat):
 
     username = f"@{chat.username}" if getattr(chat, "username", None) else None
 
-    RAM_DATA.setdefault(chat_id, {})
-    RAM_DATA[chat_id].update({
-        "display_name": display_name,
-        "username": username
-    })
+    entry = RAM_DATA. setdefault(chat_id, {})
+    changed = False
+    if entry.get("display_name") != display_name:
+        entry["display_name"] = display_name
+        changed = True
+    if entry.get ("username") != username:
+        entry ["username"] = username
+        changed = True
+    if persist and changed:
+        _save_to_redis_partial(chat_id, {
+            "display_name": display_name,
+            "username": username
+        })
+    return entry 
 # -----------------------
 # Открытые меню с таймерами
 # -----------------------
@@ -100,6 +105,8 @@ def get_user_settings(chat_id):
             "access_token": None,
             "refresh_token": None,
             "next_refresh_time": None,
+            "display_name": obj.get("display_name"),
+            "username": obj.get("username"),
             "active_nominals": {Decimal(str(n)): True for n in ACTIVE_NOMINALS},
             "waiting_for_refresh": False,
             "waiting_for_refresh_message_id": None,
@@ -321,8 +328,9 @@ async def menu_timer_task(chat_id, delay):
 # -----------------------
 # /start
 # -----------------------
-async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
+async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
     chat_id = update.effective_chat.id
+    await update_user_names_in_ram(update.effective_chat, persist=True)
     settings = get_user_settings(chat_id)
     # если новый пользователь — добавляем его в chat_ids и выставляем suspended=True
     if chat_id not in chat_ids:
@@ -550,6 +558,7 @@ async def open_settings_menu(chat_id, bot):
 # -----------------------
 async def settings_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
     query = update.callback_query
+    await update_user_names_in_ram(query.message.chat, persist=True)
     chat_id = query.message.chat.id
     if OPEN_SETTINGS_MESSAGES.get(chat_id, {}).get("menu_type") == "profile":
         await query.answer()
