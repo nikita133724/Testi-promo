@@ -523,6 +523,32 @@ async def monitor_page(request: Request, _: None = Depends(admin_required)):
             "client_id": client_id
         }
     )
+    
+@app_fastapi.post("/admin/shutdown")
+async def shutdown_server(_: None = Depends(admin_required)):
+    print("=== FINAL SHUTDOWN REQUESTED ===")
+
+    # 1. Остановить метрики
+    stop_metrics_if_needed()
+
+    # 2. Остановить telegram
+    try:
+        await tg_app.stop()
+        await client.disconnect()
+    except Exception as e:
+        print("Telegram shutdown error:", e)
+
+    # 3. Закрыть Ably
+    try:
+        await ably_client.close()
+    except:
+        pass
+
+    # 4. Дать задачам завершиться
+    await asyncio.sleep(0.5)
+
+    print("Process exiting immediately")
+    os._exit(0)   # ← ВАЖНО: без graceful restart, просто умереть
 # -----------------------
 # Фоновые задачи
 async def keep_alive():
