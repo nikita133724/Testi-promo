@@ -4,8 +4,9 @@
 <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:10px;">
     <h2 style="margin:0;">System Monitor</h2>
 
-    <form id="shutdownForm">
+    <form id="shutdownForm" style="margin:0;">
         <button
+            type="button"
             style="
                 background:#c00;
                 color:white;
@@ -21,91 +22,137 @@
 </div>
 
 <table>
-<tr><th>цпу</th><td id="cpu">--</td></tr>
-<tr><th>рам</th><td id="ram">--</td></tr>
+<tr><th>ЦПУ</th><td id="cpu">--</td></tr>
+<tr><th>РАМ</th><td id="ram">--</td></tr>
 <tr><th>Load</th><td id="load">--</td></tr>
 <tr><th>Threads</th><td id="threads">--</td></tr>
-<tr><th>время работы</th><td id="uptime">--</td></tr>
+<tr><th>Время работы</th><td id="uptime">--</td></tr>
 </table>
 
-<canvas id="cpuChart"></canvas>
+<canvas id="cpuChart" style="max-width:100%;"></canvas>
 <br>
-<canvas id="ramChart"></canvas>
+<canvas id="ramChart" style="max-width:100%;"></canvas>
 
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-<script src="https://cdn.ably.io/lib/ably.min-1.js"></script>
 
 <script>
-    const ABLY_PUBLIC_KEY = "{{ ably_public }}";
-    const CLIENT_ID = "{{ client_id }}";
-</script>
+// Простой монитор без Ably (если публичный ключ не установлен)
+let cpuData = [], ramData = [], labels = [];
 
-<script src="/static/monitor.js"></script>
+const commonOptions = {
+    animation: { duration: 200 },
+    responsive: true,
+    maintainAspectRatio: true,
+    scales: {
+        x: { display: false },
+        y: {
+            beginAtZero: true,
+            max: 100,
+            ticks: { color: "#ccc" },
+            grid: { color: "rgba(255,255,255,0.05)" }
+        }
+    },
+    plugins: {
+        legend: { labels: { color: "#eee" } }
+    }
+};
 
-<script>
+const cpuCtx = document.getElementById('cpuChart')?.getContext('2d');
+const ramCtx = document.getElementById('ramChart')?.getContext('2d');
+
+let cpuChart = null, ramChart = null;
+
+if (cpuCtx && ramCtx) {
+    cpuChart = new Chart(cpuCtx, {
+        type: 'line',
+        data: {
+            labels,
+            datasets: [{
+                label: 'CPU %',
+                data: cpuData,
+                borderColor: '#ff4d4f',
+                backgroundColor: 'rgba(255,77,79,0.15)',
+                tension: 0.3,
+                fill: true,
+                pointRadius: 0
+            }]
+        },
+        options: commonOptions
+    });
+
+    ramChart = new Chart(ramCtx, {
+        type: 'line',
+        data: {
+            labels,
+            datasets: [{
+                label: 'RAM %',
+                data: ramData,
+                borderColor: '#4dabf7',
+                backgroundColor: 'rgba(77,171,247,0.15)',
+                tension: 0.3,
+                fill: true,
+                pointRadius: 0
+            }]
+        },
+        options: commonOptions
+    });
+}
+
+async function updateMetrics() {
+    try {
+        const res = await fetch('/admin/monitor');
+        if (!res.ok) return;
+        
+        const data = await res.json();
+        
+        labels.push(new Date().toLocaleTimeString());
+        cpuData.push(data.cpu || 0);
+        ramData.push(Math.round((data.ram / data.ram_total) * 100) || 0);
+        
+        if (labels.length > 60) {
+            labels.shift();
+            cpuData.shift();
+            ramData.shift();
+        }
+        
+        if (cpuChart) cpuChart.update('none');
+        if (ramChart) ramChart.update('none');
+        
+        document.getElementById("cpu").innerText = (data.cpu || 0) + " %";
+        document.getElementById("ram").innerText = `${Math.round((data.ram / 1024))} MB (${Math.round((data.ram / data.ram_total) * 100)}%)`;
+        document.getElementById("load").innerText = (data.load_avg || [0,0,0]).map(x => x.toFixed(2)).join(", ");
+        document.getElementById("threads").innerText = "--";
+        
+        const h = Math.floor((data.uptime || 0) / 3600);
+        const m = Math.floor(((data.uptime || 0) % 3600) / 60);
+        const s = Math.floor((data.uptime || 0) % 60);
+        document.getElementById("uptime").innerText = `${h}h ${m}m ${s}s`;
+    } catch (error) {
+        console.error('Error fetching metrics:', error);
+    }
+}
+
+updateMetrics();
+setInterval(updateMetrics, 1000);
+
 document.getElementById("shutdownForm").addEventListener("submit", async e => {
     e.preventDefault();
     if (!confirm("Контейнер будет немедленно остановлен. Продолжить?")) return;
-
-    await fetch("/admin/shutdown", { method: "POST" });
-    alert("Контейнер остановлен.");
+    
+    try {
+        await fetch("/admin/shutdown", { method: "POST" });
+        alert("Контейнер остановлен.");
+    } catch (error) {
+        console.error('Error:', error);
+    }
 });
 </script>
+
 <style>
-body {
-    background: transparent;
-    color: #111;
-    font-family: system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
-}
-
-h2 {
-    color: #111;
-}
-
-table {
-    margin: 12px 0 18px 0;
-    border-collapse: collapse;
-    font-size: 14px;
-    table-layout: fixed;
-}
-
-th, td {
-    padding: 6px 12px;
-}
-
-th {
-    text-align: left;
-    font-weight: 500;
-    color: #555;
-    width: 120px;
-}
-
-td {
-    font-weight: 600;
-    color: #111;
-    text-align: right;
-    font-variant-numeric: tabular-nums;
-}
-
-table th {
-    color: #111 !important;
-}
-/* Charts */
 canvas {
     display: block;
-    width: 120%;
-    height: 220px;
-    background: #151820;
-    border-radius: 10px;
-    padding: 10px;
     margin-bottom: 16px;
 }
-
-/* Mobile */
-@media (max-width: 600px) {
-    canvas {
-        height: 220px;
-    }
-}
 </style>
+
 {% endblock %}
