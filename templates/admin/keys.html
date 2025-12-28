@@ -3,7 +3,7 @@
 {% block content %}
 <h1>Генерация ключей</h1>
 
-<form method="post" action="/admin/keys/generate">
+<form id="keys-form" method="post" action="/admin/keys/generate">
     <label for="duration">Срок действия ключа:</label>
     <select name="duration" id="duration">
         {% for label, _ in durations %}
@@ -13,9 +13,44 @@
     <button type="submit">Сгенерировать</button>
 </form>
 
-{% if key %}
-<h3>Сгенерированный ключ:</h3>
-<p>{{ key }}</p>
-{% endif %}
+<div id="key-result" style="margin-top:20px;">
+    {% if key %}
+    <h3>Сгенерированный ключ:</h3>
+    <p style="background:#f0f0f0; padding:10px; border-radius:4px; word-break:break-all;">{{ key }}</p>
+    {% endif %}
+</div>
+
+<script>
+document.getElementById('keys-form').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    
+    const duration = document.getElementById('duration').value;
+    const formData = new FormData();
+    formData.append('duration', duration);
+    
+    try {
+        const resp = await fetch('/admin/keys/generate', {
+            method: 'POST',
+            body: formData,
+            headers: {"x-requested-with": "XMLHttpRequest"}
+        });
+        
+        if (!resp.ok) throw new Error('Network error');
+        
+        const html = await resp.text();
+        const parser = new DOMParser();
+        const doc = parser.parseFromString(html, 'text/html');
+        
+        // Ищем результат в новом документе
+        const keyResult = doc.querySelector('#key-result');
+        if (keyResult) {
+            document.getElementById('key-result').innerHTML = keyResult.innerHTML;
+        }
+    } catch (error) {
+        console.error('Error:', error);
+        alert('Ошибка при генерации ключа');
+    }
+});
+</script>
 
 {% endblock %}
