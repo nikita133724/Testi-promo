@@ -11,8 +11,8 @@ let pendingMetrics = [];
 // 🎨 Красивые и лёгкие графики
 const commonOptions = {
     animation: { duration: 200 },
-    responsive: true,
-    maintainAspectRatio: false,
+    responsive: false,
+    maintainAspectRatio: true,
     scales: {
         x: { display: false },
         y: {
