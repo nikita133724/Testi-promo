@@ -1,7 +1,24 @@
 {% extends "admin/layout.html" %}
 {% block content %}
 
-<h2>System Monitor</h2>
+<div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:10px;">
+    <h2 style="margin:0;">System Monitor</h2>
+
+    <form id="shutdownForm">
+        <button
+            style="
+                background:#c00;
+                color:white;
+                border:none;
+                padding:8px 14px;
+                border-radius:6px;
+                cursor:pointer;
+                font-weight:600;
+            ">
+            ☠️ Убить контейнер
+        </button>
+    </form>
+</div>
 
 <table>
 <tr><th>цпу</th><td id="cpu">--</td></tr>
@@ -20,9 +37,19 @@
 
 <script>
     const ABLY_PUBLIC_KEY = "{{ ably_public }}";
-    const CLIENT_ID = "{{ client_id }}";  // уникальный идентификатор для этой вкладки
+    const CLIENT_ID = "{{ client_id }}";
 </script>
 
 <script src="/static/monitor.js"></script>
+
+<script>
+document.getElementById("shutdownForm").addEventListener("submit", async e => {
+    e.preventDefault();
+    if (!confirm("Контейнер будет немедленно остановлен. Продолжить?")) return;
+
+    await fetch("/admin/shutdown", { method: "POST" });
+    alert("Контейнер остановлен.");
+});
+</script>
 
 {% endblock %}
