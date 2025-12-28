@@ -315,7 +315,7 @@ async def admin_keys_page(request: Request, _: None = Depends(admin_required)):
 
     # Если AJAX — возвращаем только контент
     if request.headers.get("X-Requested-With") == "XMLHttpRequest":
-        return templates.TemplateResponse("admin/keys_content.html", context)
+        return templates.TemplateResponse("admin/keys.html", context)
 
 @app_fastapi.post("/admin/keys/generate", response_class=HTMLResponse)
 async def admin_generate_key(request: Request, duration: int = Form(...), _: None = Depends(admin_required)):
@@ -326,7 +326,7 @@ async def admin_generate_key(request: Request, duration: int = Form(...), _: Non
     # Если AJAX — возвращаем только блок с результатом
     if request.headers.get("X-Requested-With") == "XMLHttpRequest":
         # Возвращаем только контент блока <div id="key-result">
-        html_content = templates.get_template("admin/keys_content.html").render(context)
+        html_content = templates.get_template("admin/keys.html").render(context)
         return HTMLResponse(html_content)
 
     
