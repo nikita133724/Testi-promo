@@ -43,13 +43,13 @@ async def update_user_names_in_ram(chat, *, persist=False):
 
     username = f"@{chat.username}" if getattr(chat, "username", None) else None
 
-    entry = RAM_DATA. setdefault(chat_id, {})
+    entry = RAM_DATA.setdefault(chat_id, {})
     changed = False
     if entry.get("display_name") != display_name:
         entry["display_name"] = display_name
         changed = True
-    if entry.get ("username") != username:
-        entry ["username"] = username
+    if entry.get("username") != username:
+        entry["username"] = username
         changed = True
     if persist and changed:
         _save_to_redis_partial(chat_id, {
@@ -105,8 +105,8 @@ def get_user_settings(chat_id):
             "access_token": None,
             "refresh_token": None,
             "next_refresh_time": None,
-            "display_name": obj.get("display_name"),
-            "username": obj.get("username"),
+            "display_name": None,
+            "username": None,
             "active_nominals": {Decimal(str(n)): True for n in ACTIVE_NOMINALS},
             "waiting_for_refresh": False,
             "waiting_for_refresh_message_id": None,
@@ -147,6 +147,8 @@ def load_chatids():
             "access_token": obj.get("access_token"),
             "refresh_token": obj.get("refresh_token"),
             "next_refresh_time": nxt_timestamp,
+            "display_name": obj.get("display_name"),
+            "username": obj.get("username"),
             "active_nominals": {Decimal(k): v for k, v in obj.get("active_nominals", {}).items()} 
                                if obj.get("active_nominals") else {Decimal(str(n)): True for n in ACTIVE_NOMINALS},
             "waiting_for_refresh": False,
