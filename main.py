@@ -370,48 +370,37 @@ async def search_users(q: str, _: None = Depends(admin_required)):
             results.append({"chat_id": uid, "username": user.get("username"), "display_name": user.get("display_name")})
     return JSONResponse(results)
 
-@app_fastapi.post("/admin/notify")
-async def send_notification(
-    recipient_type: str = Form(...),  # "all" или "single"
-    target_user: str = Form(None),
-    message: str = Form(...),
-    _: None = Depends(admin_required)
-):
-    failed = []
-    sent_count = 0
-
-    # --- Всем пользователям ---
+@app.route("/admin/notify", methods=["POST"])
+def admin_notify():
+    recipient_type = request.form.get("recipient_type")
+    message = request.form.get("message")
+    target_user = request.form.get("target_user", "").strip()
+    
     if recipient_type == "all":
-        for chat_id, user_data in RAM_DATA.items():
+        sent = 0
+        for chat_id in RAM_DATA.keys():
             try:
-                await admin_users.bot.send_message(chat_id, message)
-                sent_count += 1
-            except Exception as e:
-                failed.append({"chat_id": chat_id, "error": str(e)})
-
-    # --- Конкретному пользователю ---
+                asyncio.create_task(telegram_notify(chat_id, message))
+                sent += 1
+            except Exception:
+                continue
+        return jsonify({"status": "ok", "sent": sent})
+    
     elif recipient_type == "single":
-        target_uid = None
-        for chat_id, user_data in RAM_DATA.items():
-            username = user_data.get("username", "")
-            display_name = user_data.get("display_name", "")
-            if str(chat_id) == target_user or username == target_user or display_name == target_user:
-                target_uid = chat_id
-                break
-
-        if target_uid is None:
-            return JSONResponse({"status": "error", "error": "Пользователь не найден"}, status_code=404)
-
+        # target_user содержит chat_id из JS
         try:
-            await admin_users.bot.send_message(target_uid, message)
-            sent_count += 1
+            chat_id = int(target_user)
+        except:
+            return jsonify({"status": "error", "error": "Неверный chat_id"})
+        
+        if chat_id not in RAM_DATA:
+            return jsonify({"status": "error", "error": "Пользователь не найден"})
+        
+        try:
+            asyncio.create_task(telegram_notify(chat_id, message))
+            return jsonify({"status": "ok", "sent": 1})
         except Exception as e:
-            failed.append({"chat_id": target_uid, "error": str(e)})
-
-    # --- Ответ фронтенду ---
-    if failed:
-        return JSONResponse({"status": "partial", "sent": sent_count, "failed": failed})
-    return JSONResponse({"status": "ok", "sent": sent_count})
+            return jsonify({"status": "error", "error": str(e)})
 
     
 #--------------------------------------
