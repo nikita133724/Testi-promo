@@ -76,10 +76,15 @@ async def admin_users_page(
     _: None = Depends(admin_required)
 ):
     users_list = []
-    for chat_id in admin_users.RAM_DATA.keys():
-        username = await admin_users.get_username(chat_id)  # Используем новую функцию
-        users_list.append({"chat_id": chat_id, "username": username})
-
+    for chat_id, user_data in admin_users.RAM_DATA.items():
+        username = await admin_users.get_username(chat_id)
+        active = is_active(user_data)
+    
+        users_list.append({
+            "chat_id": chat_id,
+            "username": username,
+            "active": active
+        })
     return templates.TemplateResponse(
         "admin/users.html",
         {"request": request, "users": users_list, "is_admin": True}
