@@ -90,7 +90,45 @@ async def admin_users_page(
         {"request": request, "users": users_list, "is_admin": True}
     )
 
+def is_active(user_data):
+    # Если пользователь явно приостановлен — неактивен
+    if user_data.get("suspended", False):
+        return False
 
+    # Если нет даты окончания подписки — неактивен
+    sub_until = user_data.get("subscription_until")
+    if not sub_until:
+        return False
+
+    # Если подписка истекла — неактивен
+    try:
+        return float(sub_until) > datetime.now(timezone.utc).timestamp()
+    except:
+        return False
+
+@app_fastapi.get("/admin/users/filter")
+async def filter_users(status: str = "all", _: None = Depends(admin_required)):
+    filtered_users = []
+
+    for chat_id, user_data in admin_users.RAM_DATA.items():
+        username = await admin_users.get_username(chat_id)
+        active = is_active(user_data)
+
+        # Фильтрация
+        if status == "active" and not active:
+            continue
+
+        if status == "inactive" and active:
+            continue
+
+        filtered_users.append({
+            "chat_id": chat_id,
+            "username": username,
+            "active": active
+        })
+
+    return JSONResponse(filtered_users)
+    
 @app_fastapi.get("/admin/users/{chat_id}", response_class=HTMLResponse)
 async def admin_user_detail(
     request: Request,
@@ -376,44 +414,6 @@ async def send_notification(
 
     return JSONResponse({"status": "ok"})
 
-def is_active(user_data):
-    # Если пользователь явно приостановлен — неактивен
-    if user_data.get("suspended", False):
-        return False
-
-    # Если нет даты окончания подписки — неактивен
-    sub_until = user_data.get("subscription_until")
-    if not sub_until:
-        return False
-
-    # Если подписка истекла — неактивен
-    try:
-        return float(sub_until) > datetime.now(timezone.utc).timestamp()
-    except:
-        return False
-
-@app_fastapi.get("/admin/users/filter")
-async def filter_users(status: str = "all", _: None = Depends(admin_required)):
-    filtered_users = []
-
-    for chat_id, user_data in admin_users.RAM_DATA.items():
-        username = await admin_users.get_username(chat_id)
-        active = is_active(user_data)
-
-        # Фильтрация
-        if status == "active" and not active:
-            continue
-
-        if status == "inactive" and active:
-            continue
-
-        filtered_users.append({
-            "chat_id": chat_id,
-            "username": username,
-            "active": active
-        })
-
-    return JSONResponse(filtered_users)
     
 #--------------------------------------
 from system_metrics import get_metrics
