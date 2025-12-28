@@ -373,7 +373,6 @@ metrics_channel = ably_client.channels.get(ABLY_CHANNEL)
 # -----------------------------
 # Глобальные переменные
 metrics_task: asyncio.Task | None = None
-presence_task: asyncio.Task | None = None
 active_viewers = 0  # количество подключенных клиентов на странице мониторинга
 metrics_enabled = False  # включен ли сбор метрик
 
@@ -407,46 +406,20 @@ def stop_metrics_if_needed():
         metrics_task.cancel()
         print("Metrics collector stopped")
 
-# -----------------------------
-async def monitor_presence_loop():
-    """Отслеживаем Presence на канале Ably и управляем сбором метрик."""
-    global active_viewers
-    last_clients = set()
-    while True:
-        try:
-            members_page = await metrics_channel.presence.get()  # PaginatedResult
-            members = members_page.items  # это уже список присутствующих клиентов
-            current_clients = set(m.client_id for m in members)
-
-            # Вошедшие зрители
-            entered = current_clients - last_clients
-            if entered:
-                active_viewers += len(entered)
-                print(f"Viewer(s) entered: {entered}, total: {active_viewers}")
-                start_metrics_if_needed()
-
-            # Ушедшие зрители
-            left = last_clients - current_clients
-            if left:
-                active_viewers -= len(left)
-                active_viewers = max(active_viewers, 0)
-                print(f"Viewer(s) left: {left}, total: {active_viewers}")
-                if active_viewers == 0:
-                    stop_metrics_if_needed()
-
-            last_clients = current_clients
-        except Exception as e:
-            print("Presence monitor error:", e)
-
-        await asyncio.sleep(1)
-
-# -----------------------------
 async def monitor_presence():
-    """Запуск мониторинга Presence на стартапе приложения."""
-    global presence_task
-    if presence_task is None or presence_task.done():
-        presence_task = asyncio.create_task(monitor_presence_loop())
-        print("Presence monitor started")
+    global active_viewers
+
+    async for msg in metrics_channel.presence.subscribe():
+        if msg.action == "enter":
+            active_viewers += 1
+            print("Viewer entered:", msg.client_id)
+            start_metrics_if_needed()
+
+        elif msg.action == "leave":
+            active_viewers = max(active_viewers - 1, 0)
+            print("Viewer left:", msg.client_id)
+            if active_viewers == 0:
+                stop_metrics_if_needed()
 # -------------------------------
 
         
