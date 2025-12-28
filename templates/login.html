@@ -2,76 +2,132 @@
 <html lang="ru">
 <head>
     <meta charset="UTF-8">
-    <title>Админка — Вход</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Вход в админку</title>
     <style>
+        :root {
+            font-family: "Inter", "Segoe UI", system-ui, sans-serif;
+            background: #0f172a;
+            color: #f1f5f9;
+        }
+        * {
+            box-sizing: border-box;
+        }
         body {
-            font-family: Arial, sans-serif;
-            background: #f0f2f5;
+            margin: 0;
+            min-height: 100vh;
             display: flex;
-            justify-content: center;
             align-items: center;
-            height: 100vh;
+            justify-content: center;
+            padding: 24px;
         }
-
-        .login-container {
-            background: white;
-            padding: 60px 50px; /* больше внутренние отступы */
-            border-radius: 10px;
-            box-shadow: 0 0 25px rgba(0,0,0,0.15);
-            width: 400px; /* увеличена ширина */
-            max-width: 90%;
-            text-align: center;
+        .login-view {
+            width: min(420px, 100%);
+            background: linear-gradient(180deg, #111827, #1e293b);
+            border-radius: 20px;
+            padding: 48px 36px;
+            box-shadow: 0 20px 50px rgba(15, 23, 42, 0.6);
+            border: 1px solid rgba(148, 163, 184, 0.3);
         }
-
-        .login-container h2 {
-            margin-bottom: 30px;
-            color: #333;
-            font-size: 28px; /* увеличенный заголовок */
+        .login-view h1 {
+            margin: 0 0 16px;
+            font-size: 28px;
+            letter-spacing: 0.02em;
         }
-
-        .login-container input[type="text"],
-        .login-container input[type="password"] {
+        .login-view p {
+            margin: 0 0 28px;
+            color: #cbd5f5;
+            line-height: 1.6;
+        }
+        .field-group {
+            margin-bottom: 18px;
+        }
+        .field-group label {
+            display: block;
+            margin-bottom: 6px;
+            font-size: 14px;
+            letter-spacing: 0.04em;
+            text-transform: uppercase;
+            color: #94a3b8;
+        }
+        .field-group input {
             width: 100%;
-            padding: 16px; /* увеличены поля */
-            margin: 10px 0 25px 0;
-            border: 1px solid #ccc;
-            border-radius: 6px;
+            background: rgba(148, 163, 184, 0.12);
+            border: 1px solid rgba(148, 163, 184, 0.4);
+            border-radius: 12px;
+            padding: 14px 16px;
             font-size: 16px;
+            color: #f8fafc;
+            outline: none;
+            transition: border-color 0.2s ease;
         }
-
-        .login-container button {
+        .field-group input:focus {
+            border-color: #38bdf8;
+        }
+        .login-view button {
             width: 100%;
-            padding: 16px;
-            background: #4CAF50;
             border: none;
-            color: white;
-            font-size: 18px; /* увеличенный текст кнопки */
-            border-radius: 6px;
+            border-radius: 14px;
+            padding: 16px;
+            font-size: 16px;
+            font-weight: 600;
             cursor: pointer;
+            background: #38bdf8;
+            color: #0f172a;
+            transition: transform 0.2s ease;
         }
-
-        .login-container button:hover {
-            background: #45a049;
+        .login-view button:active {
+            transform: translateY(1px);
         }
-
-        .error {
-            color: red;
-            margin-bottom: 20px;
-            font-size: 16px; /* больше текста ошибки */
+        .login-view .error {
+            margin: 0 0 16px;
+            padding: 12px;
+            border-radius: 10px;
+            background: rgba(248, 113, 113, 0.15);
+            border: 1px solid rgba(248, 113, 113, 0.4);
+            color: #fecaca;
+            font-size: 14px;
+        }
+        @media (max-width: 640px) {
+            body {
+                padding: 16px;
+            }
+            .login-view {
+                padding: 36px 24px;
+                border-radius: 16px;
+            }
+            .login-view h1 {
+                font-size: 24px;
+            }
+            .field-group input {
+                padding: 12px 14px;
+                font-size: 15px;
+            }
+            .login-view button {
+                padding: 14px;
+                font-size: 15px;
+            }
         }
     </style>
 </head>
 <body>
-    <div class="login-container">
-        <h2>Вход в админку</h2>
+    <section class="login-view">
+        <h1>Вход в админку</h1>
+        <p>Пожалуйста, введите логин и пароль, чтобы получить доступ к панели управления.</p>
         {% if error %}
             <div class="error">{{ error }}</div>
         {% endif %}
         <form method="post" action="/login">
-            <input type="text" name="username" placeholder="Логин" required>
-            <input type="password" name="password" placeholder="Пароль" required>
+            <div class="field-group">
+                <label for="username">Логин</label>
+                <input id="username" name="username" type="text" autocomplete="username" required>
+            </div>
+            <div class="field-group">
+                <label for="password">Пароль</label>
+                <input id="password" name="password" type="password" autocomplete="current-password" required>
+            </div>
             <button type="submit">Войти</button>
         </form>
-    </div>
+    </section>
 </body>
 </html>
