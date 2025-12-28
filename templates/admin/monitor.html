@@ -36,8 +36,10 @@
 <script src="https://cdn.ably.io/lib/ably.min-1.js"></script>
 
 <script>
-    const ABLY_PUBLIC_KEY = "{{ ably_public }}";
-    const CLIENT_ID = "{{ client_id }}";
+window.MONITOR_CONFIG = {
+    ABLY_PUBLIC_KEY: "{{ ably_public }}",
+    CLIENT_ID: "{{ client_id }}"
+};
 </script>
 
 <script src="/static/monitor.js"></script>
