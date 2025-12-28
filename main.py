@@ -372,47 +372,46 @@ async def search_users(q: str, _: None = Depends(admin_required)):
 
 @app_fastapi.post("/admin/notify")
 async def send_notification(
-    request: Request,
     recipient_type: str = Form(...),  # "all" или "single"
     target_user: str = Form(None),
     message: str = Form(...),
     _: None = Depends(admin_required)
 ):
-    if recipient_type == "all":
-        for uid, user_data in RAM_DATA.items():
-            # если user_data это список, перебираем его
-            if isinstance(user_data, list):
-                for u in user_data:
-                    try:
-                        await admin_users.bot.send_message(u["chat_id"], message)
-                    except:
-                        pass
-            else:
-                try:
-                    await admin_users.bot.send_message(uid, message)
-                except:
-                    pass
+    failed = []
+    sent_count = 0
 
+    # --- Всем пользователям ---
+    if recipient_type == "all":
+        for chat_id, user_data in RAM_DATA.items():
+            try:
+                await admin_users.bot.send_message(chat_id, message)
+                sent_count += 1
+            except Exception as e:
+                failed.append({"chat_id": chat_id, "error": str(e)})
+
+    # --- Конкретному пользователю ---
     elif recipient_type == "single":
         target_uid = None
-        for uid, user_data in RAM_DATA.items():
-            users_to_check = user_data if isinstance(user_data, list) else [user_data]
-            for user in users_to_check:
-                if str(uid) == target_user or str(user.get("chat_id")) == target_user or user.get("username") == target_user:
-                    target_uid = user.get("chat_id", uid)
-                    break
-            if target_uid:
+        for chat_id, user_data in RAM_DATA.items():
+            username = user_data.get("username", "")
+            display_name = user_data.get("display_name", "")
+            if str(chat_id) == target_user or username == target_user or display_name == target_user:
+                target_uid = chat_id
                 break
 
-        if not target_uid:
-            return JSONResponse({"error": "Пользователь не найден"}, status_code=404)
+        if target_uid is None:
+            return JSONResponse({"status": "error", "error": "Пользователь не найден"}, status_code=404)
 
         try:
             await admin_users.bot.send_message(target_uid, message)
-        except:
-            return JSONResponse({"error": "Не удалось отправить сообщение"}, status_code=500)
+            sent_count += 1
+        except Exception as e:
+            failed.append({"chat_id": target_uid, "error": str(e)})
 
-    return JSONResponse({"status": "ok"})
+    # --- Ответ фронтенду ---
+    if failed:
+        return JSONResponse({"status": "partial", "sent": sent_count, "failed": failed})
+    return JSONResponse({"status": "ok", "sent": sent_count})
 
     
 #--------------------------------------
