@@ -1,6 +1,9 @@
+{% extends "admin/layout.html" %}
+
+{% block content %}
 <h1>Генерация ключей</h1>
 
-<form id="key-form">
+<form method="post" action="/admin/keys/generate">
     <label for="duration">Срок действия ключа:</label>
     <select name="duration" id="duration">
         {% for label, _ in durations %}
@@ -10,27 +13,9 @@
     <button type="submit">Сгенерировать</button>
 </form>
 
-<div id="key-result">
-    {% if key %}
-    <h3>Сгенерированный ключ:</h3>
-    <p>{{ key }}</p>
-    {% endif %}
-</div>
+{% if key %}
+<h3>Сгенерированный ключ:</h3>
+<p>{{ key }}</p>
+{% endif %}
 
-<script>
-window.initPage = function initPage() {
-    const form = document.getElementById("key-form");
-    form?.addEventListener("submit", async e => {
-        e.preventDefault();
-        const formData = new FormData(form);
-        const res = await fetch("/admin/keys/generate", {
-            method: "POST",
-            body: formData,
-            headers: {"X-Requested-With": "XMLHttpRequest"}
-        });
-        const html = await res.text();
-        document.getElementById("key-result").innerHTML = html;
-    });
-};
-initPage();
-</script>
+{% endblock %}
