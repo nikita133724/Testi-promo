@@ -1,8 +1,22 @@
+if (window.__monitorRunning) {
+    console.warn("Monitor already running — skip reinit");
+    return;
+}
+window.__monitorRunning = true;
+
 const ably = new Ably.Realtime({ key: ABLY_PUBLIC_KEY, clientId: CLIENT_ID });
 const channel = ably.channels.get('system-metrics');
 
-const cpuCtx = document.getElementById('cpuChart').getContext('2d');
-const ramCtx = document.getElementById('ramChart').getContext('2d');
+const cpuCanvas = document.getElementById('cpuChart');
+const ramCanvas = document.getElementById('ramChart');
+if (!cpuCanvas || !ramCanvas) {
+    console.warn("Monitor DOM not ready");
+    window.__monitorRunning = false;
+    return;
+}
+
+const cpuCtx = cpuCanvas.getContext('2d');
+const ramCtx = ramCanvas.getContext('2d');
 
 let cpuData = [], ramData = [], labels = [];
 let pendingMetrics = [];
@@ -88,6 +102,9 @@ channel.subscribe('metrics', msg => {
 // ----------------------------
 // 📊 Обновление
 function updateCharts() {
+    const cpuEl = document.getElementById("cpu");
+    if (!cpuEl) return;
+    
     if (!pendingMetrics.length) return;
 
     const last = pendingMetrics[pendingMetrics.length - 1];
@@ -133,3 +150,12 @@ async function initMonitor() {
 }
 
 initMonitor();
+function cleanupMonitor() {
+    try {
+        channel.unsubscribe();
+        ably.close();
+    } catch {}
+    window.__monitorRunning = false;
+}
+
+window.__cleanupMonitor = cleanupMonitor;
