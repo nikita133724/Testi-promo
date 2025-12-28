@@ -4,6 +4,7 @@ if (window.__monitorRunning) {
 }
 window.__monitorRunning = true;
 
+const { ABLY_PUBLIC_KEY, CLIENT_ID } = window.MONITOR_CONFIG;
 const ably = new Ably.Realtime({ key: ABLY_PUBLIC_KEY, clientId: CLIENT_ID });
 const channel = ably.channels.get('system-metrics');
 
@@ -136,7 +137,7 @@ function updateCharts() {
 
 // ----------------------------
 // Интервал обновления
-setInterval(updateCharts, 500);
+const chartTimer = setInterval(updateCharts, 500);
 
 // ----------------------------
 // История при загрузке
@@ -151,6 +152,7 @@ async function initMonitor() {
 
 initMonitor();
 function cleanupMonitor() {
+    clearInterval(chartTimer);
     try {
         channel.unsubscribe();
         ably.close();
