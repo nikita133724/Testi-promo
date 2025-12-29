@@ -19,7 +19,9 @@
         {% for user in users %}
         <tr>
             <td class="user-id"><a href="/admin/users/{{ user.chat_id }}">{{ user.username }}</a></td>
-            <td>{{ "Активен" if user.active else "Неактивен" }}</td>
+            <td class="status {{ 'active' if user.active else 'inactive' }}">
+                {{ "Активен" if user.active else "Неактивен" }}
+            </td>
         </tr>
         {% endfor %}
     </table>
@@ -29,7 +31,6 @@
 const buttons = document.querySelectorAll(".filter-btn");
 const tableContainer = document.getElementById("users-table");
 
-// Функция обновления таблицы
 async function updateUsersTable(status) {
     const res = await fetch(`/admin/users/filter?status=${status}`);
     const users = await res.json();
@@ -43,7 +44,9 @@ async function updateUsersTable(status) {
     users.forEach(u => {
         html += `<tr>
             <td class="user-id"><a href="/admin/users/${u.chat_id}">${u.username}</a></td>
-            <td>${u.active ? "Активен" : "Неактивен"}</td>
+            <td class="status ${u.active ? 'active' : 'inactive'}">
+                ${u.active ? 'Активен' : 'Неактивен'}
+            </td>
         </tr>`;
     });
 
@@ -51,7 +54,6 @@ async function updateUsersTable(status) {
     tableContainer.innerHTML = html;
 }
 
-// Обработчики кнопок
 buttons.forEach(btn => {
     btn.addEventListener("click", () => {
         buttons.forEach(b => b.classList.remove("active"));
@@ -80,9 +82,19 @@ buttons.forEach(btn => {
     font-weight: 600;
     text-decoration: none;
 }
-
 .user-id a:hover {
     text-decoration: underline;
+}
+
+/* Статусы */
+.status.active {
+    color: #4CAF50; /* зеленый */
+    font-weight: 600;
+}
+
+.status.inactive {
+    color: #FF1C1C; /* тёмно-красный */
+    font-weight: 600;
 }
 </style>
 </div>
