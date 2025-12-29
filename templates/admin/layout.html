@@ -145,7 +145,10 @@ document.addEventListener("DOMContentLoaded", () => {
             script.textContent = oldScript.textContent;
             contentRoot.appendChild(script);
         });
-
+        // Если функция initUserDetail определена в новом контенте — вызываем её
+        if (typeof initUserDetail === "function") {
+            initUserDetail();
+        }
         document.title = doc.title || document.title;
         pushHistory(url, replace);
     };
