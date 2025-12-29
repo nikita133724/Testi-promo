@@ -1,10 +1,9 @@
 (function () {
-
-if (window.__monitorRunning) {
-    console.warn("Monitor already running — skip reinit");
-    return;
-}
-window.__monitorRunning = true;
+    if (window.__monitorRunning) {
+        console.warn("Monitor already running — skip reinit");
+        return;
+    }
+    window.__monitorRunning = true;
 
 const { ABLY_PUBLIC_KEY, CLIENT_ID } = window.MONITOR_CONFIG;
 const ably = new Ably.Realtime({ key: ABLY_PUBLIC_KEY, clientId: CLIENT_ID });
@@ -163,4 +162,5 @@ function cleanupMonitor() {
 }
 
 window.__cleanupMonitor = cleanupMonitor;
+
 })();
