@@ -1,3 +1,8 @@
+*,
+*::before,
+*::after {
+    box-sizing: border-box;
+}
 :root {
     font-family: "Inter", "Segoe UI", system-ui, sans-serif;
     --bg-gradient-start: #111827;
@@ -27,12 +32,13 @@ body {
 
 .wrapper .content {
     flex: 1;
-    padding: 30px;
+    padding: 24px;
     background: linear-gradient(180deg, var(--bg-gradient-start), var(--bg-gradient-end));
-    border-radius: 0;      /* убираем скругление */
-    box-shadow: none;      /* убираем тень */
+    border-radius: 0;
+    box-shadow: none;
     color: var(--text-color);
     overflow-y: auto;
+    overflow-x: hidden;
 }
 
 .wrapper .content h1,
