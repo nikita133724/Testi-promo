@@ -193,12 +193,12 @@ if (!nextRefreshTs) {
 .user-detail-container {
     color: var(--text-color);
     background: linear-gradient(180deg, var(--bg-gradient-start), var(--bg-gradient-end));
-    padding: 24px;
+    padding: 24px;          /* внутренние отступы */
     border-radius: 12px;
     box-shadow: 0 10px 30px rgba(0,0,0,0.5);
-    max-width: 900px;
-    width: 95%;
-    margin: 0 auto 40px auto;
+    max-width: 900px;       /* максимальная ширина карточки */
+    width: calc(100% - 40px); /* 20px отступ слева и справа */
+    margin: 0 20px 40px 20px; /* симметричный внешний отступ слева и справа */
     font-family: var(--font-family);
 }
 
