@@ -20,7 +20,7 @@
     </form>
 </div>
 
-<table>
+<table class="monitor-table">
 <tr><th>цпу</th><td id="cpu">--</td></tr>
 <tr><th>рам</th><td id="ram">--</td></tr>
 <tr><th>Load</th><td id="load">--</td></tr>
@@ -54,6 +54,7 @@ document.getElementById("shutdownForm").addEventListener("submit", async e => {
     alert("Контейнер остановлен.");
 });
 </script>
+
 <style>
 body {
     background: transparent;
@@ -72,28 +73,22 @@ table {
     table-layout: fixed;
 }
 
-th, td {
-    padding: 6px 12px;
+.monitor-table th,
+.monitor-table td {
+    padding: 5px 12px; /* немного меньше по высоте */
+    font-weight: 600;
+    color: #fff;       /* белый цвет для значений */
+    text-align: right;
+    text-variant-numeric: tabular-nums;
 }
 
-th {
+.monitor-table th {
     text-align: left;
     font-weight: 500;
-    color: #555;
+    color: #fff;  /* заголовки тоже белые */
     width: 120px;
 }
 
-td {
-    font-weight: 600;
-    color: #111;
-    text-align: right;
-    font-variant-numeric: tabular-nums;
-}
-
-table th {
-    color: #111 !important;
-}
-/* Charts */
 .charts {
     width: 100%;
 }
