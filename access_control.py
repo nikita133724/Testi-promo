@@ -80,7 +80,7 @@ async def prompt_for_key(update, context):
 
     keyboard = ReplyKeyboardMarkup([["❌ Отмена"]], resize_keyboard=True, one_time_keyboard=True)
     await update.message.reply_text(
-        "Введите ключ активации (32 символа) или нажмите ❌ для отмены.",
+        "Введите ключ активации или нажмите ❌ для отмены.",
         reply_markup=keyboard
     )
 
