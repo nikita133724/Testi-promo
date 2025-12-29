@@ -44,10 +44,6 @@
 
 <script>
 function initUserDetail() {
-    // Защита от повторной инициализации
-    if (window.__userDetailInit) return;
-    window.__userDetailInit = true;
-
     let mode = null;
 
     const timePicker = document.getElementById("time-picker");
@@ -56,20 +52,12 @@ function initUserDetail() {
     const statusEl = document.getElementById("status-text");
     const refreshEl = document.getElementById("refresh-text");
 
-    // ------------------------------
-    function openPicker(action) {
-        mode = action; // restore | extend
-        timePicker.style.display = "block";
-    }
-
-    function closePicker() {
-        timePicker.style.display = "none";
-    }
+    function openPicker(action) { mode = action; timePicker.style.display = "block"; }
+    function closePicker() { timePicker.style.display = "none"; }
 
     async function applyTime() {
         const input = document.getElementById("custom-datetime").value;
-        if (!input) { alert("Выберите дату и время"); return; }
-
+        if (!input) return alert("Выберите дату и время");
         const tz = Intl.DateTimeFormat().resolvedOptions().timeZone;
         const endpoint = mode === "restore" 
             ? `/admin/users/{{ chat_id }}/restore_subscription_custom`
@@ -88,8 +76,7 @@ function initUserDetail() {
             statusEl.style.color = "#4CAF50";
             closePicker();
             alert(mode === 'restore' ? "Подписка восстановлена!" : "Подписка продлена!");
-
-            if(mode === "restore") {
+            if (mode === "restore") {
                 document.getElementById("subscription-actions").innerHTML = `
                     <button type="button" id="suspend-subscription">⏸ Приостановить</button>
                     <button type="button" id="extend-subscription">➕ Продлить</button>
@@ -101,10 +88,9 @@ function initUserDetail() {
         }
     }
 
-    applyBtn.addEventListener("click", applyTime);
-    closeBtn.addEventListener("click", closePicker);
+    applyBtn?.addEventListener("click", applyTime);
+    closeBtn?.addEventListener("click", closePicker);
 
-    // ------------------------------
     function bindSuspendExtendButtons() {
         const suspendBtn = document.getElementById("suspend-subscription");
         if (suspendBtn && !suspendBtn.__bound) {
@@ -125,24 +111,17 @@ function initUserDetail() {
         }
 
         const extendBtn = document.getElementById("extend-subscription");
-        if (extendBtn && !extendBtn.__bound) {
-            extendBtn.__bound = true;
-            extendBtn.addEventListener("click", () => openPicker('extend'));
-        }
+        if (extendBtn && !extendBtn.__bound) { extendBtn.__bound = true; extendBtn.addEventListener("click", () => openPicker('extend')); }
     }
 
     function bindRestoreButton() {
         const restoreBtn = document.getElementById("restore-subscription");
-        if (restoreBtn && !restoreBtn.__bound) {
-            restoreBtn.__bound = true;
-            restoreBtn.addEventListener("click", () => openPicker('restore'));
-        }
+        if (restoreBtn && !restoreBtn.__bound) { restoreBtn.__bound = true; restoreBtn.addEventListener("click", () => openPicker('restore')); }
     }
 
     bindSuspendExtendButtons();
     bindRestoreButton();
 
-    // ------------------------------
     // Токены
     const toggleTokensBtn = document.getElementById("toggle-tokens");
     const tokensContainer = document.getElementById("tokens-container");
@@ -150,37 +129,32 @@ function initUserDetail() {
     const refreshTokenEl = document.getElementById("refresh-token");
     let tokensVisible = false;
 
-    toggleTokensBtn.addEventListener("click", async () => {
-        if (!tokensVisible) {
-            const resp = await fetch(`/admin/users/{{ chat_id }}/tokens`, {
-                method: "POST",
-                headers: {"x-requested-with": "XMLHttpRequest"}
-            });
-            const data = await resp.json();
-            accessTokenEl.textContent = data.access_token;
-            refreshTokenEl.textContent = data.refresh_token;
-            tokensContainer.style.display = "block";
-            toggleTokensBtn.textContent = "Скрыть токены";
-            tokensVisible = true;
-        } else {
-            tokensContainer.style.display = "none";
-            toggleTokensBtn.textContent = "Посмотреть токены";
-            tokensVisible = false;
-        }
-    });
+    if (toggleTokensBtn && !toggleTokensBtn.__bound) {
+        toggleTokensBtn.__bound = true;
+        toggleTokensBtn.addEventListener("click", async () => {
+            if (!tokensVisible) {
+                const resp = await fetch(`/admin/users/{{ chat_id }}/tokens`, {
+                    method: "POST",
+                    headers: {"x-requested-with": "XMLHttpRequest"}
+                });
+                const data = await resp.json();
+                accessTokenEl.textContent = data.access_token;
+                refreshTokenEl.textContent = data.refresh_token;
+                tokensContainer.style.display = "block";
+                toggleTokensBtn.textContent = "Скрыть токены";
+                tokensVisible = true;
+            } else {
+                tokensContainer.style.display = "none";
+                toggleTokensBtn.textContent = "Посмотреть токены";
+                tokensVisible = false;
+            }
+        });
+    }
 
-    // ------------------------------
-    // Автокопирование chat_id
+    // Копирование chat_id
     const chatIdEl = document.getElementById("chat-id");
-    chatIdEl.style.cursor = "pointer";
-    chatIdEl.title = "Клик для копирования";
-    chatIdEl.addEventListener("click", () => {
-        navigator.clipboard.writeText(chatIdEl.textContent)
-            .then(() => alert("chat_id скопирован!"))
-            .catch(err => console.error(err));
-    });
+    chatIdEl?.addEventListener("click", () => navigator.clipboard.writeText(chatIdEl.textContent).then(() => alert("chat_id скопирован!")));
 
-    // ------------------------------
     // Статус и refresh
     const displayUntilTs = {{ display_until if display_until else "null" }};
     const nextRefreshTs = {{ next_refresh if next_refresh else "null" }};
@@ -190,20 +164,12 @@ function initUserDetail() {
         statusEl.innerText = "приостановлен";
         statusEl.style.color = "#FF1C1C";
     } else {
-        const d = new Date(displayUntilTs * 1000);
-        statusEl.innerText = "активен до " + d.toLocaleString();
+        statusEl.innerText = "активен до " + new Date(displayUntilTs * 1000).toLocaleString();
         statusEl.style.color = "#4CAF50";
     }
-
-    if (!nextRefreshTs) {
-        refreshEl.innerText = "не задано";
-    } else {
-        const d = new Date(nextRefreshTs * 1000);
-        refreshEl.innerText = d.toLocaleString();
-    }
+    refreshEl.innerText = nextRefreshTs ? new Date(nextRefreshTs * 1000).toLocaleString() : "не задано";
 }
 
-// ------------------------------
 // SPA + прямой доступ
 if (document.readyState === "loading") {
     document.addEventListener("DOMContentLoaded", initUserDetail);
@@ -213,77 +179,17 @@ if (document.readyState === "loading") {
 </script>
 
 <style>
-.user-detail-container {
-    color: var(--text-color);
-    background: linear-gradient(180deg, var(--bg-gradient-start), var(--bg-gradient-end));
-    padding: 16px;
-    border-radius: 12px;
-    box-shadow: 0 10px 30px rgba(0,0,0,0.5);
-    width: 100%;
-    max-width: 900px;
-    margin: 0 auto 40px auto;
-    font-family: var(--font-family);
-}
-
-.user-detail-container h1,
-.user-detail-container h3 {
-    color: var(--text-color);
-}
-
-.user-detail-container p {
-    display: flex;
-    align-items: center;
-    margin: 8px 0;
-    font-size: 16px;
-}
-
-.user-detail-container p strong {
-    margin-right: 6px;
-    min-width: auto;
-}
-
-.user-detail-container a {
-    color: #38bdf8;
-    text-decoration: none;
-}
-
-.user-detail-container a:hover {
-    text-decoration: underline;
-}
-
-.back-link {
-    display: inline-block;
-    margin-top: 20px;
-    color: #38bdf8;
-    text-decoration: none;
-}
-.back-link:hover {
-    text-decoration: underline;
-}
-
-#time-picker {
-    background: rgba(255,255,255,0.05);
-    padding: 12px;
-    border-radius: 8px;
-    margin-top: 12px;
-}
-
-#subscription-actions button,
-#tokens-form button {
-    margin-top: 8px;
-    margin-right: 8px;
-    border-radius: 8px;
-    border: none;
-    padding: 8px 12px;
-    cursor: pointer;
-    background: var(--btn-bg);
-    color: #0f172a;
-    transition: 0.2s;
-}
-
-#subscription-actions button:hover,
-#tokens-form button:hover {
-    background: var(--btn-hover);
-}
+/* Стили оставляем без изменений */
+.user-detail-container { color: var(--text-color); background: linear-gradient(180deg, var(--bg-gradient-start), var(--bg-gradient-end)); padding:16px; border-radius:12px; box-shadow:0 10px 30px rgba(0,0,0,0.5); width:100%; max-width:900px; margin:0 auto 40px auto; font-family:var(--font-family);}
+.user-detail-container h1,.user-detail-container h3{color:var(--text-color);}
+.user-detail-container p{display:flex;align-items:center;margin:8px 0;font-size:16px;}
+.user-detail-container p strong{margin-right:6px;min-width:auto;}
+.user-detail-container a{color:#38bdf8;text-decoration:none;}
+.user-detail-container a:hover{text-decoration:underline;}
+.back-link{display:inline-block;margin-top:20px;color:#38bdf8;text-decoration:none;}
+.back-link:hover{text-decoration:underline;}
+#time-picker{background:rgba(255,255,255,0.05);padding:12px;border-radius:8px;margin-top:12px;}
+#subscription-actions button,#tokens-form button{margin-top:8px;margin-right:8px;border-radius:8px;border:none;padding:8px 12px;cursor:pointer;background:var(--btn-bg);color:#0f172a;transition:0.2s;}
+#subscription-actions button:hover,#tokens-form button:hover{background:var(--btn-hover);}
 </style>
 {% endblock %}
