@@ -97,3 +97,25 @@ body {
     padding: 10px;
     margin-bottom: 16px;
 }
+@media (max-width: 600px) {
+
+    .wrapper .content table {
+        table-layout: fixed;
+    }
+
+    .wrapper .content th,
+    .wrapper .content td {
+        padding: 6px 6px;
+        font-size: 12px;
+        word-wrap: break-word;
+        overflow-wrap: break-word;
+    }
+
+    .wrapper .content h2 {
+        font-size: 18px;
+    }
+
+    .wrapper .content h3 {
+        font-size: 14px;
+    }
+}
