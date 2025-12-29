@@ -1,0 +1,93 @@
+:root {
+    font-family: "Inter", "Segoe UI", system-ui, sans-serif;
+    --bg-gradient-start: #111827;
+    --bg-gradient-end: #1e293b;
+    --text-color: #f1f5f9;
+    --btn-bg: #38bdf8;
+    --btn-hover: #0ea5e9;
+    --table-header: #4f46e5;
+    --table-row-even: rgba(255,255,255,0.05);
+}
+
+body {
+    margin: 0;
+    font-family: var(--font-family);
+    background: var(--bg-gradient-start);
+    color: var(--text-color);
+}
+
+.wrapper .sidebar {
+    background: #1e293b;
+    color: var(--text-color);
+}
+
+.wrapper .sidebar a {
+    color: var(--text-color);
+}
+
+.wrapper .content {
+    flex: 1;
+    padding: 30px;
+    background: linear-gradient(180deg, var(--bg-gradient-start), var(--bg-gradient-end));
+    border-radius: 20px;
+    box-shadow: 0 20px 50px rgba(0,0,0,0.6);
+    color: var(--text-color);
+    overflow-y: auto;
+}
+
+.wrapper .content h1,
+.wrapper .content h2,
+.wrapper .content h3 {
+    color: var(--text-color);
+    margin-bottom: 16px;
+}
+
+.wrapper .content table {
+    width: 100%;
+    border-collapse: collapse;
+    background: rgba(255,255,255,0.05);
+    border-radius: 12px;
+    overflow: hidden;
+    color: var(--text-color);
+}
+
+.wrapper .content th {
+    background-color: var(--table-header);
+    color: white;
+}
+
+.wrapper .content tr:nth-child(even) {
+    background-color: var(--table-row-even);
+}
+
+.wrapper .content td, .wrapper .content th {
+    padding: 12px;
+    text-align: center;
+}
+
+.wrapper .content button, .filter-btn {
+    border: none;
+    border-radius: 12px;
+    padding: 8px 16px;
+    cursor: pointer;
+    background: var(--btn-bg);
+    color: #0f172a;
+    transition: 0.2s;
+}
+
+.wrapper .content button:hover, .filter-btn:hover {
+    background: var(--btn-hover);
+}
+
+.filter-btn.active {
+    background-color: #4caf50;
+    color: white;
+}
+
+/* Монитор */
+.charts canvas {
+    background: #151820;
+    border-radius: 10px;
+    padding: 10px;
+    margin-bottom: 16px;
+}
