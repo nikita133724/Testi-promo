@@ -79,7 +79,8 @@ const ro = new ResizeObserver(() => {
     cpuChart.resize();
     ramChart.resize();
 });
-ro.observe(cpuCanvas.parentElement);
+const chartsBox = document.querySelector('.charts');
+ro.observe(chartsBox);
 // ----------------------------
 // Presence
 async function enterPresence() {
