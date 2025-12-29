@@ -149,6 +149,9 @@ document.addEventListener("DOMContentLoaded", () => {
         if (typeof initUserDetail === "function") {
             initUserDetail();
         }
+        if (typeof initUsersList === "function") {
+            initUsersList();
+        }
         document.title = doc.title || document.title;
         pushHistory(url, replace);
     };
