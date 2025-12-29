@@ -29,8 +29,8 @@ body {
     flex: 1;
     padding: 30px;
     background: linear-gradient(180deg, var(--bg-gradient-start), var(--bg-gradient-end));
-    border-radius: 20px;
-    box-shadow: 0 20px 50px rgba(0,0,0,0.6);
+    border-radius: 0;      /* убираем скругление */
+    box-shadow: none;      /* убираем тень */
     color: var(--text-color);
     overflow-y: auto;
 }
