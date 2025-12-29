@@ -18,7 +18,7 @@
         </tr>
         {% for user in users %}
         <tr>
-            <td><a href="/admin/users/{{ user.chat_id }}">{{ user.username }}</a></td>
+            <td class="user-id"><a href="/admin/users/{{ user.chat_id }}">{{ user.username }}</a></td>
             <td>{{ "Активен" if user.active else "Неактивен" }}</td>
         </tr>
         {% endfor %}
@@ -42,7 +42,7 @@ async function updateUsersTable(status) {
 
     users.forEach(u => {
         html += `<tr>
-            <td><a href="/admin/users/${u.chat_id}">${u.username}</a></td>
+            <td class="user-id"><a href="/admin/users/${u.chat_id}">${u.username}</a></td>
             <td>${u.active ? "Активен" : "Неактивен"}</td>
         </tr>`;
     });
@@ -54,7 +54,6 @@ async function updateUsersTable(status) {
 // Обработчики кнопок
 buttons.forEach(btn => {
     btn.addEventListener("click", () => {
-        // Подсветка активной кнопки
         buttons.forEach(b => b.classList.remove("active"));
         btn.classList.add("active");
 
@@ -73,6 +72,17 @@ buttons.forEach(btn => {
     margin-right: 5px;
     padding: 5px 10px;
     cursor: pointer;
+}
+
+/* ID пользователей белым цветом */
+.user-id a {
+    color: #ffffff;
+    font-weight: 600;
+    text-decoration: none;
+}
+
+.user-id a:hover {
+    text-decoration: underline;
 }
 </style>
 </div>
