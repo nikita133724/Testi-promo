@@ -5,7 +5,10 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Admin Panel</title>
     <style>
-        body { margin: 0; font-family: Arial, sans-serif; }
+        body { margin: 0; font-family: Arial, sans-serif; overflow-x: hidden;}
+        *, *::before, *::after {
+            box-sizing: border-box;
+        }
         .wrapper { display: flex; height: 100vh; }
         .sidebar {
             width: 220px;
@@ -24,6 +27,7 @@
             padding: 30px;
             background: #f3f4f6;
             overflow-y: auto;
+            overflow-x: hidden;
         }
 
         /* Общие стили таблиц */
