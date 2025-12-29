@@ -17,8 +17,8 @@
     <div id="time-picker" style="display:none;">
         <b>Выберите дату и время:</b><br><br>
         <input type="datetime-local" id="custom-datetime"><br><br>
-        <button type="button" onclick="applyTime()">Применить</button>
-        <button type="button" onclick="closePicker()">Отмена</button>
+        <button type="button" id="apply-time-btn">Применить</button>
+        <button type="button" id="close-picker-btn">Отмена</button>
     </div>
 
     <div id="subscription-actions">
@@ -46,13 +46,19 @@
 function initUserDetail() {
     let mode = null;
 
+    const timePicker = document.getElementById("time-picker");
+    const applyBtn = document.getElementById("apply-time-btn");
+    const closeBtn = document.getElementById("close-picker-btn");
+    const statusEl = document.getElementById("status-text");
+    const refreshEl = document.getElementById("refresh-text");
+
     function openPicker(action) {
         mode = action; // restore | extend
-        document.getElementById("time-picker").style.display = "block";
+        timePicker.style.display = "block";
     }
 
     function closePicker() {
-        document.getElementById("time-picker").style.display = "none";
+        timePicker.style.display = "none";
     }
 
     async function applyTime() {
@@ -73,7 +79,6 @@ function initUserDetail() {
 
         if (data.ok) {
             const msTime = new Date(input).getTime();
-            const statusEl = document.getElementById("status-text");
             statusEl.innerText = "активен до " + new Date(msTime).toLocaleString();
             statusEl.style.color = "#4CAF50";
             closePicker();
@@ -90,6 +95,9 @@ function initUserDetail() {
         }
     }
 
+    applyBtn.addEventListener("click", applyTime);
+    closeBtn.addEventListener("click", closePicker);
+
     function bindSuspendExtendButtons() {
         const suspendBtn = document.getElementById("suspend-subscription");
         if (suspendBtn) {
@@ -99,7 +107,6 @@ function initUserDetail() {
                     headers: {"x-requested-with": "XMLHttpRequest"}
                 });
                 if (resp.ok) {
-                    const statusEl = document.getElementById("status-text");
                     statusEl.innerText = "приостановлен";
                     statusEl.style.color = "#FF1C1C";
                     document.getElementById("subscription-actions").innerHTML = `<button type="button" id="restore-subscription">🔄 Восстановить</button>`;
@@ -161,12 +168,11 @@ function initUserDetail() {
     });
 
     // Статус и refresh
-    const statusEl = document.getElementById("status-text");
-    const refreshEl = document.getElementById("refresh-text");
     const displayUntilTs = {{ display_until if display_until else "null" }};
     const nextRefreshTs = {{ next_refresh if next_refresh else "null" }};
+    const statusStr = "{{ status }}";
 
-    if ("{{ status }}" === "приостановлен" || !displayUntilTs) {
+    if (statusStr === "приостановлен" || !displayUntilTs) {
         statusEl.innerText = "приостановлен";
         statusEl.style.color = "#FF1C1C";
     } else {
@@ -181,6 +187,13 @@ function initUserDetail() {
         const d = new Date(nextRefreshTs * 1000);
         refreshEl.innerText = d.toLocaleString();
     }
+}
+
+// SPA + прямой доступ
+if (document.readyState === "loading") {
+    document.addEventListener("DOMContentLoaded", initUserDetail);
+} else {
+    initUserDetail();
 }
 </script>
 
