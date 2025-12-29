@@ -27,8 +27,8 @@ let pendingMetrics = [];
 // 🎨 Красивые и лёгкие графики
 const commonOptions = {
     animation: { duration: 200 },
-    responsive: false,
-    maintainAspectRatio: true,
+    responsive: true,
+    maintainAspectRatio: false,
     scales: {
         x: { display: false },
         y: {
@@ -75,7 +75,11 @@ const ramChart = new Chart(ramCtx, {
     },
     options: commonOptions
 });
-
+const ro = new ResizeObserver(() => {
+    cpuChart.resize();
+    ramChart.resize();
+});
+ro.observe(cpuCanvas.parentElement);
 // ----------------------------
 // Presence
 async function enterPresence() {
