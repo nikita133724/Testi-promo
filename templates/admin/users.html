@@ -28,41 +28,46 @@
 </div>
 
 <script>
-const buttons = document.querySelectorAll(".filter-btn");
-const tableContainer = document.getElementById("users-table");
+function initUsersList() {
+    const buttons = document.querySelectorAll(".filter-btn");
+    const tableContainer = document.getElementById("users-table");
 
-async function updateUsersTable(status) {
-    const res = await fetch(`/admin/users/filter?status=${status}`);
-    const users = await res.json();
+    async function updateUsersTable(status) {
+        const res = await fetch(`/admin/users/filter?status=${status}`);
+        const users = await res.json();
 
-    let html = `<table border="1" cellpadding="8" cellspacing="0">
-        <tr>
-            <th>ID пользователя</th>
-            <th>Статус</th>
-        </tr>`;
+        let html = `<table border="1" cellpadding="8" cellspacing="0">
+            <tr>
+                <th>ID пользователя</th>
+                <th>Статус</th>
+            </tr>`;
 
-    users.forEach(u => {
-        html += `<tr>
-            <td class="user-id"><a href="/admin/users/${u.chat_id}">${u.username}</a></td>
-            <td class="status ${u.active ? 'active' : 'inactive'}">
-                ${u.active ? 'Активен' : 'Неактивен'}
-            </td>
-        </tr>`;
+        users.forEach(u => {
+            html += `<tr>
+                <td class="user-id"><a href="/admin/users/${u.chat_id}">${u.username}</a></td>
+                <td class="status ${u.active ? 'active' : 'inactive'}">
+                    ${u.active ? 'Активен' : 'Неактивен'}
+                </td>
+            </tr>`;
+        });
+
+        html += "</table>";
+        tableContainer.innerHTML = html;
+    }
+
+    buttons.forEach(btn => {
+        btn.addEventListener("click", () => {
+            buttons.forEach(b => b.classList.remove("active"));
+            btn.classList.add("active");
+
+            const status = btn.dataset.status;
+            updateUsersTable(status);
+        });
     });
-
-    html += "</table>";
-    tableContainer.innerHTML = html;
 }
 
-buttons.forEach(btn => {
-    btn.addEventListener("click", () => {
-        buttons.forEach(b => b.classList.remove("active"));
-        btn.classList.add("active");
-
-        const status = btn.dataset.status;
-        updateUsersTable(status);
-    });
-});
+// Вызов функции будет выполняться автоматически после SPA-подгрузки
+initUsersList();
 </script>
 
 <style>
@@ -76,7 +81,6 @@ buttons.forEach(btn => {
     cursor: pointer;
 }
 
-/* ID пользователей белым цветом */
 .user-id a {
     color: #ffffff;
     font-weight: 600;
@@ -86,14 +90,13 @@ buttons.forEach(btn => {
     text-decoration: underline;
 }
 
-/* Статусы */
 .status.active {
-    color: #4CAF50; /* зеленый */
+    color: #4CAF50;
     font-weight: 600;
 }
 
 .status.inactive {
-    color: #FF1C1C; /* тёмно-красный */
+    color: #FF1C1C;
     font-weight: 600;
 }
 </style>
