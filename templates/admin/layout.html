@@ -1,123 +1,81 @@
 <!DOCTYPE html>
 <html lang="ru">
 <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Admin Panel</title>
     <style>
         :root{
-            font-family: "Inter", "Segoe UI", system-ui, sans-serif;
-            background: #0f172a;
+            font-family: "Inter", "Segoe UI", system-ui, -apple-system, "Helvetica Neue", Arial;
+            --bg-1: #0f172a;
+            --bg-2: #111827;
+            --muted: #94a3b8;
+            --panel: linear-gradient(180deg,#0b1220,#111827);
+            --input-bg: rgba(148,163,184,0.12);
+            --border: rgba(148,163,184,0.3);
+            --accent: #38bdf8;
             color: #f1f5f9;
         }
+
         * { box-sizing: border-box; }
+        html, body { height: 100%; margin: 0; background: var(--bg-1); color: #f1f5f9; }
 
-        html, body { height: 100%; margin: 0; }
-
-        /* Общая обёртка */
-        .app-shell {
-            min-height: 100vh;
+        .wrapper {
             display: flex;
+            min-height: 100vh;
             align-items: flex-start;
             justify-content: center;
-            padding: 28px;
-            gap: 24px;
+            padding: 24px;
+            gap: 20px;
         }
 
-        /* Карточка вокруг layout (центрирует и даёт фон) */
         .panel {
             width: min(1200px, 100%);
+            background: var(--panel);
+            border-radius: 20px;
+            padding: 18px;
+            box-shadow: 0 20px 50px rgba(15,23,42,0.6);
+            border: 1px solid var(--border);
             display: flex;
-            border-radius: 18px;
+            gap: 18px;
             overflow: hidden;
-            background: linear-gradient(180deg, #0b1220, #111827);
-            box-shadow: 0 20px 50px rgba(2,6,23,0.6);
-            border: 1px solid rgba(148,163,184,0.12);
         }
 
-        /* Sidebar */
-        aside.sidebar {
+        .sidebar {
             width: 220px;
-            background: linear-gradient(180deg, #0b1324, #111827);
-            padding: 24px;
+            background: linear-gradient(180deg,#0b1220,#0f172a);
+            padding: 20px;
+            border-radius: 12px;
             color: #e6eef8;
-            display: flex;
-            flex-direction: column;
-            gap: 12px;
+            flex-shrink: 0;
         }
-
-        aside.sidebar h2 {
-            margin: 0 0 12px;
-            font-size: 18px;
-            color: #ffffff;
-            letter-spacing: 0.02em;
-        }
-
-        aside.sidebar a {
+        .sidebar h2 { margin: 0 0 12px; font-size: 18px; }
+        .sidebar a {
             display: block;
             color: #cfe8ff;
             text-decoration: none;
-            margin: 6px 0;
+            margin: 8px 0;
             padding: 10px 12px;
             border-radius: 10px;
-            transition: background .15s ease, transform .06s ease;
+            transition: background .15s ease, transform .08s ease;
             font-weight: 600;
         }
+        .sidebar a:hover { background: rgba(255,255,255,0.02); transform: translateX(4px); }
 
-        aside.sidebar a:hover {
-            background: rgba(255,255,255,0.03);
-            transform: translateX(4px);
-        }
-
-        /* Content area */
-        main.content {
+        .content {
             flex: 1;
-            padding: 28px;
-            background: transparent;
-            overflow: auto;
+            padding: 22px;
+            overflow-y: auto;
+            min-width: 0;
         }
 
-        /* Заголовки в контенте */
-        .content h1, .content h2, .content h3 {
-            margin: 0 0 12px 0;
-            color: #e6eef8;
-        }
+        .content h1, .content h2, .content h3 { margin: 0 0 14px; color: #e6eef8; }
 
-        /* Кнопки одного стиля */
-        .btn {
-            display: inline-block;
-            border: none;
-            border-radius: 12px;
-            padding: 10px 14px;
-            font-weight: 700;
-            cursor: pointer;
-            transition: transform .12s ease, opacity .12s ease;
-            text-decoration: none;
-            color: #0f172a;
-            background: #38bdf8;
-        }
-        .btn:active { transform: translateY(1px); }
-        .btn.secondary {
-            background: rgba(148,163,184,0.12);
-            color: #cbd5e1;
-            border: 1px solid rgba(148,163,184,0.2);
-        }
-
-        /* Карточки внутри контента */
-        .card {
-            background: linear-gradient(180deg, rgba(255,255,255,0.02), rgba(255,255,255,0.01));
-            border: 1px solid rgba(148,163,184,0.06);
-            padding: 18px;
-            border-radius: 14px;
-            color: #e6eef8;
-            margin-bottom: 18px;
-        }
-
-        /* Таблицы — адаптированы под тему */
         table {
-            width: 100%;
             border-collapse: collapse;
+            width: 100%;
             margin-bottom: 18px;
+            background: transparent;
             color: #e6eef8;
         }
         th, td {
@@ -127,26 +85,63 @@
             font-size: 14px;
         }
         th {
-            font-weight: 700;
             background: rgba(255,255,255,0.02);
             color: #dbeafe;
+            font-weight: 700;
         }
-        tr:nth-child(even) td {
-            background: rgba(255,255,255,0.01);
+        tr:nth-child(even) td { background: rgba(255,255,255,0.01); }
+
+        .field-group label {
+            display: block;
+            margin-bottom: 6px;
+            color: var(--muted);
+            font-size: 13px;
+            text-transform: uppercase;
+            letter-spacing: 0.04em;
+        }
+        input[type="text"], input[type="password"], select, textarea {
+            width: 100%;
+            background: var(--input-bg);
+            border: 1px solid rgba(148,163,184,0.28);
+            border-radius: 12px;
+            padding: 12px 14px;
+            font-size: 15px;
+            color: #f8fafc;
+            outline: none;
+            transition: border-color .18s ease, box-shadow .12s ease;
+        }
+        input:focus, textarea:focus, select:focus { border-color: var(--accent); box-shadow: 0 0 0 4px rgba(56,189,248,0.06); }
+
+        button, .btn {
+            display: inline-block;
+            border: none;
+            border-radius: 14px;
+            padding: 12px 16px;
+            font-size: 15px;
+            font-weight: 600;
+            cursor: pointer;
+            background: var(--accent);
+            color: #0f172a;
+            transition: transform .12s ease;
+        }
+        button:active, .btn:active { transform: translateY(1px); }
+        .btn.ghost {
+            background: rgba(148,163,184,0.08);
+            color: #cbd5e1;
+            border: 1px solid rgba(148,163,184,0.18);
         }
 
-        /* Small screens */
-        @media (max-width: 960px) {
-            .panel { flex-direction: column; border-radius: 12px; }
-            aside.sidebar { width: 100%; flex-direction: row; gap: 8px; padding: 12px; overflow-x: auto; }
-            aside.sidebar a { white-space: nowrap; padding: 8px 10px; }
-            .app-shell { padding: 16px; }
+        .error {
+            margin: 0 0 12px;
+            padding: 10px;
+            border-radius: 10px;
+            background: rgba(248,113,113,0.12);
+            border: 1px solid rgba(248,113,113,0.28);
+            color: #fecaca;
+            font-size: 14px;
         }
 
-        /* Utility classes */
-        .muted { color: #94a3b8; }
-        .right { text-align: right; }
-        .gap { gap: 12px; display: flex; align-items: center; }
+        .muted { color: var(--muted); }
         .filters { display:flex; gap:8px; margin-bottom:12px; }
         .filter-btn {
             padding: 6px 10px;
@@ -159,12 +154,16 @@
         }
         .filter-btn.active { background: #4CAF50; color: white; }
 
-        /* Preserve previous layout JS behavior: content root focus styles */
-        .content :focus { outline: 2px solid rgba(56,189,248,0.14); outline-offset: 2px; }
+        @media (max-width: 900px) {
+            .panel { flex-direction: column; padding: 14px; border-radius: 16px; }
+            .sidebar { width: 100%; display:flex; gap:8px; padding: 10px; overflow-x:auto; }
+            .content { padding: 14px; }
+        }
     </style>
 </head>
+
 <body>
-<div class="app-shell">
+<div class="wrapper">
     <div class="panel">
         <aside class="sidebar">
             <h2>Admin</h2>
