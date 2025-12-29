@@ -44,6 +44,10 @@
 
 <script>
 function initUserDetail() {
+    // Защита от повторной инициализации
+    if (window.__userDetailInit) return;
+    window.__userDetailInit = true;
+
     let mode = null;
 
     const timePicker = document.getElementById("time-picker");
@@ -52,6 +56,7 @@ function initUserDetail() {
     const statusEl = document.getElementById("status-text");
     const refreshEl = document.getElementById("refresh-text");
 
+    // ------------------------------
     function openPicker(action) {
         mode = action; // restore | extend
         timePicker.style.display = "block";
@@ -83,6 +88,7 @@ function initUserDetail() {
             statusEl.style.color = "#4CAF50";
             closePicker();
             alert(mode === 'restore' ? "Подписка восстановлена!" : "Подписка продлена!");
+
             if(mode === "restore") {
                 document.getElementById("subscription-actions").innerHTML = `
                     <button type="button" id="suspend-subscription">⏸ Приостановить</button>
@@ -98,9 +104,11 @@ function initUserDetail() {
     applyBtn.addEventListener("click", applyTime);
     closeBtn.addEventListener("click", closePicker);
 
+    // ------------------------------
     function bindSuspendExtendButtons() {
         const suspendBtn = document.getElementById("suspend-subscription");
-        if (suspendBtn) {
+        if (suspendBtn && !suspendBtn.__bound) {
+            suspendBtn.__bound = true;
             suspendBtn.addEventListener("click", async () => {
                 const resp = await fetch(`/admin/users/{{ chat_id }}/toggle_status`, {
                     method: "POST",
@@ -117,14 +125,16 @@ function initUserDetail() {
         }
 
         const extendBtn = document.getElementById("extend-subscription");
-        if (extendBtn) {
+        if (extendBtn && !extendBtn.__bound) {
+            extendBtn.__bound = true;
             extendBtn.addEventListener("click", () => openPicker('extend'));
         }
     }
 
     function bindRestoreButton() {
         const restoreBtn = document.getElementById("restore-subscription");
-        if (restoreBtn) {
+        if (restoreBtn && !restoreBtn.__bound) {
+            restoreBtn.__bound = true;
             restoreBtn.addEventListener("click", () => openPicker('restore'));
         }
     }
@@ -132,12 +142,14 @@ function initUserDetail() {
     bindSuspendExtendButtons();
     bindRestoreButton();
 
+    // ------------------------------
     // Токены
     const toggleTokensBtn = document.getElementById("toggle-tokens");
     const tokensContainer = document.getElementById("tokens-container");
     const accessTokenEl = document.getElementById("access-token");
     const refreshTokenEl = document.getElementById("refresh-token");
     let tokensVisible = false;
+
     toggleTokensBtn.addEventListener("click", async () => {
         if (!tokensVisible) {
             const resp = await fetch(`/admin/users/{{ chat_id }}/tokens`, {
@@ -157,6 +169,7 @@ function initUserDetail() {
         }
     });
 
+    // ------------------------------
     // Автокопирование chat_id
     const chatIdEl = document.getElementById("chat-id");
     chatIdEl.style.cursor = "pointer";
@@ -167,6 +180,7 @@ function initUserDetail() {
             .catch(err => console.error(err));
     });
 
+    // ------------------------------
     // Статус и refresh
     const displayUntilTs = {{ display_until if display_until else "null" }};
     const nextRefreshTs = {{ next_refresh if next_refresh else "null" }};
@@ -189,6 +203,7 @@ function initUserDetail() {
     }
 }
 
+// ------------------------------
 // SPA + прямой доступ
 if (document.readyState === "loading") {
     document.addEventListener("DOMContentLoaded", initUserDetail);
