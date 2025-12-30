@@ -31,20 +31,6 @@ async def get_access_token() -> str:
             token_data = await resp.json()
             return token_data.get("access_token")
 
-async def create_payment_link(user_id: int, amount: int, access_token: str) -> str:
-    """Создание уникальной ссылки на оплату"""
-    async with aiohttp.ClientSession() as session:
-        headers = {"Authorization": f"Bearer {access_token}"}
-        payload = {
-            "amount": str(amount),
-            "currency": "RUB",
-            "comment": f"user_{user_id}",
-            "success_redirect_uri": SUCCESS_REDIRECT_URI
-        }
-        async with session.post("https://yoomoney.ru/api/payments/create", json=payload, headers=headers) as resp:
-            data = await resp.json()
-            return data.get("payment_url")
-
 async def send_payment_link(bot, chat_id: int, amount: int):
     """
     Генерация ссылки и отправка пользователю через Telegram
