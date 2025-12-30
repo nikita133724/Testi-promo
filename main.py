@@ -497,14 +497,6 @@ async def shutdown_server(_: None = Depends(admin_required)):
     os._exit(0)   # ← ВАЖНО: без graceful restart, просто умереть
     
 
-from config import TELEGRAM_BOT_TOKEN
-from yoomoney_module import handle_payment_notification
-
-@app_fastapi.post("/yoomoney_webhook")
-async def yoomoney_webhook(request: Request):
-    data = await request.json()
-    asyncio.create_task(handle_payment_notification(data, bot))
-    return {"status": "ok"}
 # -----------------------
 # Фоновые задачи
 async def keep_alive():
