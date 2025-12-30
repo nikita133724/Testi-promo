@@ -497,12 +497,14 @@ async def shutdown_server(_: None = Depends(admin_required)):
     os._exit(0)   # ← ВАЖНО: без graceful restart, просто умереть
     
 
+
 VERIFY_FILE = "static/lava-verify_e491e990bd7fe9b9.html"
 
 @app_fastapi.get("/lava-verify_e491e990bd7fe9b9.html")
 async def lava_verify():
-    if os.path.exists(VERIFY_FILE):
-        return FileResponse(VERIFY_FILE)
+    abs_path = os.path.join(os.getcwd(), VERIFY_FILE)
+    if os.path.exists(abs_path):
+        return FileResponse(abs_path, media_type="text/html")
     return {"error": "Verification file not found"}
 # -----------------------
 # Фоновые задачи
