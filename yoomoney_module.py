@@ -1,10 +1,14 @@
 from telegram import InlineKeyboardButton, InlineKeyboardMarkup
+import asyncio
 
 YOOMONEY_WALLET = "4100117872411525"
 SUCCESS_REDIRECT_URI = "https://tg-bot-test-gkbp.onrender.com/payment/success"
 
 # внутренний счётчик заказов
 NEXT_ORDER_ID = 1
+
+# Хранение всех заказов: {order_id: {"chat_id": int, "amount": int, "status": str}}
+ORDERS = {}
 
 def get_next_order_id():
     global NEXT_ORDER_ID
@@ -14,9 +18,7 @@ def get_next_order_id():
 
 def create_payment_link(chat_id: int, amount: int):
     order_id = get_next_order_id()
-    # метка для сервера
     label = f"{chat_id}|{order_id}|{amount}"
-    # текст для пользователя
     targets = f"Подписка на сервис, заказ #{order_id}"
 
     url = (
@@ -29,6 +31,14 @@ def create_payment_link(chat_id: int, amount: int):
         f"&successURL={SUCCESS_REDIRECT_URI}"
         f"&label={label}"
     )
+
+    # сохраняем заказ как pending
+    ORDERS[order_id] = {
+        "chat_id": chat_id,
+        "amount": amount,
+        "status": "pending"
+    }
+
     return url, order_id
 
 async def send_payment_link(bot, chat_id: int, amount: int):
@@ -40,8 +50,6 @@ async def send_payment_link(bot, chat_id: int, amount: int):
 
     await bot.send_message(
         chat_id,
-        f"💳 Сумма: {amount}₽\n"
-        f"Номер заказа: #{order_id}\n\n"
-        f"Нажмите кнопку для оплаты:",
+        f"💳 Сумма: {amount}₽\nНомер заказа: #{order_id}\n\nНажмите кнопку для оплаты:",
         reply_markup=keyboard
     )
