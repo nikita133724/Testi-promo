@@ -60,8 +60,9 @@ async def pending_order_timeout(order_id, timeout=300):
     if "message_id" in order:
         try:
             safe_telegram_call(bot.delete_message(order["chat_id"], order["message_id"]))
-        except:
-            pass
+        except Exception as e:
+            # Можно логировать, но игнорировать ошибку
+            print(f"[YOOMONEY] Не удалось удалить сообщение: {e}")
 
     if order["status"] == "pending":
         order["status"] = "failed"
@@ -154,7 +155,10 @@ async def yoomoney_ipn(notification_type, operation_id, amount, currency,
     # продление подписки
     now = datetime.now(timezone.utc).timestamp()
     current = float(RAM_DATA.get(int(chat_id), {}).get("subscription_until", 0))
-    base = max(now, current)
+    suspended = RAM_DATA.get(int(chat_id), {}).get("suspended", False)
+    
+    # Если подписка активна и не приостановлена, от текущей даты +30 дней
+    base = current if current > now and not suspended else now
     new_until = base + 30 * 24 * 60 * 60
 
     RAM_DATA.setdefault(int(chat_id), {})
