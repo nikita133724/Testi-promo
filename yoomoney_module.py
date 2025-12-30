@@ -49,6 +49,7 @@ async def send_payment_link(bot, chat_id: int, amount: int):
     """
     Генерация ссылки и отправка пользователю через Telegram
     """
-    payment_url = create_payment_link(chat_id, amount)
+    token = await get_access_token()  # <-- получаем токен
+    payment_url = await create_payment_link(chat_id, amount, token)  # <-- передаем токен
     keyboard = InlineKeyboardMarkup([[InlineKeyboardButton("Оплатить подписку", url=payment_url)]])
     await bot.send_message(chat_id, "Нажмите для оплаты:", reply_markup=keyboard)
