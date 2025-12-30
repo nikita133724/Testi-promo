@@ -498,7 +498,7 @@ async def shutdown_server(_: None = Depends(admin_required)):
     
 
 
-@app.post("/yoomoney_ipn")
+@app_fastapi.post("/yoomoney_ipn")
 async def yoomoney_ipn(request: Request):
     data = await request.form()
     print("IPN:", dict(data))
