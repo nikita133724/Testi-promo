@@ -497,11 +497,11 @@ async def shutdown_server(_: None = Depends(admin_required)):
     os._exit(0)   # ← ВАЖНО: без graceful restart, просто умереть
     
 
-
 @app_fastapi.post("/yoomoney_ipn")
 async def yoomoney_ipn(request: Request):
     data = await request.form()
-    print("IPN:", dict(data))
+    print("IPN:", dict(data))  # для отладки, чтобы видеть все поля от YooMoney
+
     status = data.get("status")
     operation_id = data.get("operation_id")
     amount = data.get("amount")
@@ -510,21 +510,27 @@ async def yoomoney_ipn(request: Request):
     if status != "success":
         return "OK"
 
-    chat_id, order_id, expected_amount = label.split("|")
+    try:
+        chat_id_str, order_id_str, expected_amount_str = label.split("|")
+        chat_id = int(chat_id_str)
+        order_id = int(order_id_str)
+        expected_amount = float(expected_amount_str)
 
-    if amount != expected_amount:
-        return "OK"
+        if float(amount) != expected_amount:
+            print(f"Сумма не совпадает: {amount} != {expected_amount}")
+            return "OK"
 
-    chat_id = int(chat_id)
+        # 🎉 Отправка уведомления пользователю и активация подписки
+        await bot.send_message(
+            chat_id,
+            f"✅ Платёж получен!\n"
+            f"Заказ #{order_id}\n"
+            f"Сумма: {amount}₽\n\n"
+            f"Подписка активирована."
+        )
 
-    # 🎉 АКТИВАЦИЯ ПОДПИСКИ
-    await bot.send_message(
-        chat_id,
-        f"✅ Платёж получен!\n"
-        f"Заказ #{order_id}\n"
-        f"Сумма: {amount}₽\n\n"
-        f"Подписка активирована."
-    )
+    except Exception as e:
+        print("Ошибка обработки IPN:", e)
 
     return "OK"
 # -----------------------
