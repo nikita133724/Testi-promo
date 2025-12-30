@@ -530,14 +530,15 @@ async def startup_event():
     # Загружаем ORDERS из Redis
     load_orders_from_redis()
 
-    # Остальные фоновые задачи
+    # Запуск остальных фоновых задач
     asyncio.create_task(keep_alive())
     asyncio.create_task(run_token_refresher())
     asyncio.create_task(subscription_watcher(bot, send_message_to_user))
     asyncio.create_task(start_telegram())
     asyncio.create_task(monitor_presence())
 
-# Подключаем IPN эндпоинт
+# -----------------------
+# IPN эндпоинт для YooMoney
 @app_fastapi.post("/yoomoney_ipn")
 async def yoomoney_ipn_endpoint(
     notification_type: str = Form(...),
@@ -550,6 +551,7 @@ async def yoomoney_ipn_endpoint(
     label: str = Form(...),
     sha1_hash: str = Form(...)
 ):
+    # Передаем данные в новый обработчик с таймером и хешированием
     return await yoomoney_ipn_handler(
         notification_type,
         operation_id,
