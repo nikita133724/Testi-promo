@@ -64,6 +64,8 @@ async def create_payment(chat_id: int, amount: int) -> dict:
             json=payload,
             headers=headers
         ) as resp:
+            text = await resp.text()
+            print("Ответ YooMoney:", text)
             data = await resp.json()
             payment_id = data.get("payment_id")
             payment_url = data.get("confirmation_url") or data.get("confirmation", {}).get("confirmation_url")
