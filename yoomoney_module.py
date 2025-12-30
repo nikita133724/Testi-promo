@@ -65,7 +65,7 @@ async def pending_order_timeout(order_id, timeout=300):
             print(f"[YOOMONEY] Не удалось удалить сообщение: {e}")
 
     if order["status"] == "pending":
-        order["status"] = "failed"
+        order["status"] = "expired"
         save_order_to_redis(order_id, order)
         safe_telegram_call(bot.send_message(order["chat_id"], "⏳ Время на оплату истекло."))
 
@@ -128,13 +128,15 @@ async def yoomoney_ipn(notification_type, operation_id, amount, currency,
         return {"status": "error", "reason": "order_not_found"}
 
     # 🛡 защита от двойного IPN
-    if order["status"] == "paid":
-        # Удаляем кнопку, если она осталась
+    if order["status"] in ("paid", "expired"):
         if "message_id" in order:
             try:
                 safe_telegram_call(bot.delete_message(order["chat_id"], order["message_id"]))
             except:
                 pass
+        # Если заказ истёк — игнорируем платеж
+        if order["status"] == "expired":
+            return {"status": "error", "reason": "order_expired"}
         return {"status": "ok"}
 
     if float(amount) != float(expected_amount):
