@@ -497,13 +497,36 @@ async def shutdown_server(_: None = Depends(admin_required)):
     os._exit(0)   # ← ВАЖНО: без graceful restart, просто умереть
     
 
-from yoomoney_module import handle_payment_notification
-@app_fastapi.post("/yoomoney_webhook")
-async def yoomoney_webhook(request: Request):
-    data = await request.json()
-    # bot - объект Telegram Bot из вашего основного бота
-    asyncio.create_task(handle_payment_notification(data, bot))
-    return {"status": "ok"}
+
+@app.post("/yoomoney_ipn")
+async def yoomoney_ipn(request: Request):
+    data = await request.form()
+
+    status = data.get("status")
+    operation_id = data.get("operation_id")
+    amount = data.get("amount")
+    label = data.get("label") or data.get("targets")
+
+    if status != "success":
+        return "OK"
+
+    chat_id, order_id, expected_amount = label.split("|")
+
+    if amount != expected_amount:
+        return "OK"
+
+    chat_id = int(chat_id)
+
+    # 🎉 АКТИВАЦИЯ ПОДПИСКИ
+    await bot.send_message(
+        chat_id,
+        f"✅ Платёж получен!\n"
+        f"Заказ #{order_id}\n"
+        f"Сумма: {amount}₽\n\n"
+        f"Подписка активирована."
+    )
+
+    return "OK"
 # -----------------------
 # Фоновые задачи
 async def keep_alive():
