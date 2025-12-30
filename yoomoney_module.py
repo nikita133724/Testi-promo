@@ -3,7 +3,7 @@ import asyncio
 from redis_client import r
 import json
 from datetime import datetime, timedelta, timezone
-from telegram_bot import RAM_DATA, _save_to_redis_partial, bot
+from telegram_bot import RAM_DATA, _save_to_redis_partial, bot, send_message_to_user
 import hashlib
 import urllib.parse
 
@@ -152,27 +152,43 @@ async def yoomoney_ipn(
     order["status"] = "paid"
     save_order_to_redis(order_id, order)
 
-    # Продление подписки
+    # ------------------ ПРАВИЛЬНАЯ ЛОГИКА ПОДПИСКИ ------------------
     RAM_DATA.setdefault(chat_id, {})
-    now = datetime.now()
-    duration = timedelta(days=30)
-    RAM_DATA[chat_id]["subscription_until"] = (now + duration).timestamp()
+    
+    now_ts = datetime.now(timezone.utc).timestamp()
+    current_until = float(RAM_DATA[chat_id].get("subscription_until", 0))
+    
+    was_active = current_until > now_ts and not RAM_DATA[chat_id].get("suspended", False)
+    
+    base_ts = current_until if was_active else now_ts
+    new_until = base_ts + 30 * 24 * 60 * 60  # +30 дней
+    
+    RAM_DATA[chat_id]["subscription_until"] = new_until
     RAM_DATA[chat_id]["suspended"] = False
-
+    
     _save_to_redis_partial(chat_id, {
-        "subscription_until": RAM_DATA[chat_id]["subscription_until"],
+        "subscription_until": new_until,
         "suspended": False
     })
-
-    # уведомление пользователя
-    until_dt = datetime.fromtimestamp(RAM_DATA[chat_id]["subscription_until"], tz=MSK)
+    
+    # Текст даты
+    until_dt = datetime.fromtimestamp(new_until, tz=timezone.utc).astimezone(MSK)
     until_text = until_dt.strftime("%d.%m.%Y %H:%M")
+    
+    # Сообщение пользователю
     try:
-        await bot.send_message(
-            chat_id,
-            f"✅ Оплата подтверждена!\nВаша подписка активна до {until_text}"
-        )
+        if was_active:
+            await bot.send_message(
+                chat_id,
+                f"✅ Оплата подтверждена!\nВаша подписка активна до {until_text}"
+            )
+        else:
+            from telegram_bot import build_reply_keyboard
+            await send_message_to_user(
+                bot,
+                chat_id,
+                f"✅ Оплата подтверждена!\nВаша подписка активна до {until_text}",
+                reply_markup=build_reply_keyboard(chat_id)
+            )
     except Exception as e:
         print(f"[YOOMONEY] Ошибка уведомления пользователя {chat_id}: {e}")
-
-    return {"status": "ok"}
