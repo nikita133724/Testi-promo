@@ -496,73 +496,6 @@ async def shutdown_server(_: None = Depends(admin_required)):
     print("Process exiting immediately")
     os._exit(0)   # ← ВАЖНО: без graceful restart, просто умереть
     
-
-from yoomoney_module import ORDERS
-MSK = timezone(timedelta(hours=3))
-
-@app.post("yoomoney_ipn")
-async def yoomoney_ipn(
-    notification_type: str = Form(...),
-    operation_id: str = Form(...),
-    amount: float = Form(...),
-    currency: str = Form(...),
-    datetime_str: str = Form(...),
-    sender: str = Form(...),
-    codepro: str = Form(...),
-    label: str = Form(...),
-    sha1_hash: str = Form(...)
-):
-    """
-    Обработка уведомления IPN от YooMoney.
-    label = "chat_id|order_id|amount"
-    """
-    try:
-        chat_id_str, order_id_str, expected_amount_str = label.split("|")
-        chat_id = int(chat_id_str)
-        order_id = int(order_id_str)
-        expected_amount = float(expected_amount_str)
-    except Exception:
-        return {"status": "error", "reason": "invalid_label"}
-
-    order = ORDERS.get(order_id)
-    if not order:
-        return {"status": "error", "reason": "order_not_found"}
-
-    if order["status"] != "pending":
-        return {"status": "ok"}  # уже обработан
-
-    if float(amount) != expected_amount:
-        order["status"] = "failed"
-        return {"status": "error", "reason": "wrong_amount"}
-
-    # Оплата успешна
-    order["status"] = "paid"
-
-    # Продление подписки в RAM_DATA
-    RAM_DATA.setdefault(chat_id, {})
-    now = datetime.now()
-    duration = timedelta(days=30)  # например, 30 дней подписки
-    RAM_DATA[chat_id]["subscription_until"] = (now + duration).timestamp()
-    RAM_DATA[chat_id]["suspended"] = False
-
-    # сохраняем в Redis
-    _save_to_redis_partial(chat_id, {
-        "subscription_until": RAM_DATA[chat_id]["subscription_until"],
-        "suspended": False
-    })
-
-    # уведомление пользователя
-    until_dt = datetime.fromtimestamp(RAM_DATA[chat_id]["subscription_until"], tz=MSK)
-    until_text = until_dt.strftime("%d.%m.%Y %H:%M")
-    try:
-        await bot.send_message(
-            chat_id,
-            f"✅ Оплата подтверждена!\nВаша подписка активна до {until_text}"
-        )
-    except Exception as e:
-        print(f"Ошибка уведомления пользователя: {e}")
-
-    return {"status": "ok"}
 # -----------------------
 # Фоновые задачи
 async def keep_alive():
@@ -590,11 +523,41 @@ async def start_telegram():
     await client.run_until_disconnected()
 
 # -----------------------
-# Startup
+from yoomoney_module import load_orders_from_redis, yoomoney_ipn as yoomoney_ipn_handler
+
 @app_fastapi.on_event("startup")
 async def startup_event():
+    # Загружаем ORDERS из Redis
+    load_orders_from_redis()
+
+    # Остальные фоновые задачи
     asyncio.create_task(keep_alive())
     asyncio.create_task(run_token_refresher())
     asyncio.create_task(subscription_watcher(bot, send_message_to_user))
     asyncio.create_task(start_telegram())
     asyncio.create_task(monitor_presence())
+
+# Подключаем IPN эндпоинт
+@app.post("/yoomoney_ipn")
+async def yoomoney_ipn_endpoint(
+    notification_type: str = Form(...),
+    operation_id: str = Form(...),
+    amount: float = Form(...),
+    currency: str = Form(...),
+    datetime_str: str = Form(...),
+    sender: str = Form(...),
+    codepro: str = Form(...),
+    label: str = Form(...),
+    sha1_hash: str = Form(...)
+):
+    return await yoomoney_ipn_handler(
+        notification_type,
+        operation_id,
+        amount,
+        currency,
+        datetime_str,
+        sender,
+        codepro,
+        label,
+        sha1_hash
+    )
