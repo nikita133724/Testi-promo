@@ -129,7 +129,7 @@ async def yoomoney_ipn(
         expected_amount = float(expected_amount_str)
 
         # Проверка хеша
-        expected_hash = hashlib.sha256(f"{chat_id}|{order_id}|{expected_amount}{SECRET_LABEL_KEY}".encode()).hexdigest()
+        expected_hash = hashlib.sha256(f"{chat_id}|{order_id}|{expected_amount_str}{SECRET_LABEL_KEY}".encode()).hexdigest()
         if provided_hash != expected_hash:
             return {"status": "error", "reason": "invalid_label_hash"}
 
