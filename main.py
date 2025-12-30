@@ -497,45 +497,72 @@ async def shutdown_server(_: None = Depends(admin_required)):
     os._exit(0)   # ← ВАЖНО: без graceful restart, просто умереть
     
 
-@app_fastapi.post("/yoomoney_ipn")
-async def yoomoney_ipn(request: Request):
-    data = await request.form()
-    print("IPN:", dict(data))  # Для отладки, чтобы видеть все поля от YooMoney
+from yoomoney_module import ORDERS
+MSK = timezone(timedelta(hours=3))
 
-    status = data.get("status")
-    amount = data.get("amount")
-    label = data.get("label")  # сюда мы помещаем chat_id|order_id|amount
-
-    if status != "success":
-        return "OK"
-
-    if not label:
-        print("Нет метки платежа (label)")
-        return "OK"
-
+@app.post("yoomoney_ipn")
+async def yoomoney_ipn(
+    notification_type: str = Form(...),
+    operation_id: str = Form(...),
+    amount: float = Form(...),
+    currency: str = Form(...),
+    datetime_str: str = Form(...),
+    sender: str = Form(...),
+    codepro: str = Form(...),
+    label: str = Form(...),
+    sha1_hash: str = Form(...)
+):
+    """
+    Обработка уведомления IPN от YooMoney.
+    label = "chat_id|order_id|amount"
+    """
     try:
         chat_id_str, order_id_str, expected_amount_str = label.split("|")
         chat_id = int(chat_id_str)
         order_id = int(order_id_str)
         expected_amount = float(expected_amount_str)
+    except Exception:
+        return {"status": "error", "reason": "invalid_label"}
 
-        if float(amount) != expected_amount:
-            print(f"Сумма не совпадает: {amount} != {expected_amount}")
-            return "OK"
+    order = ORDERS.get(order_id)
+    if not order:
+        return {"status": "error", "reason": "order_not_found"}
 
-        # 🎉 Отправка уведомления пользователю и активация подписки
+    if order["status"] != "pending":
+        return {"status": "ok"}  # уже обработан
+
+    if float(amount) != expected_amount:
+        order["status"] = "failed"
+        return {"status": "error", "reason": "wrong_amount"}
+
+    # Оплата успешна
+    order["status"] = "paid"
+
+    # Продление подписки в RAM_DATA
+    RAM_DATA.setdefault(chat_id, {})
+    now = datetime.now()
+    duration = timedelta(days=30)  # например, 30 дней подписки
+    RAM_DATA[chat_id]["subscription_until"] = (now + duration).timestamp()
+    RAM_DATA[chat_id]["suspended"] = False
+
+    # сохраняем в Redis
+    _save_to_redis_partial(chat_id, {
+        "subscription_until": RAM_DATA[chat_id]["subscription_until"],
+        "suspended": False
+    })
+
+    # уведомление пользователя
+    until_dt = datetime.fromtimestamp(RAM_DATA[chat_id]["subscription_until"], tz=MSK)
+    until_text = until_dt.strftime("%d.%m.%Y %H:%M")
+    try:
         await bot.send_message(
             chat_id,
-            f"✅ Платёж получен!\n"
-            f"Заказ #{order_id}\n"
-            f"Сумма: {amount}₽\n\n"
-            f"Подписка активирована."
+            f"✅ Оплата подтверждена!\nВаша подписка активна до {until_text}"
         )
-
     except Exception as e:
-        print("Ошибка обработки IPN:", e)
+        print(f"Ошибка уведомления пользователя: {e}")
 
-    return "OK"
+    return {"status": "ok"}
 # -----------------------
 # Фоновые задачи
 async def keep_alive():
