@@ -186,7 +186,16 @@ init_yourun(
     admin_chat_id=ADMIN_CHAT_ID,
     get_access_token=lambda cid: RAM_DATA.get(cid, {}).get("access_token")
 )
+# -----------------------
+# Добавляем команду для покупки подписки
+from yoomoney_module import send_payment_link
 
+async def buy_subscription(update, context):
+    chat_id = update.effective_chat.id
+    amount = 600  # сумма подписки
+    await send_payment_link(bot, chat_id, amount)
+
+app.add_handler(CommandHandler("buy", buy_subscription))
 # -----------------------
 # Постоянная клавиатура
 # -----------------------
