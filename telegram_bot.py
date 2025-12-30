@@ -196,6 +196,7 @@ async def buy_subscription(update, context):
     await send_payment_link(bot, chat_id, amount)
 
 app.add_handler(CommandHandler("buy", buy_subscription))
+
 # -----------------------
 # Постоянная клавиатура
 # -----------------------
