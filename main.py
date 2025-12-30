@@ -196,6 +196,7 @@ async def admin_user_toggle_status(
 
     # Снимаем подписку
     user_data["suspended"] = True
+    user_data["subscription_until"] = 0
     _save_to_redis_partial(chat_id, {"suspended": True})
 
     # Отправляем уведомление пользователю
