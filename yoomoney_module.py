@@ -78,16 +78,15 @@ async def create_payment(chat_id: int, amount: int) -> dict:
 # -----------------------
 async def send_payment_link(bot, chat_id: int, amount: int):
     payment = await create_payment(chat_id, amount)
-    payment_url = payment["payment_url"]
+    payment_url = payment.get("payment_url")
 
-    keyboard = InlineKeyboardMarkup([
-        [InlineKeyboardButton("Оплатить подписку", url=payment_url)]
-    ])
-    await bot.send_message(
-        chat_id,
-        f"Сумма к оплате: {amount}₽\nНажмите для оплаты:",
-        reply_markup=keyboard
-    )
+    if payment_url:
+        keyboard = InlineKeyboardMarkup([
+            [InlineKeyboardButton("Оплатить подписку", url=payment_url)]
+        ])
+        await bot.send_message(chat_id, f"Сумма к оплате: {amount}₽\nНажмите для оплаты:", reply_markup=keyboard)
+    else:
+        await bot.send_message(chat_id, f"Сумма к оплате: {amount}₽\nСсылка на оплату пока недоступна.")
 
 # -----------------------
 # Обработка уведомлений от YooKassa (Webhook)
