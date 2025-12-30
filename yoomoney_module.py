@@ -2,18 +2,17 @@ from telegram import InlineKeyboardButton, InlineKeyboardMarkup
 import asyncio
 from redis_client import r
 import json
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
+from telegram_bot import RAM_DATA, _save_to_redis_partial, bot
 
 YOOMONEY_WALLET = "4100117872411525"
 SUCCESS_REDIRECT_URI = "https://tg-bot-test-gkbp.onrender.com/payment/success"
 
-# внутренний счётчик заказов
 NEXT_ORDER_ID = 1
-
-# Хранение всех заказов: {order_id: {"chat_id": int, "amount": int, "status": str}}
 ORDERS = {}
-
 ORDERS_REDIS_KEY = "yoomoney_orders"
+
+MSK = timezone(timedelta(hours=3))
 
 # -----------------------
 # Redis helpers
@@ -21,6 +20,7 @@ def save_order_to_redis(order_id, data):
     r.hset(ORDERS_REDIS_KEY, order_id, json.dumps(data))
 
 def load_orders_from_redis():
+    """Загрузить ORDERS из Redis при старте"""
     global ORDERS, NEXT_ORDER_ID
     ORDERS.clear()
     all_orders = r.hgetall(ORDERS_REDIS_KEY)
@@ -41,6 +41,7 @@ def get_next_order_id():
     return oid
 
 def create_payment_link(chat_id: int, amount: int):
+    """Создать ссылку на оплату YooMoney"""
     order_id = get_next_order_id()
     label = f"{chat_id}|{order_id}|{amount}"
     targets = f"Подписка на сервис, заказ #{order_id}"
@@ -67,11 +68,7 @@ def create_payment_link(chat_id: int, amount: int):
 
 async def send_payment_link(bot, chat_id: int, amount: int):
     url, order_id = create_payment_link(chat_id, amount)
-
-    keyboard = InlineKeyboardMarkup([
-        [InlineKeyboardButton("Оплатить подписку", url=url)]
-    ])
-
+    keyboard = InlineKeyboardMarkup([[InlineKeyboardButton("Оплатить подписку", url=url)]])
     await bot.send_message(
         chat_id,
         f"💳 Сумма: {amount}₽\nНомер заказа: #{order_id}\n\nНажмите кнопку для оплаты:",
@@ -79,12 +76,6 @@ async def send_payment_link(bot, chat_id: int, amount: int):
     )
 
 # -----------------------
-# IPN обработка
-from telegram_bot import RAM_DATA, _save_to_redis_partial, bot
-from datetime import timezone
-
-MSK = timezone(timedelta(hours=3))
-
 async def yoomoney_ipn(
     notification_type: str,
     operation_id: str,
@@ -96,10 +87,7 @@ async def yoomoney_ipn(
     label: str,
     sha1_hash: str
 ):
-    """
-    Обработка уведомления IPN от YooMoney.
-    label = "chat_id|order_id|amount"
-    """
+    """Обработка уведомления IPN от YooMoney"""
     try:
         chat_id_str, order_id_str, expected_amount_str = label.split("|")
         chat_id = int(chat_id_str)
@@ -124,14 +112,13 @@ async def yoomoney_ipn(
     order["status"] = "paid"
     save_order_to_redis(order_id, order)
 
-    # Продление подписки в RAM_DATA
+    # Продление подписки
     RAM_DATA.setdefault(chat_id, {})
     now = datetime.now()
-    duration = timedelta(days=30)  # например, 30 дней подписки
+    duration = timedelta(days=30)
     RAM_DATA[chat_id]["subscription_until"] = (now + duration).timestamp()
     RAM_DATA[chat_id]["suspended"] = False
 
-    # сохраняем в Redis
     _save_to_redis_partial(chat_id, {
         "subscription_until": RAM_DATA[chat_id]["subscription_until"],
         "suspended": False
@@ -146,6 +133,6 @@ async def yoomoney_ipn(
             f"✅ Оплата подтверждена!\nВаша подписка активна до {until_text}"
         )
     except Exception as e:
-        print(f"Ошибка уведомления пользователя: {e}")
+        print(f"[YOOMONEY] Ошибка уведомления пользователя {chat_id}: {e}")
 
     return {"status": "ok"}
