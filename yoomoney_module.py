@@ -4,6 +4,8 @@ from redis_client import r
 import json
 from datetime import datetime, timedelta, timezone
 from telegram_bot import RAM_DATA, _save_to_redis_partial, bot
+import hashlib
+import urllib.parse
 
 YOOMONEY_WALLET = "4100117872411525"
 SUCCESS_REDIRECT_URI = "https://tg-bot-test-gkbp.onrender.com/payment/success"
@@ -13,6 +15,7 @@ ORDERS = {}
 ORDERS_REDIS_KEY = "yoomoney_orders"
 
 MSK = timezone(timedelta(hours=3))
+SECRET_LABEL_KEY = "supersecret123"  # Секрет для хеширования label
 
 # -----------------------
 # Redis helpers
@@ -20,7 +23,6 @@ def save_order_to_redis(order_id, data):
     r.hset(ORDERS_REDIS_KEY, order_id, json.dumps(data))
 
 def load_orders_from_redis():
-    """Загрузить ORDERS из Redis при старте"""
     global ORDERS, NEXT_ORDER_ID
     ORDERS.clear()
     all_orders = r.hgetall(ORDERS_REDIS_KEY)
@@ -40,11 +42,36 @@ def get_next_order_id():
     NEXT_ORDER_ID += 1
     return oid
 
+# -----------------------
+def make_label(chat_id: int, order_id: int, amount: float) -> str:
+    """Создание защищённого label с хешем"""
+    plain = f"{chat_id}|{order_id}|{amount}"
+    hash_digest = hashlib.sha256((plain + SECRET_LABEL_KEY).encode()).hexdigest()
+    return f"{plain}|{hash_digest}"
+
+# -----------------------
+async def pending_order_timeout(order_id: int, timeout: int = 300):
+    """Таймер 5 минут на ожидание оплаты"""
+    await asyncio.sleep(timeout)
+    order = ORDERS.get(order_id)
+    if order and order["status"] == "pending":
+        order["status"] = "failed"
+        save_order_to_redis(order_id, order)
+        chat_id = order["chat_id"]
+        try:
+            await bot.send_message(chat_id, "⏳ Время на оплату истекло. Платеж не был завершён.")
+        except:
+            pass
+
+# -----------------------
 def create_payment_link(chat_id: int, amount: int):
     """Создать ссылку на оплату YooMoney"""
     order_id = get_next_order_id()
-    label = f"{chat_id}|{order_id}|{amount}"
-    targets = f"Подписка на сервис, заказ #{order_id}"
+    label = make_label(chat_id, order_id, amount)
+
+    # targets с URL-энкодом, чтобы # не ломал ссылку
+    targets_text = f"Подписка на сервис, заказ №{order_id}"
+    targets = urllib.parse.quote_plus(targets_text)
 
     url = (
         f"https://yoomoney.ru/quickpay/confirm.xml"
@@ -64,8 +91,13 @@ def create_payment_link(chat_id: int, amount: int):
         "status": "pending"
     }
     save_order_to_redis(order_id, ORDERS[order_id])
+
+    # запуск таймера на 5 минут
+    asyncio.create_task(pending_order_timeout(order_id))
+
     return url, order_id
 
+# -----------------------
 async def send_payment_link(bot, chat_id: int, amount: int):
     url, order_id = create_payment_link(chat_id, amount)
     keyboard = InlineKeyboardMarkup([[InlineKeyboardButton("Оплатить подписку", url=url)]])
@@ -87,12 +119,21 @@ async def yoomoney_ipn(
     label: str,
     sha1_hash: str
 ):
-    """Обработка уведомления IPN от YooMoney"""
+    """Обработка уведомления IPN от YooMoney с проверкой хеша"""
     try:
-        chat_id_str, order_id_str, expected_amount_str = label.split("|")
+        parts = label.split("|")
+        if len(parts) != 4:
+            return {"status": "error", "reason": "invalid_label"}
+        chat_id_str, order_id_str, expected_amount_str, provided_hash = parts
         chat_id = int(chat_id_str)
         order_id = int(order_id_str)
         expected_amount = float(expected_amount_str)
+
+        # Проверка хеша
+        expected_hash = hashlib.sha256(f"{chat_id}|{order_id}|{expected_amount}{SECRET_LABEL_KEY}".encode()).hexdigest()
+        if provided_hash != expected_hash:
+            return {"status": "error", "reason": "invalid_label_hash"}
+
     except Exception:
         return {"status": "error", "reason": "invalid_label"}
 
