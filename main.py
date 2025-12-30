@@ -500,14 +500,17 @@ async def shutdown_server(_: None = Depends(admin_required)):
 @app_fastapi.post("/yoomoney_ipn")
 async def yoomoney_ipn(request: Request):
     data = await request.form()
-    print("IPN:", dict(data))  # для отладки, чтобы видеть все поля от YooMoney
+    print("IPN:", dict(data))  # Для отладки, чтобы видеть все поля от YooMoney
 
     status = data.get("status")
-    operation_id = data.get("operation_id")
     amount = data.get("amount")
-    label = data.get("label") or data.get("targets")
+    label = data.get("label")  # сюда мы помещаем chat_id|order_id|amount
 
     if status != "success":
+        return "OK"
+
+    if not label:
+        print("Нет метки платежа (label)")
         return "OK"
 
     try:
@@ -528,6 +531,10 @@ async def yoomoney_ipn(request: Request):
             f"Сумма: {amount}₽\n\n"
             f"Подписка активирована."
         )
+
+        # Здесь можно добавить запись в базу/обновление RAM_DATA
+        RAM_DATA[chat_id]["subscription_until"] = <timestamp окончания подписки>
+        RAM_DATA[chat_id]["suspended"] = False
 
     except Exception as e:
         print("Ошибка обработки IPN:", e)
