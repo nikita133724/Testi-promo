@@ -44,11 +44,10 @@ def get_next_order_id():
 
 # -----------------------
 def make_label(chat_id: int, order_id: int, amount: float) -> str:
-    """Создание защищённого label с хешем"""
-    plain = f"{chat_id}|{order_id}|{amount}"
+    amount_str = str(int(amount))  # если всегда целые рубли
+    plain = f"{chat_id}|{order_id}|{amount_str}"
     hash_digest = hashlib.sha256((plain + SECRET_LABEL_KEY).encode()).hexdigest()
     return f"{plain}|{hash_digest}"
-
 # -----------------------
 async def pending_order_timeout(order_id: int, timeout: int = 300):
     """Таймер 5 минут на ожидание оплаты"""
