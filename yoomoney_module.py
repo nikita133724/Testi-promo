@@ -3,7 +3,7 @@ from telegram import InlineKeyboardButton, InlineKeyboardMarkup
 YOOMONEY_WALLET = "4100117872411525"
 SUCCESS_REDIRECT_URI = "https://tg-bot-test-gkbp.onrender.com/payment/success"
 
-# внутренний счётчик заказов (позже вынесешь в БД)
+# внутренний счётчик заказов
 NEXT_ORDER_ID = 1
 
 def get_next_order_id():
@@ -14,16 +14,20 @@ def get_next_order_id():
 
 def create_payment_link(chat_id: int, amount: int):
     order_id = get_next_order_id()
-    comment = f"{chat_id}|{order_id}|{amount}"
+    # метка для сервера
+    label = f"{chat_id}|{order_id}|{amount}"
+    # текст для пользователя
+    targets = f"Подписка на сервис, заказ #{order_id}"
 
     url = (
         f"https://yoomoney.ru/quickpay/confirm.xml"
         f"?receiver={YOOMONEY_WALLET}"
         f"&quickpay-form=shop"
-        f"&targets={comment}"
+        f"&targets={targets}"
         f"&sum={amount}"
         f"&currency=643"
         f"&successURL={SUCCESS_REDIRECT_URI}"
+        f"&label={label}"
     )
     return url, order_id
 
