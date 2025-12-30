@@ -532,10 +532,6 @@ async def yoomoney_ipn(request: Request):
             f"Подписка активирована."
         )
 
-        # Здесь можно добавить запись в базу/обновление RAM_DATA
-        RAM_DATA[chat_id]["subscription_until"] = <timestamp окончания подписки>
-        RAM_DATA[chat_id]["suspended"] = False
-
     except Exception as e:
         print("Ошибка обработки IPN:", e)
 
