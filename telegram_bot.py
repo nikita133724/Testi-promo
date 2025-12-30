@@ -192,7 +192,7 @@ from yoomoney_module import send_payment_link
 
 async def buy_subscription(update, context):
     chat_id = update.effective_chat.id
-    amount = 600  # сумма подписки
+    amount = 2  # сумма подписки
     await send_payment_link(bot, chat_id, amount)
 
 app.add_handler(CommandHandler("buy", buy_subscription))
