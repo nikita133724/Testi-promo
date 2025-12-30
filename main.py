@@ -538,7 +538,7 @@ async def startup_event():
     asyncio.create_task(monitor_presence())
 
 # Подключаем IPN эндпоинт
-@app.post("/yoomoney_ipn")
+@app_fastapi.post("/yoomoney_ipn")
 async def yoomoney_ipn_endpoint(
     notification_type: str = Form(...),
     operation_id: str = Form(...),
