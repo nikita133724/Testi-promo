@@ -47,7 +47,7 @@ def make_label(chat_id, order_id, amount):
     plain = f"{chat_id}|{order_id}|{int(amount)}"
     h = hashlib.sha256((plain + SECRET_LABEL_KEY).encode()).hexdigest()
     return f"{plain}|{h}"
-
+    
 # ----------------------- Timer
 async def pending_order_timeout(order_id, timeout=300):
     await asyncio.sleep(timeout)
@@ -86,12 +86,20 @@ def create_payment_link(chat_id, amount):
         f"&label={label}"
     )
 
-    ORDERS[order_id] = {"chat_id": chat_id, "amount": amount, "status": "pending"}
+    ORDERS[order_id] = {
+        "chat_id": chat_id,
+        "amount": amount,
+        "status": "pending",
+        "created_at": int(datetime.now(timezone.utc).timestamp()),
+        "paid_at": None,
+        "operation_id": None,
+        "sender": None
+    }
+
     save_order_to_redis(order_id, ORDERS[order_id])
-
     asyncio.create_task(pending_order_timeout(order_id))
-    return url, order_id
 
+    return url, order_id
 # ----------------------- Send link
 async def send_payment_link(bot, chat_id, amount):
     url, order_id = create_payment_link(chat_id, amount)
@@ -123,6 +131,10 @@ async def yoomoney_ipn(notification_type, operation_id, amount, currency,
     except:
         return {"status": "error", "reason": "invalid_label"}
 
+    # 🧾 проверка валюты
+    if currency != "643":
+        return {"status": "error", "reason": "wrong_currency"}
+        
     order = ORDERS.get(order_id)
     if not order:
         return {"status": "error", "reason": "order_not_found"}
@@ -134,17 +146,19 @@ async def yoomoney_ipn(notification_type, operation_id, amount, currency,
                 safe_telegram_call(bot.delete_message(order["chat_id"], order["message_id"]))
             except:
                 pass
-        # Если заказ истёк — игнорируем платеж
-        if order["status"] == "expired":
-            return {"status": "error", "reason": "order_expired"}
+        # Если заказ истёк — платёж принимаем, но подписку не выдаём
         return {"status": "ok"}
+    
 
-    if float(amount) != float(expected_amount):
+    if round(float(amount), 2) != round(float(expected_amount), 2):
         order["status"] = "failed"
         save_order_to_redis(order_id, order)
         return {"status": "error", "reason": "wrong_amount"}
 
     order["status"] = "paid"
+    order["paid_at"] = datetime_str          # время платежа от YooMoney
+    order["operation_id"] = operation_id
+    order["sender"] = sender
     save_order_to_redis(order_id, order)
 
     # удаляем сообщение с кнопкой
