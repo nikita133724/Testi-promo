@@ -292,6 +292,7 @@ async def open_user_profile(chat_id):
 
     # Кнопки
     keyboard = [
+        [InlineKeyboardButton("📄 Транзакции", callback_data="profile_transactions")],
         [InlineKeyboardButton("⚙️ Настройки", callback_data="profile_settings")],
         [InlineKeyboardButton("❌ Закрыть", callback_data="profile_exit")]
     ]
@@ -571,6 +572,33 @@ async def settings_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if OPEN_SETTINGS_MESSAGES.get(chat_id, {}).get("menu_type") == "profile":
         await query.answer()
     
+        if query.data == "profile_transactions":
+            from yoomoney_module import get_last_orders
+            
+            last_orders = get_last_orders(chat_id, 4)
+            if not last_orders:
+                text = "У вас ещё нет покупок."
+            else:
+                lines = []
+                for o in last_orders:
+                    status = o["status"].capitalize()
+                    amount = o["amount"]
+                    order_id = [k for k,v in ORDERS.items() if v==o][0]  # получаем id заказа
+                    ts = datetime.fromtimestamp(o["created_at"], tz=MSK).strftime("%d.%m.%Y %H:%M")
+                    lines.append(f"💳 Сумма: {amount}₽ | Заказ: #{order_id} | Статус: {status} | Дата: {ts}")
+                text = "\n".join(lines)
+        
+            # Кнопка назад
+            keyboard = [
+                [InlineKeyboardButton("🔙 Назад", callback_data="profile_back")]
+            ]
+            await query.message.edit_text(text, reply_markup=InlineKeyboardMarkup(keyboard))
+            
+        elif query.data == "profile_back":
+            # Возвращаем профиль
+            await query.message.delete()
+            await open_user_profile(chat_id)
+            
         # ⚙️ Переход в настройки из профиля
         if query.data == "profile_settings":
             # сбрасываем таймер профиля
