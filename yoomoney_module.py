@@ -117,8 +117,8 @@ async def send_payment_link(bot, chat_id, amount):
     save_order_to_redis(order_id, ORDERS[order_id])
 
 # ----------------------- IPN
-async def yoomoney_ipn(notification_type, operation_id, amount, currency,
-                       datetime_str, sender, codepro, label, sha1_hash):
+async def yoomoney_ipn(operation_id, amount, currency,
+                       datetime_str, sender, label, sha1_hash):
 
     try:
         chat_id, order_id, expected_amount, provided_hash = label.split("|")
