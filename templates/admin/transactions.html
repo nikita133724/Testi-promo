@@ -4,7 +4,7 @@
 <h2>Транзакции</h2>
 
 <div style="margin-bottom: 16px;">
-    <input id="search-input" placeholder="Поиск по Label или chat_id" style="padding:6px; width: 250px;">
+    <input id="search-input" placeholder="Поиск по chat_id или ID YooMoney" style="padding:6px; width: 300px;">
     <button class="filter-btn active" onclick="filterTransactions('all', this)">Все</button>
     <button class="filter-btn" onclick="filterTransactions('paid', this)">Оплаченные</button>
     <button class="filter-btn" onclick="filterTransactions('failed', this)">Неудачные</button>
@@ -14,23 +14,23 @@
 <table>
     <thead>
         <tr>
-            <th>Label</th>
+            <th>№ платежа</th>
+            <th>Пользователь</th>
             <th>Сумма</th>
             <th>Статус</th>
-            <th>Пользователь</th>
             <th>Создано</th>
-            <th>Оплачено</th>
+            <th>ID платежа YooMoney</th>
         </tr>
     </thead>
     <tbody id="transactions-table">
         {% for t in transactions %}
         <tr>
-            <td>{{ t.label }}</td>
+            <td>{{ t.order_id }}</td>
+            <td>{{ t.chat_id }}</td>
             <td>{{ t.amount }} ₽</td>
             <td>{{ t.status }}</td>
-            <td>{{ t.chat_id }}</td>
             <td>{{ t.created_at }}</td>
-            <td>{{ t.paid_at }}</td>
+            <td>{{ t.operation_id if t.operation_id else '-' }}</td>
         </tr>
         {% endfor %}
     </tbody>
@@ -42,7 +42,7 @@ const tableBody = document.getElementById('transactions-table');
 
 function formatTimestamp(ts) {
     if (!ts) return '-';
-    const date = new Date(ts * 1000); // из seconds -> ms
+    const date = new Date(ts * 1000); // из секунд -> миллисекунды
     return date.toLocaleString(undefined, { hour12: false });
 }
 
@@ -53,12 +53,12 @@ async function filterTransactions(status, btn) {
     await updateTable();
 }
 
-document.getElementById('search-input').addEventListener('input', async (e) => {
+document.getElementById('search-input').addEventListener('input', async () => {
     await updateTable();
 });
 
 async function updateTable() {
-    const search = document.getElementById('search-input').value;
+    const search = document.getElementById('search-input').value.toLowerCase();
     const resp = await fetch(`/admin/transactions/filter?status=${currentStatus}&search=${encodeURIComponent(search)}`, {
         headers: {"X-Requested-With":"SPA"}
     });
@@ -66,17 +66,25 @@ async function updateTable() {
 
     tableBody.innerHTML = '';
     transactions.forEach(t => {
+        // поиск по chat_id, operation_id и order_id
+        if (search &&
+            !String(t.chat_id).toLowerCase().includes(search) &&
+            !(t.operation_id && t.operation_id.toLowerCase().includes(search)) &&
+            !String(t.order_id).toLowerCase().includes(search)
+        ) {
+            return;
+        }
+
         const tr = document.createElement('tr');
-        tr.innerHTML = `<td>${t.label}</td>
+        tr.innerHTML = `<td>${t.order_id}</td>
+                        <td>${t.chat_id}</td>
                         <td>${t.amount} ₽</td>
                         <td>${t.status}</td>
-                        <td>${t.chat_id}</td>
                         <td>${formatTimestamp(t.created_at)}</td>
-                        <td>${formatTimestamp(t.paid_at)}</td>`;
+                        <td>${t.operation_id ? t.operation_id : '-'}</td>`;
         tableBody.appendChild(tr);
     });
 }
-
 // initial load
 updateTable();
 </script>
