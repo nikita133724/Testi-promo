@@ -1,5 +1,5 @@
 from telethon import TelegramClient, events
-from telethon.tl.types import MessageMediaPhoto, MessageMediaDocument
+from telethon.tl.types import MessageMediaPhoto, MessageMediaDocument, MessageEntitySpoiler, MessageEntityCode, MessageEntityPre
 from config import TELEGRAM_SESSION_FILE, TELEGRAM_API_ID, TELEGRAM_API_HASH, CHANNEL_ORDINARY, CHANNEL_SPECIAL
 from promo_processor import handle_new_post
 import asyncio
@@ -10,6 +10,25 @@ channels = [CHANNEL_ORDINARY, CHANNEL_SPECIAL]
 
 POST_CACHE = {}
 
+def extract_special_promos(message):
+    if not message.entities:
+        return []
+
+    results = []
+    full_text = message.message or ""
+
+    for ent in message.entities:
+        if isinstance(ent, (MessageEntitySpoiler, MessageEntityCode, MessageEntityPre)):
+            start = ent.offset
+            end = ent.offset + ent.length
+            code = full_text[start:end].strip()
+
+            # фильтр мусора
+            if 4 <= len(code) <= 32:
+                results.append(code)
+
+    return results
+    
 @client.on(events.NewMessage(chats=channels))
 async def new_message_handler(event):
     message = event.message
@@ -48,8 +67,19 @@ async def new_message_handler(event):
 
     # --- Отправляем в promo_processor ---
     if message_text:
-        await handle_new_post(message_text, media)
-
+        if chat_id == CHANNEL_SPECIAL:
+            codes = extract_special_promos(message)
+    
+            if codes:
+                for code in codes:
+                    fake_line = f"0.25$ — {code}"
+                    print(f"[SPECIAL] Найден промо: {code}")
+                    await handle_new_post(fake_line, media)
+            else:
+                print("[SPECIAL] В посте нет промокодов")
+    
+        else:
+            await handle_new_post(message_text, media)
     # --- Сохраняем пост в кэш для отслеживания изменений ---
     POST_CACHE.setdefault(chat_id, {})[message_id] = {
         "text": message_text,
@@ -84,4 +114,13 @@ async def track_post_changes(chat_id, message_id, media=None):
         if new_text != old_text:
             print(f"[UPDATE] Пост {message_id} изменён! Отправляем заново.")
             POST_CACHE[chat_id][message_id]["text"] = new_text
-            await handle_new_post(new_text, media)
+        
+            if chat_id == CHANNEL_SPECIAL:
+                codes = extract_special_promos(message)
+                if codes:
+                    for code in codes:
+                        fake_line = f"0.25$ — {code}"
+                        print(f"[SPECIAL UPDATE] Найден промо: {code}")
+                        await handle_new_post(fake_line, media)
+            else:
+                await handle_new_post(new_text, media)
