@@ -28,13 +28,20 @@
             <td>{{ t.order_id }}</td>
             <td>{{ t.chat_id }}</td>
             <td>{{ t.amount }} ₽</td>
-            <td>{{ t.status }}</td>
+            <td data-status="{{ t.status }}"></td>
             <td>{{ t.created_at }}</td>
             <td>{{ t.operation_id if t.operation_id else '-' }}</td>
         </tr>
         {% endfor %}
     </tbody>
 </table>
+
+<style>
+.status-paid { color: #2ecc71; font-weight: 600; }
+.status-pending { color: #f4b350; font-weight: 600; }
+.status-expired { color: #eb7373; font-weight: 600; }
+.status-failed { color: #ff3b3b; font-weight: 600; }
+</style>
 
 <script>
 let currentStatus = 'all';
@@ -79,11 +86,30 @@ async function updateTable() {
         tr.innerHTML = `<td>${t.order_id}</td>
                         <td>${t.chat_id}</td>
                         <td>${t.amount} ₽</td>
-                        <td>${t.status}</td>
+                        <td class="${statusClass(t.status)}">${humanStatus(t.status)}</td>
                         <td>${formatTimestamp(t.created_at)}</td>
                         <td>${t.operation_id ? t.operation_id : '-'}</td>`;
         tableBody.appendChild(tr);
     });
+}
+function humanStatus(status) {
+    switch (status) {
+        case 'pending': return 'Ожидание';
+        case 'paid': return 'Оплачен';
+        case 'expired': return 'Время вышло';
+        case 'failed': return 'Ошибка';
+        default: return status;
+    }
+}
+
+function statusClass(status) {
+    switch (status) {
+        case 'paid': return 'status-paid';
+        case 'pending': return 'status-pending';
+        case 'expired': return 'status-expired';
+        case 'failed': return 'status-failed';
+        default: return '';
+    }
 }
 // initial load
 updateTable();
