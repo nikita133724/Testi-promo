@@ -497,6 +497,29 @@ async def shutdown_server(_: None = Depends(admin_required)):
     print("Process exiting immediately")
     os._exit(0)   # ← ВАЖНО: без graceful restart, просто умереть
     
+@app_fastapi.get("/admin/transactions", response_class=HTMLResponse)
+async def admin_transactions_page(request: Request, _: None = Depends(admin_required)):
+    # сортировка по дате
+    transactions = sorted(ORDERS.values(), key=lambda x: x.get("created_at", 0), reverse=True)
+    return templates.TemplateResponse(
+        "admin/transactions.html",
+        {"request": request, "transactions": transactions, "is_admin": True}
+    )
+
+@app_fastapi.get("/admin/transactions/filter")
+async def filter_transactions(status: str = "all", search: str = "", _: None = Depends(admin_required)):
+    filtered = []
+    for t in ORDERS.values():
+        # фильтр по статусу
+        if status != "all" and t.get("status") != status:
+            continue
+        # поиск по chat_id или label
+        if search and search.lower() not in str(t.get("chat_id", "")).lower() and search.lower() not in t.get("label", "").lower():
+            continue
+        filtered.append(t)
+    filtered.sort(key=lambda x: x.get("created_at", 0), reverse=True)
+    return JSONResponse(filtered)
+    
 # -----------------------
 # Фоновые задачи
 async def keep_alive():
