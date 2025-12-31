@@ -4,26 +4,12 @@ from config import TELEGRAM_SESSION_FILE, TELEGRAM_API_ID, TELEGRAM_API_HASH, CH
 from promo_processor import handle_new_post
 import asyncio
 import time
-
 client = TelegramClient(TELEGRAM_SESSION_FILE, TELEGRAM_API_ID, TELEGRAM_API_HASH)
+channels = [CHANNEL_ORDINARY, CHANNEL_SPECIAL]
 
-# ----------------------------
-# Глобальные числовые ID каналов
-ORDINARY_ID: int
-SPECIAL_ID: int
 
 POST_CACHE = {}
 
-# ----------------------------
-async def init_channel_ids():
-    global ORDINARY_ID, SPECIAL_ID
-    ordinary = await client.get_entity(CHANNEL_ORDINARY)
-    special = await client.get_entity(CHANNEL_SPECIAL)
-    ORDINARY_ID = ordinary.id
-    SPECIAL_ID = special.id
-    print(f"[INFO] Каналы: ORDINARY_ID={ORDINARY_ID}, SPECIAL_ID={SPECIAL_ID}")
-
-# ----------------------------
 def extract_special_promos(message):
     if not message.entities:
         print("[DEBUG] Нет entities в сообщении")
@@ -50,17 +36,16 @@ def extract_special_promos(message):
 
     print(f"[DEBUG] Всего найдено промо: {len(results)}")
     return results
-
-# ----------------------------
-@client.on(events.NewMessage())
+    
+@client.on(events.NewMessage(chats=channels))
 async def new_message_handler(event):
     message = event.message
     message_id = message.id
-    chat_id = message.chat_id
+    chat_id = event.chat_id
     message_text = message.message or ""
     media = message.media
 
-    # --- логирование ---
+    # --- логирование и обработка медиа как раньше ---
     media_info = None
     if media:
         if isinstance(media, MessageMediaPhoto):
@@ -88,34 +73,37 @@ async def new_message_handler(event):
         print("Пустое сообщение")
     print("----")
 
-    # --- обработка ---
-    if chat_id == SPECIAL_ID:
-        codes = extract_special_promos(message)
-        if codes:
-            for code in codes:
-                fake_line = f"0.25$ — {code}"
-                print(f"[SPECIAL] Найден промо: {code}")
-                await handle_new_post(fake_line, media)
+    # --- Отправляем в promo_processor ---
+    if message_text:
+        if chat_id == CHANNEL_SPECIAL:
+            codes = extract_special_promos(message)
+    
+            if codes:
+                for code in codes:
+                    fake_line = f"0.25$ — {code}"
+                    print(f"[SPECIAL] Найден промо: {code}")
+                    await handle_new_post(fake_line, media)
+            else:
+                print("[SPECIAL] В посте нет промокодов")
+    
         else:
-            print("[SPECIAL] В посте нет промокодов")
-    elif chat_id == ORDINARY_ID:
-        await handle_new_post(message_text, media)
-
-    # --- кэш и отслеживание изменений ---
+            await handle_new_post(message_text, media)
+    # --- Сохраняем пост в кэш для отслеживания изменений ---
     POST_CACHE.setdefault(chat_id, {})[message_id] = {
         "text": message_text,
         "timestamp": time.time()
     }
-    asyncio.create_task(track_post_changes(chat_id, message_id, media))
 
-# ----------------------------
+    # --- Запускаем фоновую проверку изменений ---
+    asyncio.create_task(track_post_changes(chat_id, message_id, media))
+    
 async def track_post_changes(chat_id, message_id, media=None):
     print(f"[track_post_changes] Старт отслеживания поста {message_id} в чате {chat_id}")
 
     CHECK_INTERVAL = 4
     TIMEOUT = 5 * 60
-    start_time = time.time()
 
+    start_time = time.time()
     while time.time() - start_time < TIMEOUT:
         await asyncio.sleep(CHECK_INTERVAL)
         try:
@@ -134,16 +122,13 @@ async def track_post_changes(chat_id, message_id, media=None):
         if new_text != old_text:
             print(f"[UPDATE] Пост {message_id} изменён! Отправляем заново.")
             POST_CACHE[chat_id][message_id]["text"] = new_text
-
-            if chat_id == SPECIAL_ID:
+        
+            if chat_id == CHANNEL_SPECIAL:
                 codes = extract_special_promos(message)
                 if codes:
                     for code in codes:
                         fake_line = f"0.25$ — {code}"
                         print(f"[SPECIAL UPDATE] Найден промо: {code}")
                         await handle_new_post(fake_line, media)
-            elif chat_id == ORDINARY_ID:
+            else:
                 await handle_new_post(new_text, media)
-
-
-
