@@ -17,7 +17,7 @@ from admin_users import AdminUsers, KEY_DURATION_OPTIONS, extract_user_id_from_r
 
 # -----------------------
 SECRET_KEY = "vAGavYNa1WzrymonUQIEJ9ZW9mEDf"
-SELF_URL = os.environ.get("SELF_URL", "https://tg-bot-promokody.onrender.com")
+SELF_URL = os.environ.get("SELF_URL", "https://tg-bot-test-gkbp.onrender.com")
 
 app_fastapi = FastAPI()
 app_fastapi.add_middleware(SessionMiddleware, secret_key=SECRET_KEY)
