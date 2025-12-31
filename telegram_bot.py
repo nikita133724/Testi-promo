@@ -580,10 +580,9 @@ async def settings_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
                 text = "У вас ещё нет покупок."
             else:
                 lines = []
-                for o in last_orders:
+                for order_id, o in last_orders:
                     status = o["status"].capitalize()
                     amount = o["amount"]
-                    order_id = [k for k,v in ORDERS.items() if v==o][0]  # получаем id заказа
                     ts = datetime.fromtimestamp(o["created_at"], tz=MSK).strftime("%d.%m.%Y %H:%M")
                     lines.append(f"💳 Сумма: {amount}₽ | Заказ: #{order_id} | Статус: {status} | Дата: {ts}")
                 text = "\n".join(lines)
