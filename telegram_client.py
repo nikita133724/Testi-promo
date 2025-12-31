@@ -10,23 +10,31 @@ channels = [CHANNEL_ORDINARY, CHANNEL_SPECIAL]
 
 POST_CACHE = {}
 
-def extract_special_promos(message):
+ddef extract_special_promos(message):
     if not message.entities:
+        print("[DEBUG] Нет entities в сообщении")
         return []
 
     results = []
     full_text = message.message or ""
+    print(f"[DEBUG] Всего entities: {len(message.entities)}")
 
-    for ent in message.entities:
+    for i, ent in enumerate(message.entities, start=1):
+        print(f"[DEBUG] Entity {i}: {type(ent).__name__}, offset={ent.offset}, length={ent.length}")
+
         if isinstance(ent, (MessageEntitySpoiler, MessageEntityCode, MessageEntityPre)):
             start = ent.offset
             end = ent.offset + ent.length
             code = full_text[start:end].strip()
+            print(f"[DEBUG] Извлечённый код: '{code}'")
 
             # фильтр мусора
             if 4 <= len(code) <= 32:
                 results.append(code)
+            else:
+                print(f"[DEBUG] Код '{code}' отфильтрован (длина {len(code)})")
 
+    print(f"[DEBUG] Всего найдено промо: {len(results)}")
     return results
     
 @client.on(events.NewMessage(chats=channels))
