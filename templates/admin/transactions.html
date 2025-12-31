@@ -1,0 +1,75 @@
+{% extends "layout.html" %}
+
+{% block content %}
+<h2>Транзакции</h2>
+
+<div style="margin-bottom: 16px;">
+    <input id="search-input" placeholder="Поиск по Label или chat_id" style="padding:6px; width: 250px;">
+    <button class="filter-btn active" onclick="filterTransactions('all', this)">Все</button>
+    <button class="filter-btn" onclick="filterTransactions('paid', this)">Оплаченные</button>
+    <button class="filter-btn" onclick="filterTransactions('failed', this)">Неудачные</button>
+    <button class="filter-btn" onclick="filterTransactions('pending', this)">В обработке</button>
+</div>
+
+<table>
+    <thead>
+        <tr>
+            <th>Label</th>
+            <th>Сумма</th>
+            <th>Статус</th>
+            <th>Пользователь</th>
+            <th>Создано</th>
+            <th>Оплачено</th>
+        </tr>
+    </thead>
+    <tbody id="transactions-table">
+        {% for t in transactions %}
+        <tr>
+            <td>{{ t.label }}</td>
+            <td>{{ t.amount }} ₽</td>
+            <td>{{ t.status }}</td>
+            <td>{{ t.chat_id }}</td>
+            <td>{{ t.created_at|datetimeformat }}</td>
+            <td>{{ t.paid_at|datetimeformat }}</td>
+        </tr>
+        {% endfor %}
+    </tbody>
+</table>
+
+<script>
+let currentStatus = 'all';
+const tableBody = document.getElementById('transactions-table');
+
+async function filterTransactions(status, btn) {
+    currentStatus = status;
+    document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    await updateTable();
+}
+
+document.getElementById('search-input').addEventListener('input', async (e) => {
+    await updateTable();
+});
+
+async function updateTable() {
+    const search = document.getElementById('search-input').value;
+    const resp = await fetch(`/admin/transactions/filter?status=${currentStatus}&search=${encodeURIComponent(search)}`, { headers: {"X-Requested-With":"SPA"} });
+    const transactions = await resp.json();
+
+    tableBody.innerHTML = '';
+    transactions.forEach(t => {
+        const tr = document.createElement('tr');
+        tr.innerHTML = `<td>${t.label}</td>
+                        <td>${t.amount} ₽</td>
+                        <td>${t.status}</td>
+                        <td>${t.chat_id}</td>
+                        <td>${t.created_at ? new Date(t.created_at*1000).toLocaleString() : '-'}</td>
+                        <td>${t.paid_at ? new Date(t.paid_at*1000).toLocaleString() : '-'}</td>`;
+        tableBody.appendChild(tr);
+    });
+}
+
+// initial load
+updateTable();
+</script>
+{% endblock %}
