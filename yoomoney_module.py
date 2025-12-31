@@ -200,3 +200,10 @@ async def yoomoney_ipn(operation_id, amount, currency,
         safe_telegram_call(bot.send_message(int(chat_id), f"✅ Подписка активна до {until_text}"))
 
     return {"status": "ok"}
+    
+def get_last_orders(chat_id, count=4):
+    """Возвращает список последних заказов пользователя."""
+    orders = [o for o in ORDERS.values() if o["chat_id"] == chat_id]
+    # Сортировка по дате создания, последние сверху
+    orders.sort(key=lambda x: x["created_at"], reverse=True)
+    return orders[:count]
