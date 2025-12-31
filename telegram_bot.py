@@ -1,7 +1,7 @@
 import json
 import asyncio
 from decimal import Decimal
-from datetime import timezone, timedelta
+from datetime import timezone, timedelta, datetime
 MSK = timezone(timedelta(hours=3))
 from telegram import Update, ReplyKeyboardMarkup, InlineKeyboardButton, InlineKeyboardMarkup
 from telegram.ext import (
@@ -593,6 +593,7 @@ async def settings_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
                 [InlineKeyboardButton("🔙 Назад", callback_data="profile_back")]
             ]
             await query.message.edit_text(text, reply_markup=InlineKeyboardMarkup(keyboard))
+            reset_menu_timer(chat_id, 120)
             
         elif query.data == "profile_back":
             # Возвращаем профиль
