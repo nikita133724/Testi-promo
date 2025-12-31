@@ -593,7 +593,7 @@ async def settings_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
                 [InlineKeyboardButton("🔙 Назад", callback_data="profile_back")]
             ]
             await query.message.edit_text(text, reply_markup=InlineKeyboardMarkup(keyboard))
-            reset_menu_timer(chat_id, 120)
+            
         elif query.data == "profile_back":
             # Возвращаем профиль
             await query.message.delete()
