@@ -16,7 +16,7 @@ def extract_special_promos(message):
         return []
 
     results = []
-    full_text = message.message or ""
+    full_text = message.raw_text or message.message or ""
 
     for ent in message.entities:
         if isinstance(ent, (MessageEntitySpoiler, MessageEntityCode, MessageEntityPre)):
