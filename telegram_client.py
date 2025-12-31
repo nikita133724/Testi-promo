@@ -3,10 +3,10 @@ from telethon.tl.types import MessageMediaPhoto, MessageMediaDocument
 from config import TELEGRAM_SESSION_FILE, TELEGRAM_API_ID, TELEGRAM_API_HASH, CHANNEL_ORDINARY, CHANNEL_SPECIAL
 from promo_processor import handle_new_post
 import asyncio
+import time
 client = TelegramClient(TELEGRAM_SESSION_FILE, TELEGRAM_API_ID, TELEGRAM_API_HASH)
 channels = [CHANNEL_ORDINARY, CHANNEL_SPECIAL]
 
-from datetime import datetime
 
 POST_CACHE = {}
 
