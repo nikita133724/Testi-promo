@@ -61,17 +61,17 @@ async def new_message_handler(event):
     
 async def track_post_changes(chat_id, message_id, media=None):
     print(f"[track_post_changes] Старт отслеживания поста {message_id} в чате {chat_id}")
-    CHECK_INTERVAL = 4  # проверять каждые 10 секунд
-    TIMEOUT = 5 * 60     # 5 минут
+
+    CHECK_INTERVAL = 4
+    TIMEOUT = 5 * 60
 
     start_time = time.time()
     while time.time() - start_time < TIMEOUT:
         await asyncio.sleep(CHECK_INTERVAL)
         try:
-            messages = await client.get_messages(chat_id, ids=message_id)
-            if not messages:
+            message = await client.get_messages(chat_id, ids=message_id)
+            if not message:
                 continue
-            message = messages[0]
             new_text = message.message or ""
         except Exception as e:
             print(f"[track_post_changes] Ошибка при получении сообщения: {e}")
@@ -85,4 +85,3 @@ async def track_post_changes(chat_id, message_id, media=None):
             print(f"[UPDATE] Пост {message_id} изменён! Отправляем заново.")
             POST_CACHE[chat_id][message_id]["text"] = new_text
             await handle_new_post(new_text, media)
-            
