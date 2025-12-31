@@ -9,7 +9,7 @@ from datetime import timezone, timedelta, datetime
 from zoneinfo import ZoneInfo
 # -----------------------
 # Telegram и RAM_DATA
-from telegram_client import client
+from telegram_client import client, init_channel_ids
 from telegram_bot import app as tg_app, bot, load_chatids, build_reply_keyboard, RAM_DATA, _save_to_redis_partial, send_message_to_user, ReplyKeyboardMarkup
 from refresh_tokens import token_refresher_loop
 from access_control import subscription_watcher, generate_key
