@@ -582,10 +582,19 @@ async def settings_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
             else:
                 lines = []
                 for order_id, o in last_orders:
-                    status = o["status"].capitalize()
                     amount = o["amount"]
-                    ts = datetime.fromtimestamp(o["created_at"], tz=MSK).strftime("%d.%m.%Y %H:%M")
-                    lines.append(f"💳 Сумма: {amount}₽ | Заказ: #{order_id} | Статус: {status} | Дата: {ts}")
+                    ts = datetime.fromtimestamp(o["created_at"], tz=MSK).strftime("%d.%m.%Y %H:%M") + " МСК"
+                    
+                    status_map = {
+                        "paid": "Оплачено",
+                        "pending": "Ожидание",
+                        "canceled": "Отмена",
+                        "expired": "Отмена",
+                        "failed": "Ошибка"
+                    }
+                    status = status_map.get(o["status"].lower(), o["status"].capitalize())
+                
+                    lines.append(f"Заказ: #{order_id} | Сумма: {amount}₽ | Статус: {status} | Дата: {ts}")
                 text = "\n".join(lines)
         
             # Кнопка назад
