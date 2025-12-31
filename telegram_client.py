@@ -60,11 +60,8 @@ async def new_message_handler(event):
     asyncio.create_task(track_post_changes(chat_id, message_id, media))
     
 async def track_post_changes(chat_id, message_id, media=None):
-    """
-    Отслеживает изменения текста поста в течение 5 минут.
-    Если текст поменялся — заново отправляет в promo_processor.
-    """
-    CHECK_INTERVAL = 10  # проверять каждые 10 секунд
+    print(f"[track_post_changes] Старт отслеживания поста {message_id} в чате {chat_id}")
+    CHECK_INTERVAL = 4  # проверять каждые 10 секунд
     TIMEOUT = 5 * 60     # 5 минут
 
     start_time = time.time()
