@@ -156,7 +156,7 @@ async def yoomoney_ipn(notification_type, operation_id, amount, currency,
         return {"status": "error", "reason": "wrong_amount"}
 
     order["status"] = "paid"
-    order["paid_at"] = datetime_str          # время платежа от YooMoney
+    order["paid_at"] = int(datetime.fromisoformat(datetime_str.replace("Z", "+00:00")).timestamp())      # время платежа от YooMoney
     order["operation_id"] = operation_id
     order["sender"] = sender
     save_order_to_redis(order_id, order)
