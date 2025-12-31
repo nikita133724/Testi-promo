@@ -15,14 +15,15 @@ def extract_special_promos(message):
     if not message.entities:
         return []
 
-    full_text = message.raw_text or message.message or ""
     results = []
+    full_text = message.message or ""
 
     for ent in message.entities:
         if isinstance(ent, (MessageEntitySpoiler, MessageEntityCode, MessageEntityPre)):
             start = ent.offset
             end = ent.offset + ent.length
             code = full_text[start:end].strip()
+
             if 4 <= len(code) <= 32:
                 results.append(code)
 
