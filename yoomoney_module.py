@@ -74,7 +74,9 @@ def create_payment_link(chat_id, amount):
     order_id = get_next_order_id()
     label = make_label(chat_id, order_id, amount)
 
-    targets = urllib.parse.quote_plus(f"Подписка, заказ №{order_id}")
+    store_name = "promo_run_bot"
+    targets = urllib.parse.quote_plus(f"{store_name}, заказ №{order_id}")  # название магазина + номер заказа
+
     url = (
         f"https://yoomoney.ru/quickpay/confirm.xml"
         f"?receiver={YOOMONEY_WALLET}"
