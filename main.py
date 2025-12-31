@@ -542,25 +542,20 @@ async def startup_event():
 # IPN эндпоинт для YooMoney
 @app_fastapi.post("/yoomoney_ipn")
 async def yoomoney_ipn_endpoint(
-    notification_type: str = Form(...),
     operation_id: str = Form(...),
     amount: float = Form(...),
     currency: str = Form(...),
     datetime_str: str = Form(...),
     sender: str = Form(...),
-    codepro: str = Form(...),
     label: str = Form(...),
     sha1_hash: str = Form(...)
 ):
-    # Передаем данные в новый обработчик с таймером и хешированием
     return await yoomoney_ipn_handler(
-        notification_type,
         operation_id,
         amount,
         currency,
         datetime_str,
         sender,
-        codepro,
         label,
         sha1_hash
     )
