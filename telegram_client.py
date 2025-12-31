@@ -10,7 +10,7 @@ channels = [CHANNEL_ORDINARY, CHANNEL_SPECIAL]
 
 POST_CACHE = {}
 
-ddef extract_special_promos(message):
+def extract_special_promos(message):
     if not message.entities:
         print("[DEBUG] Нет entities в сообщении")
         return []
