@@ -4,9 +4,10 @@ from config import TELEGRAM_SESSION_FILE, TELEGRAM_API_ID, TELEGRAM_API_HASH, CH
 from promo_processor import handle_new_post
 import asyncio
 import time
+
 client = TelegramClient(TELEGRAM_SESSION_FILE, TELEGRAM_API_ID, TELEGRAM_API_HASH)
 channels = [CHANNEL_ORDINARY, CHANNEL_SPECIAL]
-
+SPECIAL_USERNAME = CHANNEL_SPECIAL.lstrip("@").lower()
 
 POST_CACHE = {}
 
@@ -23,27 +24,28 @@ def extract_special_promos(message):
             end = ent.offset + ent.length
             code = full_text[start:end].strip()
 
-            # фильтр мусора
             if 4 <= len(code) <= 32:
                 results.append(code)
 
     return results
-    
+
 @client.on(events.NewMessage(chats=channels))
 async def new_message_handler(event):
     message = event.message
     message_id = message.id
     chat_id = event.chat_id
+    chat = await event.get_chat()
+    chat_username = (getattr(chat, "username", None) or "").lower()
+    is_special_channel = chat_username == SPECIAL_USERNAME
     message_text = message.message or ""
     media = message.media
 
-    # --- логирование и обработка медиа как раньше ---
     media_info = None
     if media:
         if isinstance(media, MessageMediaPhoto):
             media_info = "Фото"
         elif isinstance(media, MessageMediaDocument):
-            mime = getattr(media.document, 'mime_type', '')
+            mime = getattr(media.document, "mime_type", "")
             if mime.startswith("image/webp"):
                 media_info = "Стикер"
             elif mime.startswith("video/"):
@@ -65,11 +67,10 @@ async def new_message_handler(event):
         print("Пустое сообщение")
     print("----")
 
-    # --- Отправляем в promo_processor ---
     if message_text:
-        if chat_id == CHANNEL_SPECIAL:
+        if is_special_channel:
             codes = extract_special_promos(message)
-    
+
             if codes:
                 for code in codes:
                     fake_line = f"0.25$ — {code}"
@@ -77,19 +78,17 @@ async def new_message_handler(event):
                     await handle_new_post(fake_line, media)
             else:
                 print("[SPECIAL] В посте нет промокодов")
-    
         else:
             await handle_new_post(message_text, media)
-    # --- Сохраняем пост в кэш для отслеживания изменений ---
+
     POST_CACHE.setdefault(chat_id, {})[message_id] = {
         "text": message_text,
         "timestamp": time.time()
     }
 
-    # --- Запускаем фоновую проверку изменений ---
-    asyncio.create_task(track_post_changes(chat_id, message_id, media))
-    
-async def track_post_changes(chat_id, message_id, media=None):
+    asyncio.create_task(track_post_changes(chat_id, message_id, media, is_special_channel))
+
+async def track_post_changes(chat_id, message_id, media=None, is_special_channel=False):
     print(f"[track_post_changes] Старт отслеживания поста {message_id} в чате {chat_id}")
 
     CHECK_INTERVAL = 4
@@ -114,8 +113,8 @@ async def track_post_changes(chat_id, message_id, media=None):
         if new_text != old_text:
             print(f"[UPDATE] Пост {message_id} изменён! Отправляем заново.")
             POST_CACHE[chat_id][message_id]["text"] = new_text
-        
-            if chat_id == CHANNEL_SPECIAL:
+
+            if is_special_channel:
                 codes = extract_special_promos(message)
                 if codes:
                     for code in codes:
