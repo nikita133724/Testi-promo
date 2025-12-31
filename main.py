@@ -519,6 +519,7 @@ async def start_telegram():
     await tg_app.initialize()
     await tg_app.start()
     await client.start()
+    await init_channel_ids()
     print("Telethon клиент запущен.")
     await tg_app.updater.start_polling()
     
