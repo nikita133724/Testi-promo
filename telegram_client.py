@@ -82,9 +82,6 @@ async def poll_special_channel():
     print("[POLL] Запущен polling спец-канала на конкретный пост")
     TARGET_POST_ID = 9474  # конкретный пост для теста
 
-    # Ждем подключения клиента
-    while not client.is_connected():
-        await asyncio.sleep(0.5)
 
     # Задержка 1 минута для теста
     await asyncio.sleep(60)
