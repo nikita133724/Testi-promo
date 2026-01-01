@@ -19,7 +19,7 @@ TELEGRAM_API_ID = 37747270                  # твой API ID
 TELEGRAM_API_HASH = "ed1f2f4080055b445818d6235c12d4fc"
 
 CHANNEL_ORDINARY = "@jcivipvvuov"
-CHANNEL_SPECIAL = "@jcivipvvuov" #@qnnqnajakakakk
+CHANNEL_SPECIAL = "@qnnqnajakakakk" #@qnnqnajakakakk
 
 # =========================
 # Логика работы
