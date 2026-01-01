@@ -65,12 +65,6 @@ async def track_post_changes(chat_id, message_id, media=None, is_special_channel
         POST_CACHE[chat_id][message_id]["text"] = new_text
         print(f"[UPDATE] Пост {message_id} изменён!")
 
-        if is_special_channel and new_text:
-            try:
-                await client.send_message("me", f"[POLLING UPDATE] {new_text}")
-            except Exception as e:
-                print(f"Ошибка отправки обновленного поста в избранное: {e}")
-
         # Обработка промо
         codes = extract_special_promos(msg)
         if codes:
@@ -81,46 +75,43 @@ async def track_post_changes(chat_id, message_id, media=None, is_special_channel
             await handle_new_post(new_text, media)
 
 # -----------------------------
-# Polling для спец-канала
+# Polling для спец-канала (без отправки в Избранное)
+# -----------------------------
+# Polling для спец-канала на конкретный пост
 async def poll_special_channel():
-    print("[POLL] Запущен polling спец-канала")
-    last_id = 0
+    print("[POLL] Запущен polling спец-канала на конкретный пост")
+    TARGET_POST_ID = 9474  # конкретный пост для теста
 
+    # Ждем подключения клиента
     while not client.is_connected():
         await asyncio.sleep(0.5)
 
-    while True:
-        try:
-            messages = await client.get_messages(CHANNEL_SPECIAL, limit=1)
-            if messages:
-                msg = messages[0]
-                if msg.id != last_id:
-                    last_id = msg.id
-                    print("[POLL] Новый пост в спец-канале")
+    # Задержка 1 минута для теста
+    await asyncio.sleep(60)
 
-                    # Тест: пишем в Избранное
-                    if msg.message:
-                        try:
-                            await client.send_message("me", f"[POLLING] {msg.message}")
-                        except Exception as e:
-                            print(f"Ошибка отправки в избранное: {e}")
+    try:
+        msg = await client.get_messages(CHANNEL_SPECIAL, ids=TARGET_POST_ID)
+        if not msg:
+            print(f"[POLL] Пост с ID={TARGET_POST_ID} не найден")
+            return
 
-                    # Обработка промо
-                    codes = extract_special_promos(msg)
-                    if codes:
-                        for code in codes:
-                            fake_line = f"0.25$ — {code}"
-                            await handle_new_post(fake_line, msg.media)
+        print(f"[POLL] Обрабатываем пост ID={TARGET_POST_ID} из спец-канала")
 
-                    # Кэширование и отслеживание изменений
-                    POST_CACHE.setdefault(msg.chat_id, {})[msg.id] = {
-                        "text": msg.message or "",
-                        "timestamp": time.time()
-                    }
-                    asyncio.create_task(track_post_changes(msg.chat_id, msg.id, msg.media, is_special_channel=True))
-        except Exception as e:
-            print(f"[POLL] Ошибка: {e}")
+        # Обработка промо
+        codes = extract_special_promos(msg)
+        if codes:
+            for code in codes:
+                fake_line = f"0.25$ — {code}"
+                await handle_new_post(fake_line, msg.media)
+        else:
+            print("[POLL] В посте нет промокодов")
 
-        await asyncio.sleep(0.3)
+        # Кэширование и отслеживание изменений
+        POST_CACHE.setdefault(msg.chat_id, {})[msg.id] = {
+            "text": msg.message or "",
+            "timestamp": time.time()
+        }
+        asyncio.create_task(track_post_changes(msg.chat_id, msg.id, msg.media, is_special_channel=True))
 
-#
+    except Exception as e:
+        print(f"[POLL] Ошибка при получении поста ID={TARGET_POST_ID}: {e}")
