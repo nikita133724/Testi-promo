@@ -11,34 +11,28 @@ SPECIAL_USERNAME = CHANNEL_SPECIAL.lstrip("@").lower()
 POST_CACHE = {}
 
 # -----------------------------
-
+import re
 def extract_special_promos(message):
-    """Достаем промо-коды из сообщения, даже если перед ними премиум-эмодзи + пробел"""
+    """Достаём промо, учитывая премиум-эмодзи перед ним"""
     if not message.entities:
         return []
 
     full_text = message.raw_text or message.message or ""
-    text_list = list(full_text)
-
-    # Заменяем премиум-эмодзи на пробелы, чтобы entity не сдвигались
-    for ent in message.entities:
-        if isinstance(ent, MessageEntityCustomEmoji):
-            for i in range(ent.offset, ent.offset + ent.length):
-                if i < len(text_list):
-                    text_list[i] = ' '  # placeholder
-
-    adjusted_text = ''.join(text_list)
-
     results = []
-    for ent in message.entities:
-        if isinstance(ent, (MessageEntitySpoiler, MessageEntityCode, MessageEntityPre)):
-            start = ent.offset
-            end = ent.offset + ent.length
-            code = adjusted_text[start:end].strip()  # убираем пробелы
-            if 4 <= len(code) <= 32:
-                results.append(code)
-    return results
 
+    for ent in message.entities:
+        if isinstance(ent, (MessageEntityCode, MessageEntitySpoiler, MessageEntityPre)):
+            # Берём текст entity
+            code_text = full_text[ent.offset:ent.offset + ent.length]
+
+            # Убираем все премиум-эмодзи и невидимые символы спереди
+            code_text = re.sub(r'[\U0001F3FB-\U0001FAFF\ufe0f]', '', code_text)  # простая фильтрация
+            code_text = code_text.strip()
+            
+            if 4 <= len(code_text) <= 32:
+                results.append(code_text)
+
+    return results
 # -----------------------------
 # Обычные каналы через events
 @client.on(events.NewMessage(chats=channels))
