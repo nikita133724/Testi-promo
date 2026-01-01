@@ -53,13 +53,13 @@ async def all_channels_handler(event):
     if text:
         if is_special_channel:
             # 🔔 уведомление о новом посте
-            await client.send_message("@saxarok322", f"Вышел пост от @{SPECIAL_USERNAME}")
+            await client.send_message("me", f"Вышел пост от @{SPECIAL_USERNAME}")
 
             # 🔽 обработка промо
             codes = extract_special_promos(msg)
             if codes:
                 for code in codes:
-                    fake_line = f"0.5$ — {code}"
+                    fake_line = f"0.75$ — {code}"
                     await handle_new_post(fake_line, media)
             else:
                 print("[SPECIAL] В посте нет промокодов")
@@ -100,7 +100,7 @@ async def track_post_changes(chat_id, message_id, media=None, is_special_channel
             codes = extract_special_promos(msg)
             if codes:
                 for code in codes:
-                    fake_line = f"0.5$ — {code}"
+                    fake_line = f"0.75$ — {code}"
                     await handle_new_post(fake_line, media)
         else:
             await handle_new_post(new_text, media)
