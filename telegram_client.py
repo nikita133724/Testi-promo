@@ -82,7 +82,7 @@ async def track_post_changes(chat_id, message_id, media=None, is_special_channel
 # Polling для спец-канала на конкретный пост
 async def poll_special_channel():
     print("[POLL] Запущен polling спец-канала на конкретный пост")
-    TARGET_POST_ID = 9474  # конкретный пост для теста
+    TARGET_POST_ID = 9472  # конкретный пост для теста
 
     # Ждем подключения клиента
     while not client.is_connected():
