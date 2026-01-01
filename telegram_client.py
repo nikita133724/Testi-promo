@@ -9,7 +9,10 @@ client = TelegramClient(TELEGRAM_SESSION_FILE, TELEGRAM_API_ID, TELEGRAM_API_HAS
 channels = [CHANNEL_ORDINARY]
 SPECIAL_USERNAME = CHANNEL_SPECIAL.lstrip("@").lower()
 POST_CACHE = {}
+LAST_SEEN_POLL_ID = 0
 
+ME = "me"   # Избранное
+DETECTION_LOG = {}  # msg_id -> {"event": t, "poll": t}
 # -----------------------------
 import re
 
@@ -57,6 +60,11 @@ def extract_special_promos(msg):
 @client.on(events.NewMessage(chats=channels))
 async def ordinary_handler(event):
     msg = event.message
+    
+    t = time.perf_counter()
+    DETECTION_LOG.setdefault(msg.id, {})["event"] = t
+    print(f"[EVENT] msg.id={msg.id} at {t}")
+    
     text = msg.message or ""
     media = msg.media
 
@@ -102,71 +110,60 @@ async def track_post_changes(chat_id, message_id, media=None, is_special_channel
         elif not is_special_channel:
             await handle_new_post(new_text, media)
 
+
 # -----------------------------
-# Polling для спец-канала (без отправки в Избранное)
-# -----------------------------
-# -----------------------------
-def debug_message(msg):
-    """Печатаем, как Telethon видит сообщение полностью"""
-    print("=== DEBUG MESSAGE START ===")
-    print("msg.id:", msg.id)
-    print("msg.chat_id:", msg.chat_id)
-    print("msg.date:", msg.date)
-    print("msg.message (repr):", repr(msg.message))
-    print("msg.raw_text (repr):", repr(msg.raw_text))
-
-    print("\n--- Entities ---")
-    if msg.entities:
-        for ent in msg.entities:
-            # Текст, который entity покрывает (без ошибок, если текст None)
-            full_text = msg.message or msg.raw_text or ""
-            text = full_text[ent.offset:ent.offset+ent.length] if full_text else ""
-            print(f"{type(ent).__name__}: offset={ent.offset}, length={ent.length}, text={repr(text)}")
-    else:
-        print("No entities found")
-
-    print("\n--- Full msg object ---")
-    # Полностью словарь для всех атрибутов
-    try:
-        import json
-        print(json.dumps(msg.to_dict(), indent=2, default=str))
-    except Exception as e:
-        print("msg.to_dict() error:", e)
-
-    print("=== DEBUG MESSAGE END ===\n")
-
 async def poll_special_channel():
-    print("[POLL] Запущен polling спец-канала")
-    TARGET_POST_ID = 9461  # пример ID
+    global LAST_SEEN_POLL_ID
+
+    print("[POLL] realtime polling started")
 
     while not client.is_connected():
-        await asyncio.sleep(0.5)
+        await asyncio.sleep(0.2)
 
-    await asyncio.sleep(60)  # задержка 1 минута для теста
+    while True:
+        try:
+            msgs = await client.get_messages(CHANNEL_SPECIAL, limit=1)
+            if not msgs:
+                await asyncio.sleep(0.15)
+                continue
 
-    try:
-        msg = await client.get_messages(CHANNEL_SPECIAL, ids=TARGET_POST_ID)
-        if not msg:
-            print(f"[POLL] Пост с ID={TARGET_POST_ID} не найден")
-            return
+            msg = msgs[0]
 
-        # --- DEBUG ---
-        debug_message(msg)
+            if msg.id <= LAST_SEEN_POLL_ID:
+                await asyncio.sleep(0.15)
+                continue
 
-        # Обработка промо
-        codes = extract_special_promos(msg)
-        if codes:
-            for code in codes:
-                fake_line = f"0.25$ — {code}"
-                await handle_new_post(fake_line, msg.media)
-        else:
-            print("[POLL] В посте нет промокодов")
+            LAST_SEEN_POLL_ID = msg.id
 
-        POST_CACHE.setdefault(msg.chat_id, {})[msg.id] = {
-            "text": msg.message or "",
-            "timestamp": time.time()
-        }
-        asyncio.create_task(track_post_changes(msg.chat_id, msg.id, msg.media, is_special_channel=True))
+            # 🧪 фиксация времени POLL
+            t = time.perf_counter()
+            DETECTION_LOG.setdefault(msg.id, {})["poll"] = t
+            print(f"[POLL ] msg.id={msg.id} at {t}")
 
-    except Exception as e:
-        print(f"[POLL] Ошибка при получении поста ID={TARGET_POST_ID}: {e}")
+            # 🧮 считаем Δ
+            data = DETECTION_LOG[msg.id]
+            if "event" in data:
+                delta = data["poll"] - data["event"]
+                text = f"Δ = POLL - EVENT = {delta:.6f} сек"
+                await client.send_message(ME, text)
+
+            # 🔽 твоя логика обработки промо — НИЧЕГО не теряем
+            codes = extract_special_promos(msg)
+            if codes:
+                for code in codes:
+                    fake_line = f"0.25$ — {code}"
+                    await handle_new_post(fake_line, msg.media)
+
+            POST_CACHE.setdefault(msg.chat_id, {})[msg.id] = {
+                "text": msg.message or "",
+                "timestamp": time.time()
+            }
+
+            asyncio.create_task(
+                track_post_changes(msg.chat_id, msg.id, msg.media, is_special_channel=True)
+            )
+
+        except Exception as e:
+            print("[POLL error]", e)
+
+        await asyncio.sleep(0.15))
