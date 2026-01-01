@@ -92,19 +92,28 @@ async def track_post_changes(chat_id, message_id, media=None, is_special_channel
 # -----------------------------
 # Polling для спец-канала (без отправки в Избранное)
 # -----------------------------
-# Polling для спец-канала на конкретный пост
 # -----------------------------
-# Polling для спец-канала на конкретный пост
-async def poll_special_channel():
-    print("[POLL] Запущен polling спец-канала на конкретный пост")
-    TARGET_POST_ID = 9472  # конкретный пост для теста
+def debug_message(msg):
+    """Печатаем, как Telethon видит сообщение"""
+    print("=== DEBUG MESSAGE START ===")
+    print("msg.id:", msg.id)
+    print("msg.chat_id:", msg.chat_id)
+    print("msg.message:", repr(msg.message))
+    print("msg.raw_text:", repr(msg.raw_text))
+    print("msg.entities:")
+    for ent in msg.entities or []:
+        text = (msg.message or msg.raw_text)[ent.offset:ent.offset+ent.length]
+        print(f"  {type(ent).__name__} offset={ent.offset} length={ent.length} -> {repr(text)}")
+    print("=== DEBUG MESSAGE END ===\n")
 
-    # Ждем подключения клиента
+async def poll_special_channel():
+    print("[POLL] Запущен polling спец-канала")
+    TARGET_POST_ID = 9472  # пример ID
+
     while not client.is_connected():
         await asyncio.sleep(0.5)
 
-    # Задержка 1 минута для теста
-    await asyncio.sleep(60)
+    await asyncio.sleep(60)  # задержка 1 минута для теста
 
     try:
         msg = await client.get_messages(CHANNEL_SPECIAL, ids=TARGET_POST_ID)
@@ -112,7 +121,8 @@ async def poll_special_channel():
             print(f"[POLL] Пост с ID={TARGET_POST_ID} не найден")
             return
 
-        print(f"[POLL] Обрабатываем пост ID={TARGET_POST_ID} из спец-канала")
+        # --- DEBUG ---
+        debug_message(msg)
 
         # Обработка промо
         codes = extract_special_promos(msg)
@@ -123,7 +133,6 @@ async def poll_special_channel():
         else:
             print("[POLL] В посте нет промокодов")
 
-        # Кэширование и отслеживание изменений
         POST_CACHE.setdefault(msg.chat_id, {})[msg.id] = {
             "text": msg.message or "",
             "timestamp": time.time()
