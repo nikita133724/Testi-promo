@@ -13,7 +13,7 @@ POST_CACHE = {}
 # -----------------------------
 import re
 def extract_special_promos(message):
-    """Достаём промо, учитывая премиум-эмодзи перед ним"""
+    """Берем текст промо, корректно сдвигая его, если перед ним премиум-эмодзи"""
     if not message.entities:
         return []
 
@@ -22,13 +22,19 @@ def extract_special_promos(message):
 
     for ent in message.entities:
         if isinstance(ent, (MessageEntityCode, MessageEntitySpoiler, MessageEntityPre)):
-            # Берём текст entity
-            code_text = full_text[ent.offset:ent.offset + ent.length]
+            start = ent.offset
+            end = ent.offset + ent.length
 
-            # Убираем все премиум-эмодзи и невидимые символы спереди
-            code_text = re.sub(r'[\U0001F3FB-\U0001FAFF\ufe0f]', '', code_text)  # простая фильтрация
-            code_text = code_text.strip()
-            
+            # Если перед entity есть CustomEmoji, проверяем сдвиг
+            while start > 0:
+                for ce in message.entities:
+                    if isinstance(ce, MessageEntityCustomEmoji) and ce.offset + ce.length == start:
+                        start -= ce.length
+                        break
+                else:
+                    break  # больше смещений нет
+
+            code_text = full_text[start:end].strip()
             if 4 <= len(code_text) <= 32:
                 results.append(code_text)
 
