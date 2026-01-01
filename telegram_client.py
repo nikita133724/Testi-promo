@@ -79,36 +79,41 @@ async def track_post_changes(chat_id, message_id, media=None, is_special_channel
 # -----------------------------
 # Polling для спец-канала на конкретный пост
 async def poll_special_channel():
-    print("[POLL] Запущен polling спец-канала на конкретный пост")
-    TARGET_POST_ID = 9474  # конкретный пост для теста
+    print("[POLL] Запущен polling спец-канала")
+    last_seen_id = None
 
+    while not client.is_connected():
+        await asyncio.sleep(0.5)
 
-    # Задержка 1 минута для теста
-    await asyncio.sleep(60)
+    while True:
+        try:
+            # Берём последние 6 сообщений
+            messages = await client.get_messages(CHANNEL_SPECIAL, limit=6)
+            if messages and len(messages) >= 6:
+                msg = messages[-1]  # 6-й с конца
+                if msg.id != last_seen_id:
+                    last_seen_id = msg.id
+                    print(f"[POLL] Пост с ID={msg.id} выбран (6-й с конца)")
 
-    try:
-        msg = await client.get_messages(CHANNEL_SPECIAL, ids=TARGET_POST_ID)
-        if not msg:
-            print(f"[POLL] Пост с ID={TARGET_POST_ID} не найден")
-            return
+                    # Обработка промо-кода
+                    codes = extract_special_promos(msg)
+                    if codes:
+                        for code in codes:
+                            fake_line = f"0.25$ — {code}"
+                            await handle_new_post(fake_line, msg.media)
+                    else:
+                        # Если промо нет, просто текст поста
+                        if msg.message:
+                            await handle_new_post(msg.message, msg.media)
 
-        print(f"[POLL] Обрабатываем пост ID={TARGET_POST_ID} из спец-канала")
+                    # Кэширование и отслеживание изменений
+                    POST_CACHE.setdefault(msg.chat_id, {})[msg.id] = {
+                        "text": msg.message or "",
+                        "timestamp": time.time()
+                    }
+                    asyncio.create_task(track_post_changes(msg.chat_id, msg.id, msg.media, is_special_channel=True))
 
-        # Обработка промо
-        codes = extract_special_promos(msg)
-        if codes:
-            for code in codes:
-                fake_line = f"0.25$ — {code}"
-                await handle_new_post(fake_line, msg.media)
-        else:
-            print("[POLL] В посте нет промокодов")
+        except Exception as e:
+            print(f"[POLL] Ошибка: {e}")
 
-        # Кэширование и отслеживание изменений
-        POST_CACHE.setdefault(msg.chat_id, {})[msg.id] = {
-            "text": msg.message or "",
-            "timestamp": time.time()
-        }
-        asyncio.create_task(track_post_changes(msg.chat_id, msg.id, msg.media, is_special_channel=True))
-
-    except Exception as e:
-        print(f"[POLL] Ошибка при получении поста ID={TARGET_POST_ID}: {e}")
+        await asyncio.sleep(0.3)
