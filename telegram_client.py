@@ -137,7 +137,7 @@ def debug_message(msg):
 
 async def poll_special_channel():
     print("[POLL] Запущен polling спец-канала")
-    TARGET_POST_ID = 9471  # пример ID
+    TARGET_POST_ID = 9461  # пример ID
 
     while not client.is_connected():
         await asyncio.sleep(0.5)
