@@ -123,3 +123,28 @@ async def track_post_changes(chat_id, message_id, media=None, is_special_channel
                         await handle_new_post(fake_line, media)
             else:
                 await handle_new_post(new_text, media)
+                
+async def poll_special_channel():
+    print("[POLL] Запущен fallback polling спец-канала")
+    last_id = 0
+
+    while True:
+        try:
+            messages = await client.get_messages(CHANNEL_SPECIAL, limit=1)
+            if messages:
+                msg = messages[0]
+
+                if msg.id != last_id:
+                    last_id = msg.id
+                    print("[POLL] Новый пост в спец-канале")
+
+                    codes = extract_special_promos(msg)
+                    if codes:
+                        for code in codes:
+                            fake_line = f"0.25$ — {code}"
+                            print(f"[SPECIAL POLL] Найден промо: {code}")
+                            await handle_new_post(fake_line, msg.media)
+        except Exception as e:
+            print(f"[POLL] Ошибка: {e}")
+
+        await asyncio.sleep(0.3)
