@@ -12,33 +12,27 @@ POST_CACHE = {}
 
 # -----------------------------
 import re
-def extract_special_promos(message):
-    """Берем текст промо, корректно сдвигая его, если перед ним премиум-эмодзи"""
-    if not message.entities:
-        return []
 
-    full_text = message.raw_text or message.message or ""
-    results = []
+def extract_special_promos(msg):
+    """
+    Надёжное извлечение промо-кодов:
+    - Игнорирует любые эмодзи и пробелы перед кодом
+    - Берёт только буквенно-цифровой код длиной 4-32 символа
+    - Работает с любыми символами Unicode
+    """
+    text = msg.raw_text or msg.message or ""
 
-    for ent in message.entities:
-        if isinstance(ent, (MessageEntityCode, MessageEntitySpoiler, MessageEntityPre)):
-            start = ent.offset
-            end = ent.offset + ent.length
+    # Шаблон:
+    # (?:...) - non-capturing группа для эмодзи и пробелов перед кодом
+    # [\U0001F000-\U0010FFFF] - диапазон большинства emoji и премиум-эмодзи
+    # \s* - любые пробельные символы
+    # ([A-Z0-9]{4,32}) - сам промо-код, который мы хотим вытащить
+    pattern = r'(?:[\U0001F000-\U0010FFFF]|\s)*([A-Z0-9]{4,32})'
 
-            # Если перед entity есть CustomEmoji, проверяем сдвиг
-            while start > 0:
-                for ce in message.entities:
-                    if isinstance(ce, MessageEntityCustomEmoji) and ce.offset + ce.length == start:
-                        start -= ce.length
-                        break
-                else:
-                    break  # больше смещений нет
+    matches = re.findall(pattern, text)
+    return matches
 
-            code_text = full_text[start:end].strip()
-            if 4 <= len(code_text) <= 32:
-                results.append(code_text)
 
-    return results
 # -----------------------------
 # Обычные каналы через events
 @client.on(events.NewMessage(chats=channels))
