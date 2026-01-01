@@ -521,7 +521,7 @@ async def start_telegram():
     await client.start()
     print("Telethon клиент запущен.")
     await tg_app.updater.start_polling()
-    
+    await client.run_until_disconnected()
 
 # -----------------------
 from yoomoney_module import load_orders_from_redis, yoomoney_ipn as yoomoney_ipn_handler, ORDERS
