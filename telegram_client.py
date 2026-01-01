@@ -40,5 +40,12 @@ async def new_message_handler(event):
     print("----")
 
     if message_text:
-        # ChatID больше не передается
+        
         await handle_new_post(message_text, media)
+        
+async def connection_watcher():
+    while True:
+        if not client.is_connected():
+            print("🔄 Reconnecting...")
+            await client.connect()
+        await asyncio.sleep(5)
