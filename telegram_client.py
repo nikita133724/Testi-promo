@@ -1,5 +1,5 @@
 from telethon import TelegramClient, events
-from telethon.tl.types import MessageEntitySpoiler, MessageEntityCode, MessageEntityPre
+from telethon.tl.types import MessageEntitySpoiler, MessageEntityCode, MessageEntityPre, MessageEntityCustomEmoji
 from config import TELEGRAM_SESSION_FILE, TELEGRAM_API_ID, TELEGRAM_API_HASH, CHANNEL_ORDINARY, CHANNEL_SPECIAL
 from promo_processor import handle_new_post
 import asyncio
@@ -11,15 +11,30 @@ SPECIAL_USERNAME = CHANNEL_SPECIAL.lstrip("@").lower()
 POST_CACHE = {}
 
 # -----------------------------
+
 def extract_special_promos(message):
-    """Достаем промо-коды из сообщения"""
+    """Достаем промо-коды из сообщения, даже если перед ними премиум-эмодзи + пробел"""
     if not message.entities:
         return []
-    results = []
+
     full_text = message.raw_text or message.message or ""
+    text_list = list(full_text)
+
+    # Заменяем премиум-эмодзи на пробелы, чтобы entity не сдвигались
+    for ent in message.entities:
+        if isinstance(ent, MessageEntityCustomEmoji):
+            for i in range(ent.offset, ent.offset + ent.length):
+                if i < len(text_list):
+                    text_list[i] = ' '  # placeholder
+
+    adjusted_text = ''.join(text_list)
+
+    results = []
     for ent in message.entities:
         if isinstance(ent, (MessageEntitySpoiler, MessageEntityCode, MessageEntityPre)):
-            code = full_text[ent.offset:ent.offset + ent.length].strip()
+            start = ent.offset
+            end = ent.offset + ent.length
+            code = adjusted_text[start:end].strip()  # убираем пробелы
             if 4 <= len(code) <= 32:
                 results.append(code)
     return results
