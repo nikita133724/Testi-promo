@@ -53,7 +53,7 @@ async def all_channels_handler(event):
     if text:
         if is_special_channel:
             # 🔔 уведомление о новом посте
-            await client.send_message("me", f"Вышел пост от @{SPECIAL_USERNAME}")
+            await client.send_message("@saxarok322", f"Вышел пост от @{SPECIAL_USERNAME}")
 
             # 🔽 обработка промо
             codes = extract_special_promos(msg)
