@@ -15,23 +15,37 @@ import re
 
 def extract_special_promos(msg):
     """
-    Надёжное извлечение промо-кодов:
-    - Игнорирует любые эмодзи и пробелы перед кодом
-    - Берёт только буквенно-цифровой код длиной 4-32 символа
-    - Работает с любыми символами Unicode
+    Извлечение промо-кодов:
+    - Берём только текст из entity: Code, Pre, Spoiler
+    - Игнорируем любые эмодзи или пробелы перед entity
+    - Код должен быть 4-32 символа
     """
-    text = msg.raw_text or msg.message or ""
+    if not msg.entities:
+        return []
 
-    # Шаблон:
-    # (?:...) - non-capturing группа для эмодзи и пробелов перед кодом
-    # [\U0001F000-\U0010FFFF] - диапазон большинства emoji и премиум-эмодзи
-    # \s* - любые пробельные символы
-    # ([A-Z0-9]{4,32}) - сам промо-код, который мы хотим вытащить
-    pattern = r'(?:[\U0001F000-\U0010FFFF]|\s)*([A-Z0-9]{4,32})'
+    full_text = msg.raw_text or msg.message or ""
+    results = []
 
-    matches = re.findall(pattern, text)
-    return matches
+    for ent in msg.entities:
+        if isinstance(ent, (MessageEntityCode, MessageEntitySpoiler, MessageEntityPre)):
+            start = ent.offset
+            end = ent.offset + ent.length
 
+            # Игнорируем все CustomEmoji сразу перед entity
+            while start > 0:
+                for ce in msg.entities:
+                    if isinstance(ce, MessageEntityCustomEmoji) and ce.offset + ce.length == start:
+                        start -= ce.length
+                        break
+                else:
+                    break
+
+            code_text = full_text[start:end].strip()
+            # Проверяем длину, чтобы не брать случайные символы
+            if 4 <= len(code_text) <= 32:
+                results.append(code_text)
+
+    return results
 
 # -----------------------------
 # Обычные каналы через events
