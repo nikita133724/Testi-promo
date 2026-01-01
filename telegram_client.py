@@ -16,9 +16,9 @@ import re
 def extract_special_promos(msg):
     """
     Извлечение промо-кодов:
-    - Берём только текст из entity: Code, Pre, Spoiler
-    - Игнорируем любые эмодзи или пробелы перед entity
-    - Код должен быть 4-32 символа
+    - Берём только entity типа Code, Pre, Spoiler
+    - Игнорируем все CustomEmoji или пробелы перед entity
+    - Берём только буквенно-цифровой код длиной 4-32 символа
     """
     if not msg.entities:
         return []
@@ -40,10 +40,12 @@ def extract_special_promos(msg):
                 else:
                     break
 
-            code_text = full_text[start:end].strip()
-            # Проверяем длину, чтобы не брать случайные символы
-            if 4 <= len(code_text) <= 32:
-                results.append(code_text)
+            entity_text = full_text[start:end].strip()
+
+            # Берём только буквенно-цифровой код внутри entity
+            match = re.search(r'([A-Za-zА-Яа-я0-9]{4,32})', entity_text)
+            if match:
+                results.append(match.group(1))
 
     return results
 
