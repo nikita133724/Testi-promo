@@ -94,16 +94,32 @@ async def track_post_changes(chat_id, message_id, media=None, is_special_channel
 # -----------------------------
 # -----------------------------
 def debug_message(msg):
-    """Печатаем, как Telethon видит сообщение"""
+    """Печатаем, как Telethon видит сообщение полностью"""
     print("=== DEBUG MESSAGE START ===")
     print("msg.id:", msg.id)
     print("msg.chat_id:", msg.chat_id)
-    print("msg.message:", repr(msg.message))
-    print("msg.raw_text:", repr(msg.raw_text))
-    print("msg.entities:")
-    for ent in msg.entities or []:
-        text = (msg.message or msg.raw_text)[ent.offset:ent.offset+ent.length]
-        print(f"  {type(ent).__name__} offset={ent.offset} length={ent.length} -> {repr(text)}")
+    print("msg.date:", msg.date)
+    print("msg.message (repr):", repr(msg.message))
+    print("msg.raw_text (repr):", repr(msg.raw_text))
+
+    print("\n--- Entities ---")
+    if msg.entities:
+        for ent in msg.entities:
+            # Текст, который entity покрывает (без ошибок, если текст None)
+            full_text = msg.message or msg.raw_text or ""
+            text = full_text[ent.offset:ent.offset+ent.length] if full_text else ""
+            print(f"{type(ent).__name__}: offset={ent.offset}, length={ent.length}, text={repr(text)}")
+    else:
+        print("No entities found")
+
+    print("\n--- Full msg object ---")
+    # Полностью словарь для всех атрибутов
+    try:
+        import json
+        print(json.dumps(msg.to_dict(), indent=2, default=str))
+    except Exception as e:
+        print("msg.to_dict() error:", e)
+
     print("=== DEBUG MESSAGE END ===\n")
 
 async def poll_special_channel():
