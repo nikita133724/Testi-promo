@@ -31,12 +31,15 @@ def extract_special_promos(msg):
             start = ent.offset
             end = ent.offset + ent.length
 
-            # Игнорируем все CustomEmoji сразу перед entity
+            # смещаем start на все предшествующие символы, которые могут быть частью кода
             while start > 0:
-                for ce in msg.entities:
-                    if isinstance(ce, MessageEntityCustomEmoji) and ce.offset + ce.length == start:
-                        start -= ce.length
-                        break
+                prev_char = full_text[start-1]
+                # если это буква/цифра — включаем в entity
+                if re.match(r'[A-Za-zА-Яа-я0-9]', prev_char):
+                    start -= 1
+                # если это CustomEmoji — игнорируем
+                elif any(isinstance(ce, MessageEntityCustomEmoji) and ce.offset <= start-1 < ce.offset+ce.length for ce in msg.entities):
+                    start -= 1
                 else:
                     break
 
