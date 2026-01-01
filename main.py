@@ -537,7 +537,6 @@ async def startup_event():
     asyncio.create_task(subscription_watcher(bot, send_message_to_user))
     asyncio.create_task(start_telegram())
     asyncio.create_task(monitor_presence())
-    asyncio.create_task(poll_special_channel())
 # -----------------------
 # IPN эндпоинт для YooMoney
 @app_fastapi.post("/yoomoney_ipn")
