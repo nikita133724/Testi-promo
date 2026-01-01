@@ -11,9 +11,6 @@ SPECIAL_USERNAME = CHANNEL_SPECIAL.lstrip("@").lower()
 POST_CACHE = {}
 LAST_SEEN_POLL_ID = 0
 
-ME = "me"   # Избранное
-DETECTION_LOG = {}  # msg_id -> {"event": t, "poll": t}
-# -----------------------------
 import re
 
 def extract_special_promos(msg):
@@ -60,11 +57,6 @@ def extract_special_promos(msg):
 @client.on(events.NewMessage(chats=channels))
 async def ordinary_handler(event):
     msg = event.message
-    
-    t = time.perf_counter()
-    DETECTION_LOG.setdefault(msg.id, {})["event"] = t
-    print(f"[EVENT] msg.id={msg.id} at {t}")
-    
     text = msg.message or ""
     media = msg.media
 
@@ -115,8 +107,6 @@ async def track_post_changes(chat_id, message_id, media=None, is_special_channel
 async def poll_special_channel():
     global LAST_SEEN_POLL_ID
 
-    print("[POLL] realtime polling started")
-
     while not client.is_connected():
         await asyncio.sleep(0.2)
 
@@ -134,18 +124,6 @@ async def poll_special_channel():
                 continue
 
             LAST_SEEN_POLL_ID = msg.id
-
-            # 🧪 фиксация времени POLL
-            t = time.perf_counter()
-            DETECTION_LOG.setdefault(msg.id, {})["poll"] = t
-            print(f"[POLL ] msg.id={msg.id} at {t}")
-
-            # 🧮 считаем Δ
-            data = DETECTION_LOG[msg.id]
-            if "event" in data:
-                delta = data["poll"] - data["event"]
-                text = f"Δ = POLL - EVENT = {delta:.6f} сек"
-                await client.send_message(ME, text)
 
             # 🔽 твоя логика обработки промо — НИЧЕГО не теряем
             codes = extract_special_promos(msg)
