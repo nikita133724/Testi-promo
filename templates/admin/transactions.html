@@ -35,7 +35,7 @@
         <tr>
             <td>{{ t.order_id }}</td>
             <td>{{ t.chat_id }}</td>
-            <td>{{ t.amount }} ₽</td>
+            <td>{{ t.amount }}/{{ t.paid_amount if t.paid_amount is not none else '-' }} ₽</td>
             <td data-status="{{ t.status }}"></td>
             <td>{{ t.created_at }}</td>
             <td>{{ t.operation_id if t.operation_id else '-' }}</td>
@@ -93,7 +93,7 @@ async function updateTable() {
         const tr = document.createElement('tr');
         tr.innerHTML = `<td>${t.order_id}</td>
                         <td>${t.chat_id}</td>
-                        <td>${t.amount} ₽</td>
+                        <td>${t.amount}/${t.paid_amount ?? '-'} ₽</td>
                         <td class="${statusClass(t.status)}">${humanStatus(t.status)}</td>
                         <td>${formatTimestamp(t.created_at)}</td>
                         <td>${t.operation_id ? t.operation_id : '-'}</td>`;
