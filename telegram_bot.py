@@ -404,10 +404,14 @@ async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
     
     # Кнопка "Активировать доступ"
     if text == "Активировать доступ":
-        from access_control import prompt_for_key  # импортируем функцию обработки ключа
-        await prompt_for_key(update, context)
+        from yoomoney_module import send_payment_link
+        from subscription_config import get_price
+        
+        chat_id = update.effective_chat.id
+        amount = get_price("basic")  # сумма подписки
+        await send_payment_link(bot, chat_id, amount)
         return
-    
+        
     # Ввод ключа активации
     if settings.get("waiting_for_key"):
         from access_control import process_key_input
