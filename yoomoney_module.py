@@ -150,12 +150,6 @@ async def yoomoney_ipn(operation_id, amount, currency,
         # Если заказ истёк — платёж принимаем, но подписку не выдаём
         return {"status": "ok"}
     
-
-    if round(float(amount), 2) != round(float(expected_amount), 2):
-        order["status"] = "failed"
-        save_order_to_redis(order_id, order)
-        return {"status": "error", "reason": "wrong_amount"}
-
     order["status"] = "paid"
     order["paid_at"] = int(datetime.fromisoformat(datetime_str.replace("Z", "+00:00")).timestamp())      # время платежа от YooMoney
     order["operation_id"] = operation_id
