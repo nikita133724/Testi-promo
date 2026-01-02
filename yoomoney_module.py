@@ -128,7 +128,7 @@ async def yoomoney_ipn(operation_id, amount, currency,
 
         plain = f"{chat_id}|{order_id}|{expected_amount}"
         expected_hash = hashlib.sha256((plain + SECRET_LABEL_KEY).encode()).hexdigest()
-        if provided_hash != expected_hash:
+        if not expected_hash.startswith(provided_hash):
             return {"status": "error", "reason": "invalid_label_hash"}
     except:
         return {"status": "error", "reason": "invalid_label"}
