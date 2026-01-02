@@ -550,27 +550,7 @@ async def yoomoney_ipn_endpoint(
     label: str = Form(...),
     sha1_hash: str = Form(...)
 ):
-    # --- безопасно конвертируем сумму в float ---
-    try:
-        amount_float = float(amount.replace(",", "."))
-    except Exception as e:
-        print(f"[YOOMONEY IPN] Ошибка конвертации amount: {amount} -> {e}")
-        return {"status": "error", "reason": "invalid_amount_format"}
-
-    # --- Логируем для дебага ---
-    print("=== YOOMONEY IPN RECEIVED ===")
-    print({
-        "operation_id": operation_id,
-        "amount_raw": amount,
-        "amount": amount_float,
-        "currency": currency,
-        "datetime_str": datetime_str,
-        "sender": sender,
-        "label": label,
-        "sha1_hash": sha1_hash
-    })
-    print("=============================")
-
+    
     # --- Передаем дальше в обработчик ---
     return await yoomoney_ipn_handler(
         operation_id,
@@ -581,6 +561,16 @@ async def yoomoney_ipn_endpoint(
         label,
         sha1_hash
     )
+
+@app_fastapi.post("/yoomoney_ipn_test")
+async def yoomoney_ipn_test(request: Request):
+    body = await request.body()
+    headers = dict(request.headers)
+    print("=== YOOMONEY RAW IPN ===")
+    print("Headers:", headers)
+    print("Body:", body.decode())
+    print("=======================")
+    return {"status": "ok"}
     
 @app_fastapi.get("/admin/transactions", response_class=HTMLResponse)
 async def admin_transactions_page(request: Request, _: None = Depends(admin_required)):
