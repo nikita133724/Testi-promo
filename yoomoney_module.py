@@ -120,21 +120,30 @@ async def send_payment_link(bot, chat_id, amount):
 
 MIN_HASH_LEN = 25  # минимум символов для проверки
 # ----------------------- IPN
+MAX_DIFF_PERCENT = 0.1  # 10% допустимая разница
+
 async def yoomoney_ipn(operation_id, amount, currency,
                        datetime_str, label, sha1_hash):
 
     try:
-        chat_id, order_id, expected_amount, provided_hash = label.split("|")
+        chat_id, order_id, expected_amount_str, provided_hash = label.split("|")
         order_id = int(order_id)
-
-        plain = f"{chat_id}|{order_id}|{expected_amount}"
+        expected_amount = float(expected_amount_str)
+        
+        # Проверка хэша
+        plain = f"{chat_id}|{order_id}|{expected_amount_str}"
         expected_hash = hashlib.sha256((plain + SECRET_LABEL_KEY).encode()).hexdigest()
         if len(provided_hash) < MIN_HASH_LEN or not expected_hash.startswith(provided_hash):
             return {"status": "error", "reason": "invalid_label_hash"}
-    except:
+
+        # Проверка суммы с допуском
+        if amount < expected_amount * (1 - MAX_DIFF_PERCENT):
+            return {"status": "error", "reason": "wrong_amount"}
+    except Exception as e:
+        print(f"[YOOMONEY IPN] Ошибка разбора лейбла: {e}")
         return {"status": "error", "reason": "invalid_label"}
 
-    # 🧾 проверка валюты
+    # Проверка валюты
     if currency != "643":
         return {"status": "error", "reason": "wrong_currency"}
         
@@ -142,7 +151,7 @@ async def yoomoney_ipn(operation_id, amount, currency,
     if not order:
         return {"status": "error", "reason": "order_not_found"}
 
-    # 🔒 атомарная блокировка обработки IPN
+    # Атомарная блокировка обработки
     if order.get("processing"):
         return {"status": "ok"}
     
@@ -154,15 +163,15 @@ async def yoomoney_ipn(operation_id, amount, currency,
         order["paid_at"] = int(datetime.fromisoformat(datetime_str.replace("Z", "+00:00")).timestamp())
         order["operation_id"] = operation_id
         save_order_to_redis(order_id, order)
-    
-        # удаляем сообщение с кнопкой
+
+        # Удаляем сообщение с кнопкой
         if "message_id" in order:
             try:
                 safe_telegram_call(bot.delete_message(order["chat_id"], order["message_id"]))
             except:
                 pass
-    
-        # продление подписки
+
+        # Продление подписки
         now = datetime.now(timezone.utc).timestamp()
         current = float(RAM_DATA.get(int(chat_id), {}).get("subscription_until", 0))
         suspended = RAM_DATA.get(int(chat_id), {}).get("suspended", False)
@@ -187,9 +196,9 @@ async def yoomoney_ipn(operation_id, amount, currency,
             )
         else:
             await bot.send_message(int(chat_id), f"✅ Подписка активна до {until_text}")
-        print(f"[YOOMONEY IPN] заказ {order_id} оплачен для  chat {chat_id}, подписка до  {until_text}")
+        print(f"[YOOMONEY IPN] заказ {order_id} оплачен для  chat {chat_id}, подписка до {until_text}")
     finally:
-        # 🔓 гарантированное снятие блокировки
+        # Снимаем блокировку
         order["processing"] = False
         save_order_to_redis(order_id, order)
     
