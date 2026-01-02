@@ -27,7 +27,7 @@ from yourun_module import (
 load_keys_from_redis()
 CHATID_KEY = "promo"
 ADMIN_CHAT_ID = 8455743587
-ARTICLE_URL = "https://t.me/promo_runs"
+ARTICLE_URL = "https://t.me/promo_runs/6"
 
 # -----------------------
 # RAM-память для всех данных
