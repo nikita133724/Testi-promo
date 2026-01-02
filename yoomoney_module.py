@@ -3,7 +3,7 @@ import asyncio
 from redis_client import r
 import json
 from datetime import datetime, timedelta, timezone
-from telegram_bot import RAM_DATA, _save_to_redis_partial, bot, send_message_to_user, app as tg_app
+from telegram_bot import RAM_DATA, _save_to_redis_partial, bot, send_message_to_user, app as tg_app, build_reply_keyboard
 import hashlib
 import urllib.parse
 
@@ -194,7 +194,7 @@ async def yoomoney_ipn(operation_id, amount, currency,
             reply_markup=build_reply_keyboard(int(chat_id))
         )
     else:
-        await bot.send_message(bot, int(chat_id), f"✅ Подписка активна до {until_text}")
+        await bot.send_message(int(chat_id), f"✅ Подписка активна до {until_text}")
         
 def get_last_orders(chat_id, count=4):
     """Возвращает список последних заказов пользователя вместе с их ID."""
