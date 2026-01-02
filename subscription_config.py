@@ -1,22 +1,13 @@
-import json
 from redis_client import r
 
 KEY = "subscription_prices"
 
-DEFAULT = {
-    "basic": 2
-}
+def get_price(tariff="basic"):
+    value = r.hget(KEY, tariff)
+    if not value:
+        return 2  # цена по умолчанию
+    return int(value)
 
-def load_prices():
-    raw = r.get(KEY)
-    if not raw:
-        r.set(KEY, json.dumps(DEFAULT))
-        return DEFAULT
-    return json.loads(raw)
-
-def save_prices(prices: dict):
-    r.set(KEY, json.dumps(prices))
-
-def get_price(plan="basic"):
-    prices = load_prices()
-    return int(prices.get(plan, DEFAULT["basic"]))
+def save_prices(data: dict):
+    for k, v in data.items():
+        r.hset(KEY, k, int(v))
