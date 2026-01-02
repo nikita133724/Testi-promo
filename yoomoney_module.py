@@ -94,8 +94,7 @@ def create_payment_link(chat_id, amount):
         "status": "pending",
         "created_at": int(datetime.now(timezone.utc).timestamp()),
         "paid_at": None,
-        "operation_id": None,
-        "sender": None
+        "operation_id": None
     }
 
     save_order_to_redis(order_id, ORDERS[order_id])
@@ -120,7 +119,7 @@ async def send_payment_link(bot, chat_id, amount):
 
 # ----------------------- IPN
 async def yoomoney_ipn(operation_id, amount, currency,
-                       datetime_str, sender, label, sha1_hash):
+                       datetime_str, label, sha1_hash):
 
     try:
         chat_id, order_id, expected_amount, provided_hash = label.split("|")
