@@ -550,6 +550,19 @@ async def yoomoney_ipn_endpoint(
     label: str = Form(...),
     sha1_hash: str = Form(...)
 ):
+
+    print("=== YOOMONEY IPN RECEIVED ===")
+    print({
+        "operation_id": operation_id,
+        "amount": amount,
+        "currency": currency,
+        "datetime_str": datetime_str,
+        "sender": sender,
+        "label": label,
+        "sha1_hash": sha1_hash
+    })
+    print("=============================")
+    
     return await yoomoney_ipn_handler(
         operation_id,
         amount,
