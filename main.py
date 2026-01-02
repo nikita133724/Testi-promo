@@ -546,7 +546,6 @@ async def yoomoney_ipn_endpoint(
     amount: str = Form(...),       # оставляем str, потом float
     currency: str = Form(...),
     datetime: str = Form(...),     # <-- поменяли имя с datetime_str на datetime
-    sender: str = Form(...),
     label: str = Form(...),
     sha1_hash: str = Form(...)
 ):
@@ -565,7 +564,6 @@ async def yoomoney_ipn_endpoint(
         "amount": amount_float,
         "currency": currency,
         "datetime": datetime,
-        "sender": sender,
         "label": label,
         "sha1_hash": sha1_hash
     })
@@ -577,7 +575,6 @@ async def yoomoney_ipn_endpoint(
         amount_float,
         currency,
         datetime,
-        sender,
         label,
         sha1_hash
     )
