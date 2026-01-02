@@ -404,11 +404,19 @@ async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
     
     # Кнопка "Активировать доступ"
     if text == "Активировать доступ":
-        from yoomoney_module import send_payment_link
+        from yoomoney_module import ORDERS, send_payment_link
         from subscription_config import get_price
-        
-        chat_id = update.effective_chat.id
-        amount = get_price("basic")  # сумма подписки
+    
+        # Проверяем, есть ли уже заказ в статусе pending
+        pending_orders = [o for o in ORDERS.values() if o["chat_id"] == chat_id and o["status"] == "pending"]
+        if pending_orders:
+            await update.message.reply_text(
+                "⏳ У вас уже есть активный заказ. Подождите 5 минут или завершите текущую оплату."
+            )
+            return
+    
+        # Создаём новый заказ
+        amount = get_price("basic")
         await send_payment_link(bot, chat_id, amount)
         return
         
