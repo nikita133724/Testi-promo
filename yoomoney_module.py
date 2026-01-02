@@ -11,14 +11,14 @@ def safe_telegram_call(coro):
     tg_app.create_task(coro)
 
 YOOMONEY_WALLET = "4100117872411525"
-SUCCESS_REDIRECT_URI = "https://tg-bot-test-gkbp.onrender.com/payment/success"
+SUCCESS_REDIRECT_URI = "https://t.me/promo_run_bot"
 
 NEXT_ORDER_ID = 1
 ORDERS = {}
 ORDERS_REDIS_KEY = "yoomoney_orders"
 
 MSK = timezone(timedelta(hours=3))
-SECRET_LABEL_KEY = "supersecret123"
+SECRET_LABEL_KEY = "superqownsnms18191wnwnw181991wnsnsm199192nwnnsjs292992snnejsjs"
 
 # ----------------------- Redis
 def save_order_to_redis(order_id, data):
@@ -128,7 +128,6 @@ MAX_DIFF_PERCENT = 0.1  # 10% допустимая разница
 
 async def yoomoney_ipn(operation_id, amount, currency,
                        datetime_str, label, sha1_hash):
-
     try:
         chat_id, order_id, expected_amount_str, provided_hash = label.split("|")
         order_id = int(order_id)
@@ -155,6 +154,11 @@ async def yoomoney_ipn(operation_id, amount, currency,
     if not order:
         return {"status": "error", "reason": "order_not_found"}
 
+    # === НОВАЯ ЗАЩИТА ===
+    if order["status"] == "paid":
+        print(f"[YOOMONEY IPN] повторная оплата заказа {order_id}, игнорируем")
+        return {"status": "ok"}  # не продлеваем подписку повторно
+
     # Атомарная блокировка обработки
     if order.get("processing"):
         return {"status": "ok"}
@@ -166,7 +170,7 @@ async def yoomoney_ipn(operation_id, amount, currency,
         order["status"] = "paid"
         order["paid_at"] = int(datetime.fromisoformat(datetime_str.replace("Z", "+00:00")).timestamp())
         order["operation_id"] = operation_id
-        order["paid_amount"] = amount  # Фактическая сумма от YooMoney
+        order["paid_amount"] = amount  # фактическая сумма
         save_order_to_redis(order_id, order)
 
         # Удаляем сообщение с кнопкой
@@ -203,10 +207,9 @@ async def yoomoney_ipn(operation_id, amount, currency,
             await bot.send_message(int(chat_id), f"✅ Подписка активна до {until_text}. Заказ: #{order_id}")
         print(f"[YOOMONEY IPN] заказ {order_id} оплачен для  chat {chat_id}, подписка до {until_text}")
     finally:
-        # Снимаем блокировку
         order["processing"] = False
         save_order_to_redis(order_id, order)
-    
+        
 def get_last_orders(chat_id, count=4):
     """Возвращает список последних заказов пользователя вместе с их ID."""
     orders = [(oid, o) for oid, o in ORDERS.items() if o["chat_id"] == chat_id]
