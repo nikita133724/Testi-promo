@@ -94,7 +94,8 @@ def create_payment_link(chat_id, amount):
         "status": "pending",
         "created_at": int(datetime.now(timezone.utc).timestamp()),
         "paid_at": None,
-        "operation_id": None
+        "operation_id": None,
+        "processing": False
     }
 
     save_order_to_redis(order_id, ORDERS[order_id])
@@ -140,57 +141,57 @@ async def yoomoney_ipn(operation_id, amount, currency,
     if not order:
         return {"status": "error", "reason": "order_not_found"}
 
-    # 🛡 защита от двойного IPN
-    if order["status"] in ("paid", "expired"):
+    # 🔒 атомарная блокировка обработки IPN
+    if order.get("processing"):
+        return {"status": "ok"}
+    
+    order["processing"] = True
+    save_order_to_redis(order_id, order)
+    
+    try:
+        order["status"] = "paid"
+        order["paid_at"] = int(datetime.fromisoformat(datetime_str.replace("Z", "+00:00")).timestamp())
+        order["operation_id"] = operation_id
+        save_order_to_redis(order_id, order)
+    
+        # удаляем сообщение с кнопкой
         if "message_id" in order:
             try:
                 safe_telegram_call(bot.delete_message(order["chat_id"], order["message_id"]))
             except:
                 pass
-        # Если заказ истёк — платёж принимаем, но подписку не выдаём
-        return {"status": "ok"}
     
-    order["status"] = "paid"
-    order["paid_at"] = int(datetime.fromisoformat(datetime_str.replace("Z", "+00:00")).timestamp())      # время платежа от YooMoney
-    order["operation_id"] = operation_id
-    save_order_to_redis(order_id, order)
-
-    # удаляем сообщение с кнопкой
-    if "message_id" in order:
-        try:
-            safe_telegram_call(bot.delete_message(order["chat_id"], order["message_id"]))
-        except:
-            pass
-
-    # продление подписки
-    now = datetime.now(timezone.utc).timestamp()
-    current = float(RAM_DATA.get(int(chat_id), {}).get("subscription_until", 0))
-    suspended = RAM_DATA.get(int(chat_id), {}).get("suspended", False)
+        # продление подписки
+        now = datetime.now(timezone.utc).timestamp()
+        current = float(RAM_DATA.get(int(chat_id), {}).get("subscription_until", 0))
+        suspended = RAM_DATA.get(int(chat_id), {}).get("suspended", False)
     
-    # Если подписка активна и не приостановлена, от текущей даты +30 дней
-    base = current if current > now and not suspended else now
-    new_until = base + 30 * 24 * 60 * 60
-
-    was_suspended = RAM_DATA[int(chat_id)].get("suspended", True)
-    RAM_DATA[int(chat_id)]["subscription_until"] = new_until
-    RAM_DATA[int(chat_id)]["suspended"] = False
-    _save_to_redis_partial(int(chat_id), {"subscription_until": new_until, "suspended": False})
+        base = current if current > now and not suspended else now
+        new_until = base + 30 * 24 * 60 * 60
     
-    # формируем строку с МСК
-    until_text = datetime.fromtimestamp(new_until, tz=MSK).strftime("%d.%m.%Y %H:%M") + " МСК"
+        was_suspended = RAM_DATA[int(chat_id)].get("suspended", True)
+        RAM_DATA[int(chat_id)]["subscription_until"] = new_until
+        RAM_DATA[int(chat_id)]["suspended"] = False
+        _save_to_redis_partial(int(chat_id), {"subscription_until": new_until, "suspended": False})
     
-    # если подписка была неактивна — отправляем клавиатуру с номиналами
-    if was_suspended:
-        from telegram_bot import build_reply_keyboard
-        await send_message_to_user(
-            bot,
-            int(chat_id),
-            f"✅ Подписка активна до {until_text}",
-            reply_markup=build_reply_keyboard(int(chat_id))
-        )
-    else:
-        await bot.send_message(int(chat_id), f"✅ Подписка активна до {until_text}")
-        
+        until_text = datetime.fromtimestamp(new_until, tz=MSK).strftime("%d.%m.%Y %H:%M") + " МСК"
+    
+        if was_suspended:
+            from telegram_bot import build_reply_keyboard
+            await send_message_to_user(
+                bot,
+                int(chat_id),
+                f"✅ Подписка активна до {until_text}",
+                reply_markup=build_reply_keyboard(int(chat_id))
+            )
+        else:
+            await bot.send_message(int(chat_id), f"✅ Подписка активна до {until_text}")
+        print(f"[YOOMONEY IPN] заказ {order_id} оплачен для  chat {chat_id}, подписка до  {until_text}")
+    finally:
+        # 🔓 гарантированное снятие блокировки
+        order["processing"] = False
+        save_order_to_redis(order_id, order)
+    
 def get_last_orders(chat_id, count=4):
     """Возвращает список последних заказов пользователя вместе с их ID."""
     orders = [(oid, o) for oid, o in ORDERS.items() if o["chat_id"] == chat_id]
