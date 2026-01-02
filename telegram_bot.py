@@ -194,6 +194,7 @@ from yoomoney_module import send_payment_link
 
 async def buy_subscription(update, context):
     chat_id = update.effective_chat.id
+    from subscription_config import get_price
     amount = get_price("basic")  # сумма подписки
     await send_payment_link(bot, chat_id, amount)
 
@@ -578,6 +579,7 @@ async def settings_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
         if query.data == "profile_buy_subscription":
             await query.answer()
             chat_id = query.message.chat.id
+            from subscription_config import get_price
             amount = get_price("basic")  # стоимость подписки
             from yoomoney_module import send_payment_link
             await send_payment_link(bot, chat_id, amount)
