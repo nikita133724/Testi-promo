@@ -608,3 +608,17 @@ async def filter_transactions(status: str = "all", search: str = "", _: None = D
         filtered.append(t)
     filtered.sort(key=lambda x: x.get("created_at", 0), reverse=True)
     return JSONResponse(filtered)
+    
+from pydantic import BaseModel
+from subscription_config import get_price, save_prices
+
+class PriceUpdate(BaseModel):
+    price: int
+@app_fastapi.get("/admin/subscription/price")
+async def get_subscription_price(_: None = Depends(admin_required)):
+    return {"price": get_price("basic")}
+
+@app_fastapi.post("/admin/subscription/price")
+async def set_subscription_price(data: PriceUpdate, _: None = Depends(admin_required)):
+    save_prices({"basic": data.price})
+    return {"ok": True}
