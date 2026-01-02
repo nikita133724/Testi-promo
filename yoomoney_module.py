@@ -166,6 +166,7 @@ async def yoomoney_ipn(operation_id, amount, currency,
         order["status"] = "paid"
         order["paid_at"] = int(datetime.fromisoformat(datetime_str.replace("Z", "+00:00")).timestamp())
         order["operation_id"] = operation_id
+        order["paid_amount"] = amount  # Фактическая сумма от YooMoney
         save_order_to_redis(order_id, order)
 
         # Удаляем сообщение с кнопкой
