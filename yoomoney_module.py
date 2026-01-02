@@ -3,7 +3,7 @@ import asyncio
 from redis_client import r
 import json
 from datetime import datetime, timedelta, timezone
-from telegram_bot import RAM_DATA, _save_to_redis_partial, bot, send_message_to_user, app as tg_app, build_reply_keyboard
+from telegram_bot import RAM_DATA, _save_to_redis_partial, bot, send_message_to_user, app as tg_app
 import hashlib
 import urllib.parse
 
@@ -187,6 +187,7 @@ async def yoomoney_ipn(operation_id, amount, currency,
     
     # если подписка была неактивна — отправляем клавиатуру с номиналами
     if was_suspended:
+        from telegram_bot import build_reply_keyboard
         await send_message_to_user(
             bot,
             int(chat_id),
