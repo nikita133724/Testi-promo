@@ -118,6 +118,7 @@ async def send_payment_link(bot, chat_id, amount):
     ORDERS[order_id]["message_id"] = msg.message_id
     save_order_to_redis(order_id, ORDERS[order_id])
 
+MIN_HASH_LEN = 25  # минимум символов для проверки
 # ----------------------- IPN
 async def yoomoney_ipn(operation_id, amount, currency,
                        datetime_str, label, sha1_hash):
@@ -128,7 +129,7 @@ async def yoomoney_ipn(operation_id, amount, currency,
 
         plain = f"{chat_id}|{order_id}|{expected_amount}"
         expected_hash = hashlib.sha256((plain + SECRET_LABEL_KEY).encode()).hexdigest()
-        if not expected_hash.startswith(provided_hash):
+        if len(provided_hash) < MIN_HASH_LEN or not expected_hash.startswith(provided_hash):
             return {"status": "error", "reason": "invalid_label_hash"}
     except:
         return {"status": "error", "reason": "invalid_label"}
