@@ -293,6 +293,7 @@ async def open_user_profile(chat_id):
 
     # Кнопки
     keyboard = [
+        [InlineKeyboardButton("💳 Купить подписку", callback_data="profile_buy_subscription")],
         [InlineKeyboardButton("📄 Транзакции", callback_data="profile_transactions")],
         [InlineKeyboardButton("⚙️ Настройки", callback_data="profile_settings")],
         [InlineKeyboardButton("❌ Закрыть", callback_data="profile_exit")]
@@ -573,6 +574,18 @@ async def settings_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if OPEN_SETTINGS_MESSAGES.get(chat_id, {}).get("menu_type") == "profile":
         await query.answer()
     
+        if query.data == "profile_buy_subscription":
+            await query.answer()
+            chat_id = query.message.chat.id
+            amount = 2  # стоимость подписки
+            from yoomoney_module import send_payment_link
+            await send_payment_link(bot, chat_id, amount)
+            # удаляем старое сообщение с кнопкой "Оплатить"
+            try:
+                await query.message.delete()
+            except:
+                pass
+        
         if query.data == "profile_transactions":
             from yoomoney_module import get_last_orders
             
