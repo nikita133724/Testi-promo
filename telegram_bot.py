@@ -26,7 +26,9 @@ from yourun_module import (
 
 load_keys_from_redis()
 CHATID_KEY = "promo"
-ADMIN_CHAT_ID = 8455743587  # <- замени на свой Telegram ID
+ADMIN_CHAT_ID = 8455743587
+ARTICLE_URL = "https://t.me/promo_runs"
+
 # -----------------------
 # RAM-память для всех данных
 # -----------------------
@@ -368,14 +370,27 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
     # проверяем статус suspended
     if settings.get("suspended", True):
-        keyboard = ReplyKeyboardMarkup(
+        # Inline-кнопка на статью
+        inline_keyboard = InlineKeyboardMarkup([
+            [InlineKeyboardButton("📄 Подробнее", url=ARTICLE_URL)]
+        ])
+        # Reply-кнопка «Активировать доступ»
+        reply_keyboard = ReplyKeyboardMarkup(
             [["Активировать доступ"]],
             resize_keyboard=True
         )
+    
+        # Сначала отправляем текст с inline-кнопкой
         await update.message.reply_text(
             "Добро пожаловать в небольшое комьюнити лудоманов CSGORUN’а!\n\n"
-            "Чтобы получить доступ к промокодам и ставкам, нажмите кнопку ниже 👇",
-            reply_markup=keyboard
+            "Чтобы узнать больше о боте и его преимуществах, нажмите кнопку Подробнее ",
+            reply_markup=inline_keyboard
+        )
+    
+        # Потом отправляем Reply-кнопку «Активировать доступ»
+        await update.message.reply_text(
+            "Нажмите кнопку ниже, чтобы активировать доступ:",
+            reply_markup=reply_keyboard
         )
     else:
         # пользователь с активной подпиской — показываем основное меню
