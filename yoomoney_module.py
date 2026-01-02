@@ -177,28 +177,25 @@ async def yoomoney_ipn(operation_id, amount, currency,
     base = current if current > now and not suspended else now
     new_until = base + 30 * 24 * 60 * 60
 
-    RAM_DATA.setdefault(int(chat_id), {})
+    was_suspended = RAM_DATA[int(chat_id)].get("suspended", True)
     RAM_DATA[int(chat_id)]["subscription_until"] = new_until
     RAM_DATA[int(chat_id)]["suspended"] = False
-
     _save_to_redis_partial(int(chat_id), {"subscription_until": new_until, "suspended": False})
-
-    until_text = datetime.fromtimestamp(new_until, tz=MSK).strftime("%d.%m.%Y %H:%M")
-
-    # сообщение пользователю с клавиатурой, если подписка была неактивна
-    if current < now or RAM_DATA[int(chat_id)].get("suspended", False):
-        from telegram_bot import build_reply_keyboard
-        safe_telegram_call(send_message_to_user(
+    
+    # формируем строку с МСК
+    until_text = datetime.fromtimestamp(new_until, tz=MSK).strftime("%d.%m.%Y %H:%M") + " МСК"
+    
+    # если подписка была неактивна — отправляем клавиатуру с номиналами
+    if was_suspended:
+        await send_message_to_user(
             bot,
             int(chat_id),
             f"✅ Подписка активна до {until_text}",
             reply_markup=build_reply_keyboard(int(chat_id))
-        ))
+        )
     else:
-        safe_telegram_call(bot.send_message(int(chat_id), f"✅ Подписка активна до {until_text}"))
-
-    return {"status": "ok"}
-    
+        await bot.send_message(bot, int(chat_id), f"✅ Подписка активна до {until_text}")
+        
 def get_last_orders(chat_id, count=4):
     """Возвращает список последних заказов пользователя вместе с их ID."""
     orders = [(oid, o) for oid, o in ORDERS.items() if o["chat_id"] == chat_id]
