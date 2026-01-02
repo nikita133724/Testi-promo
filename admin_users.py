@@ -299,13 +299,20 @@ class AdminUsers:
 
         if state["mode"] == "all":
             text = message.text
-            for uid in self.RAM_DATA.keys():
+            sent = 0
+        
+            for uid, user_data in self.RAM_DATA.items():
+                # ❗ Пропускаем пользователей без активной подписки
+                if user_data.get("suspended", True):
+                    continue
+        
                 try:
                     await self.bot.send_message(uid, text)
+                    sent += 1
                 except:
                     pass
-
-            await message.reply_text("✅ Сообщение отправлено всем пользователям")
+        
+            await message.reply_text(f"✅ Сообщение отправлено {sent} активным пользователям")
             del self.admin_state[admin_id]
             return True
 
