@@ -543,18 +543,26 @@ async def startup_event():
 @app_fastapi.post("/yoomoney_ipn")
 async def yoomoney_ipn_endpoint(
     operation_id: str = Form(...),
-    amount: float = Form(...),
+    amount: str = Form(...),       # <- поменяли float на str
     currency: str = Form(...),
     datetime_str: str = Form(...),
     sender: str = Form(...),
     label: str = Form(...),
     sha1_hash: str = Form(...)
 ):
+    # --- безопасно конвертируем сумму в float ---
+    try:
+        amount_float = float(amount.replace(",", "."))
+    except Exception as e:
+        print(f"[YOOMONEY IPN] Ошибка конвертации amount: {amount} -> {e}")
+        return {"status": "error", "reason": "invalid_amount_format"}
 
+    # --- Логируем для дебага ---
     print("=== YOOMONEY IPN RECEIVED ===")
     print({
         "operation_id": operation_id,
-        "amount": amount,
+        "amount_raw": amount,
+        "amount": amount_float,
         "currency": currency,
         "datetime_str": datetime_str,
         "sender": sender,
@@ -562,10 +570,11 @@ async def yoomoney_ipn_endpoint(
         "sha1_hash": sha1_hash
     })
     print("=============================")
-    
+
+    # --- Передаем дальше в обработчик ---
     return await yoomoney_ipn_handler(
         operation_id,
-        amount,
+        amount_float,
         currency,
         datetime_str,
         sender,
