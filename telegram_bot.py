@@ -23,6 +23,7 @@ from yourun_module import (
     handle_yourun_input,
     handle_yourun_file
 )
+
 load_keys_from_redis()
 CHATID_KEY = "promo"
 ADMIN_CHAT_ID = 8455743587  # <- замени на свой Telegram ID
@@ -30,7 +31,7 @@ ADMIN_CHAT_ID = 8455743587  # <- замени на свой Telegram ID
 # RAM-память для всех данных
 # -----------------------
 RAM_DATA = {}
-        
+from subscription_config import get_price        
 async def send_message_to_user(bot, chat_id, text, **kwargs):
     msg = await bot.send_message(chat_id=chat_id, text=text, **kwargs)
     await update_user_names_in_ram(msg.chat, persist=True)
@@ -193,7 +194,7 @@ from yoomoney_module import send_payment_link
 
 async def buy_subscription(update, context):
     chat_id = update.effective_chat.id
-    amount = 2  # сумма подписки
+    amount = get_price("basic")  # сумма подписки
     await send_payment_link(bot, chat_id, amount)
 
 app.add_handler(CommandHandler("buy", buy_subscription))
@@ -577,7 +578,7 @@ async def settings_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
         if query.data == "profile_buy_subscription":
             await query.answer()
             chat_id = query.message.chat.id
-            amount = 2  # стоимость подписки
+            amount = get_price("basic")  # стоимость подписки
             from yoomoney_module import send_payment_link
             await send_payment_link(bot, chat_id, amount)
             # удаляем старое сообщение с кнопкой "Оплатить"
