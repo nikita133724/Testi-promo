@@ -67,7 +67,7 @@ async def pending_order_timeout(order_id, timeout=300):
     if order["status"] == "pending":
         order["status"] = "expired"
         save_order_to_redis(order_id, order)
-        safe_telegram_call(bot.send_message(order["chat_id"], "⏳ Время на оплату истекло."))
+        safe_telegram_call(bot.send_message(order["chat_id"], f"⏳ Время на оплату истекло. Заказ: #{order_id}"))
 
 # ----------------------- Create link
 def create_payment_link(chat_id, amount):
@@ -111,7 +111,11 @@ async def send_payment_link(bot, chat_id, amount):
     suspended = RAM_DATA.get(chat_id, {}).get("suspended", False)
     was_active = current_until > now_ts and not suspended
 
-    text = f"💳 Сумма: {amount}₽\nЗаказ: #{order_id}"
+    text = (
+        f"💳 Сумма: {amount}₽\n"
+        f"Заказ: #{order_id}\n"
+        f"⏳ Время на оплату: 5 минут"
+    )
     keyboard = InlineKeyboardMarkup([[InlineKeyboardButton("Оплатить", url=url)]])
     msg = await bot.send_message(chat_id, text, reply_markup=keyboard)
 
@@ -191,11 +195,11 @@ async def yoomoney_ipn(operation_id, amount, currency,
             await send_message_to_user(
                 bot,
                 int(chat_id),
-                f"✅ Подписка активна до {until_text}",
+                f"✅ Подписка активна до {until_text}. Заказ: #{order_id}",
                 reply_markup=build_reply_keyboard(int(chat_id))
             )
         else:
-            await bot.send_message(int(chat_id), f"✅ Подписка активна до {until_text}")
+            await bot.send_message(int(chat_id), f"✅ Подписка активна до {until_text}. Заказ: #{order_id}")
         print(f"[YOOMONEY IPN] заказ {order_id} оплачен для  chat {chat_id}, подписка до {until_text}")
     finally:
         # Снимаем блокировку
