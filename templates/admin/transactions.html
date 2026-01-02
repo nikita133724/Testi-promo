@@ -1,12 +1,12 @@
 {% extends "admin/layout.html" %}
 
 {% block content %}
-<div style="display:flex; justify-content:space-between; align-items:center;">
+<div style="display:flex; justify-content:space-between; align-items:center; margin-bottom: 10px;">
     <h2>Транзакции</h2>
 
     <div style="display:flex; gap:8px; align-items:center;">
         <span>Цена подписки:</span>
-        <input id="price-input" style="width:80px; padding:6px;" />
+        <input id="price-input" type="number" min="1" style="width:80px; padding:6px;">
         <button onclick="savePrice()">Сохранить</button>
     </div>
 </div>
@@ -120,18 +120,25 @@ function statusClass(status) {
     }
 }
 async function loadPrice() {
-    const r = await fetch("/admin/subscription/price");
+    const r = await fetch("/admin/subscription/price", {
+        headers: {"X-Requested-With":"SPA"}
+    });
     const data = await r.json();
     document.getElementById("price-input").value = data.price;
 }
 
 async function savePrice() {
     const price = document.getElementById("price-input").value;
+
     await fetch("/admin/subscription/price", {
         method: "POST",
-        headers: {"Content-Type":"application/json"},
+        headers: {
+            "Content-Type": "application/json",
+            "X-Requested-With":"SPA"
+        },
         body: JSON.stringify({ price })
     });
+
     alert("Цена сохранена");
 }
 
