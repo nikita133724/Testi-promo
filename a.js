@@ -2,43 +2,34 @@ const fs = require('fs');
 
 const code = fs.readFileSync('Ксгоран.js','utf8');
 
-const sections = {
-  constants: [],
-  api: [],
-  utils: [],
-  others: []
-};
+// 1️⃣ Все реальные API пути
+const pathRegex = /(const|let|var)?\s*([A-Za-z0-9_$]{1,6})\s*=\s*"\/[^"\n]+"/g;
+const paths = [];
+let m;
 
-const lines = code.split('\n');
-
-for (const line of lines) {
-  if (/=\s*"\/[^"]+"/.test(line)) {
-    sections.constants.push(line);
-  } 
-  else if (/\.(get|post|put|delete)\(/.test(line)) {
-    sections.api.push(line);
-  } 
-  else if (/function|\=\s*\(/.test(line)) {
-    sections.utils.push(line);
-  } 
-  else {
-    sections.others.push(line);
-  }
+while ((m = pathRegex.exec(code))) {
+  paths.push(m[0]);
 }
 
-let output = `
-/* ===================== CONSTANTS ===================== */
-${sections.constants.join('\n')}
+// 2️⃣ Только настоящие сетевые вызовы
+const httpRegex = /(?:axios|arg65|client)\.(get|post|put|delete)\([^;]+\);/g;
+const calls = code.match(httpRegex) || [];
+
+// 3️⃣ Остальной код
+let cleaned = code;
+for (const p of paths) cleaned = cleaned.replace(p, '');
+for (const c of calls) cleaned = cleaned.replace(c, '');
+
+const output = `
+/* ===================== API PATHS ===================== */
+${paths.join('\n')}
 
 /* ===================== API CALLS ===================== */
-${sections.api.join('\n')}
+${calls.join('\n')}
 
-/* ===================== FUNCTIONS ===================== */
-${sections.utils.join('\n')}
-
-/* ===================== OTHER ===================== */
-${sections.others.join('\n')}
+/* ===================== APPLICATION CODE ===================== */
+${cleaned}
 `;
 
-fs.writeFileSync('KsGoran.normalized.js', output.trim());
+fs.writeFileSync('KsGoran.normalized.js', output);
 console.log('Готово → KsGoran.normalized.js');
