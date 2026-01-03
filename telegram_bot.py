@@ -349,13 +349,16 @@ async def menu_timer_task(chat_id, delay):
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
     chat_id = update.effective_chat.id
     settings = get_user_settings(chat_id)
-        # 🔽 сохраняем имя и username пользователя в RAM и Redis
     await update_user_names_in_ram(update.effective_chat, persist=True)
     # если новый пользователь — добавляем его в chat_ids и выставляем suspended=True
     if chat_id not in chat_ids:
         chat_ids.add(chat_id)
         settings["suspended"] = True
-        _save_to_redis_partial(chat_id, settings)
+        _save_to_redis_partial(chat_id, {
+            "suspended": True,
+            "display_name": settings["display_name"],
+            "username": settings["username"]
+        })
     # 🔍 Проверка истечения подписки при /start (для старых пользователей)
     if settings.get("suspended") is False:
         until = settings.get("subscription_until")
