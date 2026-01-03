@@ -11,12 +11,19 @@ RAM_DATA = {}
 # 1️⃣ Точка входа: даём пользователю ссылку
 @router.get("/auth/login")
 async def auth_login(chat_id: int = Query(...)):
-    # ВАЖНО: только базовый домен
-    return_url = SELF_URL
+    import aiohttp
 
-    redirect = f"https://cs2run.app/auth/1/get-url/?return_url={urllib.parse.quote(return_url)}"
-    return RedirectResponse(redirect)
+    return_url = f"{SELF_URL}/auth/steam?chat_id={chat_id}"
 
+    async with aiohttp.ClientSession() as session:
+        async with session.get(
+            "https://cs2run.app/auth/1/get-url/",
+            params={"return_url": return_url}
+        ) as r:
+            data = await r.json()
+
+    steam_url = data["data"]["url"]
+    return RedirectResponse(steam_url)
 
 # 2️⃣ Сюда cs2run + Steam возвращают пользователя
 @router.get("/auth/steam")
