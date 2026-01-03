@@ -1,34 +1,40 @@
-// extract_endpoints.js
 const fs = require('fs');
-const path = require('path');
 
-// Имя файла с минифицированным бандлом
-const filename = path.join(__dirname, 'Ксгоран.js');
+const text = fs.readFileSync('Ксгоран.js','utf8');
 
-// Проверяем, что файл существует
-if (!fs.existsSync(filename)) {
-  console.error(`Файл "${filename}" не найден!`);
-  process.exit(1);
+// 1. Собираем все переменные с путями
+const pathMap = {};
+const pathRegex = /([A-Za-z0-9_$]{1,6})\s*=\s*"\/[^"\n]+"/g;
+let m;
+
+while ((m = pathRegex.exec(text))) {
+  const [full] = m;
+  const [name, value] = full.split('=');
+  pathMap[name.trim()] = value.trim().replace(/"/g,'');
 }
 
-// Читаем содержимое файла
-const text = fs.readFileSync(filename, 'utf8');
+// 2. Ищем HTTP вызовы
+const callRegex = /(\w+)\.(get|post|put|delete)\(([^)]+)\)/g;
 
-// Регулярка для поиска переменных вида: Jk="/profile"
-const regex = /([A-Za-z0-9_$]{1,6})\s*=\s*"((\/|https?:\/\/)[^"\n]+)"/g;
+const results = [];
 
-let match;
-const endpoints = {};
+while ((m = callRegex.exec(text))) {
+  const [, client, method, args] = m;
 
-// Ищем все совпадения
-while ((match = regex.exec(text))) {
-  endpoints[match[1]] = match[2];
+  const parts = args.split(',').map(s => s.trim());
+  const endpointVar = parts[0];
+  const payload = parts[1] || '';
+
+  const endpoint = pathMap[endpointVar] || endpointVar;
+
+  results.push({
+    method: method.toUpperCase(),
+    endpoint,
+    payload
+  });
 }
 
-// Выводим красиво в консоль
-console.log(
-  Object.entries(endpoints)
-    .sort((a, b) => a[0].localeCompare(b[0]))
-    .map(([k, v]) => `${k}: ${v}`)
-    .join('\n')
-);
+// 3. Сохраняем в файл
+fs.writeFileSync('api_map.json', JSON.stringify(results, null, 2));
+
+console.log('Готово. Результат сохранён в api_map.json');
