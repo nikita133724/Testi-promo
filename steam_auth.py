@@ -26,8 +26,8 @@ async def auth_login(chat_id: int = Query(...)):
 
 @router.get("/auth/callback")
 async def auth_callback(request: Request, chat_id: int = Query(...)):
-    """Callback после авторизации Steam"""
     params = dict(request.query_params)
+    print("Params from Steam callback:", params)
     start_sign_in_url = "https://cs2run.app/auth/1/start-sign-in/"
 
     async with aiohttp.ClientSession() as session:
