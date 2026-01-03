@@ -32,37 +32,35 @@ async def auth_login(chat_id: int = Query(...)):
 
 @router.get("/auth/callback")
 async def auth_callback(request: Request, chat_id: int = Query(...)):
-    """
-    2️⃣ Callback после входа через Steam
-    """
-    # Получаем все параметры OpenID от Steam
+    # 1️⃣ Получаем openid параметры от Steam
     openid_params = dict(request.query_params)
     print(f"[DEBUG] Chat ID {chat_id} - OpenID params from Steam callback:", openid_params)
 
-    # 3️⃣ Запрос к cs2run /start-sign-in/ для получения токенов
-    start_sign_in_url = "https://cs2run.app/auth/1/start-sign-in/"
-
-    # Важно: передаём **все параметры OpenID**
+    # 2️⃣ Создаём сессию aiohttp, передаём cookies пользователя (из запроса)
     async with aiohttp.ClientSession() as session:
+        # 3️⃣ Делаем GET к cs2run, имитируя браузер
+        start_sign_in_url = "https://cs2run.app/auth/1/start-sign-in/"
         async with session.get(start_sign_in_url, params=openid_params) as resp:
-            try:
-                data = await resp.json()
-            except Exception:
-                return JSONResponse({"error": "Не удалось распарсить ответ cs2run"}, status_code=500)
+            # 4️⃣ Читаем cookies, особенно auth-token
+            auth_token = resp.cookies.get("auth-token")
+            if auth_token:
+                auth_token = auth_token.value
+                print(f"[DEBUG] Chat ID {chat_id} - auth-token (JWT): {auth_token}")
+            else:
+                print(f"[DEBUG] Chat ID {chat_id} - auth-token не получен")
+            
+            # 5️⃣ Дополнительно можно вызвать current-state, если нужно centrifugeToken и user info
+            headers = {"Cookie": f"auth-token={auth_token}"} if auth_token else {}
+            async with session.get("https://cs2run.app/current-state", headers=headers) as state_resp:
+                try:
+                    state_data = await state_resp.json()
+                    print(f"[DEBUG] Chat ID {chat_id} - current-state:", state_data)
+                except Exception:
+                    print(f"[DEBUG] Chat ID {chat_id} - не удалось получить current-state")
 
-    # Извлекаем токены cs2run
-    access_token = data.get("access_token")
-    refresh_token = data.get("refresh_token")
-
-    if access_token and refresh_token:
-        print(f"[DEBUG] Chat ID {chat_id} - access_token: {access_token}")
-        print(f"[DEBUG] Chat ID {chat_id} - refresh_token: {refresh_token}")
-    else:
-        print(f"[DEBUG] Chat ID {chat_id} - токены не получены, ответ cs2run:", data)
-
-    # Временное сохранение в RAM_DATA
-    RAM_DATA.setdefault(chat_id, {})["access_token"] = access_token
-    RAM_DATA[chat_id]["refresh_token"] = refresh_token
+    # 6️⃣ RAM_DATA для временного хранения
+    RAM_DATA.setdefault(chat_id, {})["auth_token"] = auth_token
+    RAM_DATA[chat_id]["current_state"] = state_data if 'state_data' in locals() else None
 
     return HTMLResponse(f"<h2>Авторизация завершена для Telegram ID {chat_id}</h2>"
                         f"<p>Токены выведены в лог сервера.</p>")
