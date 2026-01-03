@@ -2,10 +2,11 @@
 from fastapi import APIRouter, Request, Query
 from fastapi.responses import RedirectResponse, JSONResponse, HTMLResponse
 import aiohttp
-from main import RAM_DATA, SELF_URL, bot, send_message_to_user
 
 router = APIRouter()
 
+SELF_URL = "https://tg-bot-test-gkbp.onrender.com"  # <- твой домен для теста
+RAM_DATA = {}  # пока просто в логах
 
 @router.get("/auth/login")
 async def auth_login(chat_id: int = Query(...)):
@@ -27,42 +28,27 @@ async def auth_login(chat_id: int = Query(...)):
 async def auth_callback(request: Request, chat_id: int = Query(...)):
     """Callback после авторизации Steam"""
     params = dict(request.query_params)
+    start_sign_in_url = "https://cs2run.app/auth/1/start-sign-in/"
 
     async with aiohttp.ClientSession() as session:
-        start_sign_in_url = "https://cs2run.app/auth/1/start-sign-in/"
-        async with session.get(start_sign_in_url, params=params, allow_redirects=False) as resp:
-            cookies = resp.cookies
-            access_token = cookies.get("access_token").value if cookies.get("access_token") else None
-            refresh_token = cookies.get("refresh_token").value if cookies.get("refresh_token") else None
-
-            if not access_token or not refresh_token:
-                try:
-                    data = await resp.json()
-                    access_token = data.get("access_token", access_token)
-                    refresh_token = data.get("refresh_token", refresh_token)
-                except Exception:
-                    pass
-
-            if not access_token or not refresh_token:
-                return JSONResponse({"error": "Не удалось получить токены"}, status_code=500)
-
-            RAM_DATA[chat_id] = {
-                "access_token": access_token,
-                "refresh_token": refresh_token
-            }
-
+        async with session.get(start_sign_in_url, params=params) as resp:
             try:
-                await send_message_to_user(
-                    bot,
-                    chat_id,
-                    "✅ Авторизация через Steam успешна! Теперь бот может использовать ваш аккаунт cs2run."
-                )
-            except Exception as e:
-                print(f"Ошибка при уведомлении пользователя {chat_id}: {e}")
+                data = await resp.json()
+            except Exception:
+                return JSONResponse({"error": "Не удалось распарсить ответ cs2run"}, status_code=500)
 
-            return RedirectResponse(f"{SELF_URL}/auth/success?chat_id={chat_id}")
+    access_token = data.get("access_token")
+    refresh_token = data.get("refresh_token")
 
+    if access_token and refresh_token:
+        print(f"[DEBUG] Chat ID {chat_id} access_token: {access_token}")
+        print(f"[DEBUG] Chat ID {chat_id} refresh_token: {refresh_token}")
+    else:
+        print(f"[DEBUG] Chat ID {chat_id} токены не получены, ответ cs2run: {data}")
 
-@router.get("/auth/success", response_class=HTMLResponse)
-async def auth_success(chat_id: int = Query(...)):
-    return HTMLResponse(f"<h2>Авторизация завершена для Telegram ID {chat_id}</h2><p>Теперь можно вернуться к боту.</p>")
+    # Сохраняем в RAM_DATA на всякий случай (пока не используем)
+    RAM_DATA.setdefault(chat_id, {})["access_token"] = access_token
+    RAM_DATA[chat_id]["refresh_token"] = refresh_token
+
+    return HTMLResponse(f"<h2>Авторизация завершена для Telegram ID {chat_id}</h2>"
+                        f"<p>Токены выведены в консоль сервера.</p>")
