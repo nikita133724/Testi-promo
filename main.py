@@ -69,6 +69,9 @@ async def logout(request: Request):
     return RedirectResponse("/login", status_code=303)
 
 # -----------------------
+from steam_auth import router as steam_auth_router
+app_fastapi.include_router(steam_auth_router)
+
 # Admin Users
 @app_fastapi.get("/admin/users", response_class=HTMLResponse)
 async def admin_users_page(
