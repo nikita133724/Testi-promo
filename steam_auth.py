@@ -8,39 +8,46 @@ SELF_URL = "https://tg-bot-test-gkbp.onrender.com"
 RAM_DATA = {}
 
 
+# 1️⃣ Точка входа: даём пользователю ссылку
 @router.get("/auth/login")
 async def auth_login(chat_id: int = Query(...)):
-    return_url = f"{SELF_URL}/auth/steam?chat_id={chat_id}"
-    return RedirectResponse(
-        f"https://cs2run.app/auth/1/get-url/?return_url={urllib.parse.quote(return_url)}"
-    )
+    # ВАЖНО: только базовый домен
+    return_url = SELF_URL
+
+    redirect = f"https://cs2run.app/auth/1/get-url/?return_url={urllib.parse.quote(return_url)}"
+    return RedirectResponse(redirect)
 
 
+# 2️⃣ Сюда cs2run + Steam возвращают пользователя
 @router.get("/auth/steam")
-async def auth_steam(request: Request, chat_id: int):
-    # Это ТОЧКА, куда Steam возвращает пользователя
-    query = request.url.query
+async def auth_steam(request: Request, chat_id: int = Query(...)):
+    # Все параметры OpenID от Steam
+    steam_query = request.url.query
+    print("\n🧪 STEAM CALLBACK PARAMS:\n", steam_query, "\n")
 
+    # Куда cs2run должен вернуть пользователя ПОСЛЕ установки cookie
     final_return = f"{SELF_URL}/auth/final?chat_id={chat_id}"
     final_return = urllib.parse.quote(final_return)
 
+    # Передаём параметры обратно cs2run
     redirect_url = (
         f"https://cs2run.app/auth/1/start-sign-in/"
-        f"?{query}&returnUrl={final_return}"
+        f"?{steam_query}&returnUrl={final_return}"
     )
 
     return RedirectResponse(redirect_url)
 
 
+# 3️⃣ Финальная точка — тут у тебя уже есть JWT
 @router.get("/auth/final")
 async def auth_final(request: Request, chat_id: int):
     auth_token = request.cookies.get("auth-token")
 
     if not auth_token:
-        return HTMLResponse("<h2>Ошибка: auth-token не получен</h2>")
+        return HTMLResponse("<h2>❌ Ошибка: auth-token не получен</h2>")
 
     print(f"\n🔥 [SUCCESS] Chat {chat_id} auth-token:\n{auth_token}\n")
 
     RAM_DATA[chat_id] = {"auth_token": auth_token}
 
-    return HTMLResponse("<h2>Готово. Авторизация завершена.</h2>")
+    return HTMLResponse("<h2>✅ Авторизация завершена. Можно закрыть страницу.</h2>")
