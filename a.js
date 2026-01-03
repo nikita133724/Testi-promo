@@ -2,39 +2,51 @@ const fs = require('fs');
 
 const text = fs.readFileSync('Ксгоран.js','utf8');
 
-// 1. Собираем все переменные с путями
+// 1. Карта переменных → реальный путь
 const pathMap = {};
-const pathRegex = /([A-Za-z0-9_$]{1,6})\s*=\s*"\/[^"\n]+"/g;
+const pathRegex = /(const|let|var)?\s*([A-Za-z0-9_$]{1,6})\s*=\s*"\/[^"\n]+"/g;
 let m;
 
 while ((m = pathRegex.exec(text))) {
-  const [full] = m;
-  const [name, value] = full.split('=');
-  pathMap[name.trim()] = value.trim().replace(/"/g,'');
+  const name = m[2];
+  const value = m[0].split('=').pop().trim().replace(/"/g,'');
+  pathMap[name] = value;
 }
 
-// 2. Ищем HTTP вызовы
-const callRegex = /(\w+)\.(get|post|put|delete)\(([^)]+)\)/g;
-
+// 2. Поиск HTTP вызовов
+const callRegex = /\.(get|post|put|delete)\(([^)]+)\)/g;
 const results = [];
 
 while ((m = callRegex.exec(text))) {
-  const [, client, method, args] = m;
+  const method = m[1].toUpperCase();
+  const args = m[2].split(',').map(s => s.trim());
 
-  const parts = args.split(',').map(s => s.trim());
-  const endpointVar = parts[0];
-  const payload = parts[1] || '';
+  let rawEndpoint = args[0];
+  let payload = args[1] || '';
 
-  const endpoint = pathMap[endpointVar] || endpointVar;
+  // Подстановка реального пути
+  if (pathMap[rawEndpoint]) {
+    rawEndpoint = pathMap[rawEndpoint];
+  }
 
-  results.push({
-    method: method.toUpperCase(),
-    endpoint,
-    payload
-  });
+  // Фильтрация мусора
+  if (!rawEndpoint.startsWith('/')) continue;
+
+  results.push({ method, endpoint: rawEndpoint, payload });
 }
 
-// 3. Сохраняем в файл
-fs.writeFileSync('api_map.json', JSON.stringify(results, null, 2));
+// 3. Удаляем дубликаты
+const unique = [];
+const seen = new Set();
 
-console.log('Готово. Результат сохранён в api_map.json');
+for (const r of results) {
+  const key = `${r.method}|${r.endpoint}`;
+  if (!seen.has(key)) {
+    seen.add(key);
+    unique.push(r);
+  }
+}
+
+// 4. Сохраняем
+fs.writeFileSync('api_clean.json', JSON.stringify(unique, null, 2));
+console.log('Готово → api_clean.json');
