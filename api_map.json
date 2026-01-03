@@ -1,0 +1,2192 @@
+[
+  {
+    "method": "DELETE",
+    "endpoint": "arg102.pointerId",
+    "payload": ""
+  },
+  {
+    "method": "DELETE",
+    "endpoint": "arg102.pointerId",
+    "payload": ""
+  },
+  {
+    "method": "GET",
+    "endpoint": "arg99",
+    "payload": ""
+  },
+  {
+    "method": "GET",
+    "endpoint": "arg99",
+    "payload": ""
+  },
+  {
+    "method": "DELETE",
+    "endpoint": "arg102",
+    "payload": ""
+  },
+  {
+    "method": "GET",
+    "endpoint": "arg65",
+    "payload": ""
+  },
+  {
+    "method": "GET",
+    "endpoint": "arg38",
+    "payload": ""
+  },
+  {
+    "method": "GET",
+    "endpoint": "arg10.key === null ? arg38 : arg10.key",
+    "payload": ""
+  },
+  {
+    "method": "GET",
+    "endpoint": "arg10.key === null ? arg38 : arg10.key",
+    "payload": ""
+  },
+  {
+    "method": "GET",
+    "endpoint": "arg38",
+    "payload": ""
+  },
+  {
+    "method": "DELETE",
+    "endpoint": "arg18.key === null ? arg32 : arg18.key",
+    "payload": ""
+  },
+  {
+    "method": "DELETE",
+    "endpoint": "arg22.key === null ? arg32 : arg22.key",
+    "payload": ""
+  },
+  {
+    "method": "GET",
+    "endpoint": "arg102",
+    "payload": ""
+  },
+  {
+    "method": "DELETE",
+    "endpoint": "arg102",
+    "payload": ""
+  },
+  {
+    "method": "DELETE",
+    "endpoint": "arg102",
+    "payload": ""
+  },
+  {
+    "method": "GET",
+    "endpoint": "arg84",
+    "payload": ""
+  },
+  {
+    "method": "DELETE",
+    "endpoint": "arg102",
+    "payload": ""
+  },
+  {
+    "method": "DELETE",
+    "endpoint": "arg102",
+    "payload": ""
+  },
+  {
+    "method": "DELETE",
+    "endpoint": "arg102",
+    "payload": ""
+  },
+  {
+    "method": "GET",
+    "endpoint": "arg102",
+    "payload": ""
+  },
+  {
+    "method": "GET",
+    "endpoint": "arg93",
+    "payload": ""
+  },
+  {
+    "method": "GET",
+    "endpoint": "arg93",
+    "payload": ""
+  },
+  {
+    "method": "DELETE",
+    "endpoint": "arg102",
+    "payload": ""
+  },
+  {
+    "method": "GET",
+    "endpoint": "arg84",
+    "payload": ""
+  },
+  {
+    "method": "GET",
+    "endpoint": "arg102",
+    "payload": ""
+  },
+  {
+    "method": "DELETE",
+    "endpoint": "arg102.name",
+    "payload": ""
+  },
+  {
+    "method": "GET",
+    "endpoint": "arg102",
+    "payload": ""
+  },
+  {
+    "method": "GET",
+    "endpoint": "arg65",
+    "payload": ""
+  },
+  {
+    "method": "GET",
+    "endpoint": "arg65",
+    "payload": ""
+  },
+  {
+    "method": "GET",
+    "endpoint": "this",
+    "payload": ""
+  },
+  {
+    "method": "GET",
+    "endpoint": "arg65",
+    "payload": ""
+  },
+  {
+    "method": "GET",
+    "endpoint": "arg65",
+    "payload": ""
+  },
+  {
+    "method": "GET",
+    "endpoint": "arg102",
+    "payload": ""
+  },
+  {
+    "method": "GET",
+    "endpoint": "arg102",
+    "payload": ""
+  },
+  {
+    "method": "GET",
+    "endpoint": "arg102",
+    "payload": "arg84"
+  },
+  {
+    "method": "GET",
+    "endpoint": "arg93",
+    "payload": ""
+  },
+  {
+    "method": "GET",
+    "endpoint": "arg65",
+    "payload": ""
+  },
+  {
+    "method": "GET",
+    "endpoint": "arg65",
+    "payload": ""
+  },
+  {
+    "method": "GET",
+    "endpoint": "arg65",
+    "payload": ""
+  },
+  {
+    "method": "GET",
+    "endpoint": "this",
+    "payload": ""
+  },
+  {
+    "method": "GET",
+    "endpoint": "arg65",
+    "payload": ""
+  },
+  {
+    "method": "GET",
+    "endpoint": "arg65",
+    "payload": ""
+  },
+  {
+    "method": "GET",
+    "endpoint": "arg102",
+    "payload": ""
+  },
+  {
+    "method": "GET",
+    "endpoint": "arg102",
+    "payload": ""
+  },
+  {
+    "method": "GET",
+    "endpoint": "arg102",
+    "payload": "arg84"
+  },
+  {
+    "method": "GET",
+    "endpoint": "arg65",
+    "payload": ""
+  },
+  {
+    "method": "GET",
+    "endpoint": "arg84",
+    "payload": ""
+  },
+  {
+    "method": "PUT",
+    "endpoint": "arg102",
+    "payload": "arg84"
+  },
+  {
+    "method": "GET",
+    "endpoint": "arg84",
+    "payload": ""
+  },
+  {
+    "method": "DELETE",
+    "endpoint": "arg84",
+    "payload": ""
+  },
+  {
+    "method": "PUT",
+    "endpoint": "arg78",
+    "payload": "arg84"
+  },
+  {
+    "method": "GET",
+    "endpoint": "arg65",
+    "payload": ""
+  },
+  {
+    "method": "GET",
+    "endpoint": "arg65",
+    "payload": ""
+  },
+  {
+    "method": "GET",
+    "endpoint": "this",
+    "payload": ""
+  },
+  {
+    "method": "GET",
+    "endpoint": "arg65",
+    "payload": ""
+  },
+  {
+    "method": "GET",
+    "endpoint": "arg65",
+    "payload": ""
+  },
+  {
+    "method": "GET",
+    "endpoint": "arg102",
+    "payload": ""
+  },
+  {
+    "method": "GET",
+    "endpoint": "arg102",
+    "payload": ""
+  },
+  {
+    "method": "GET",
+    "endpoint": "arg102",
+    "payload": "arg84"
+  },
+  {
+    "method": "GET",
+    "endpoint": "\"version\"",
+    "payload": ""
+  },
+  {
+    "method": "GET",
+    "endpoint": "var262.createContext",
+    "payload": ""
+  },
+  {
+    "method": "GET",
+    "endpoint": "arg84",
+    "payload": ""
+  },
+  {
+    "method": "GET",
+    "endpoint": "arg102",
+    "payload": ""
+  },
+  {
+    "method": "GET",
+    "endpoint": "arg61",
+    "payload": ""
+  },
+  {
+    "method": "GET",
+    "endpoint": "arg102",
+    "payload": ""
+  },
+  {
+    "method": "GET",
+    "endpoint": "arg102",
+    "payload": ""
+  },
+  {
+    "method": "DELETE",
+    "endpoint": "arg102",
+    "payload": ""
+  },
+  {
+    "method": "GET",
+    "endpoint": "arg102",
+    "payload": ""
+  },
+  {
+    "method": "GET",
+    "endpoint": "`${B6e(arg102",
+    "payload": ""
+  },
+  {
+    "method": "POST",
+    "endpoint": "/integrations/run-bets-auth",
+    "payload": "arg102"
+  },
+  {
+    "method": "POST",
+    "endpoint": "L6e(arg102",
+    "payload": ""
+  },
+  {
+    "method": "POST",
+    "endpoint": "/auth/one-time-token/sign-in",
+    "payload": "arg102"
+  },
+  {
+    "method": "POST",
+    "endpoint": "/auth/sign-out",
+    "payload": ""
+  },
+  {
+    "method": "POST",
+    "endpoint": "/auth/sign-out-all",
+    "payload": ""
+  },
+  {
+    "method": "POST",
+    "endpoint": "/auth/refresh-token",
+    "payload": ""
+  },
+  {
+    "method": "POST",
+    "endpoint": "/user/update-lang",
+    "payload": "{\r\n        lang: KJ.out(arg102"
+  },
+  {
+    "method": "POST",
+    "endpoint": "/user/referral-balance-withdraw",
+    "payload": ""
+  },
+  {
+    "method": "GET",
+    "endpoint": "/user/get-push-notification-token",
+    "payload": ""
+  },
+  {
+    "method": "POST",
+    "endpoint": "/user/save-push-notification-token",
+    "payload": "{\r\n        token: arg102\r\n      }"
+  },
+  {
+    "method": "POST",
+    "endpoint": "/user/destroy-push-notification-token",
+    "payload": "{\r\n        token: arg102\r\n      }"
+  },
+  {
+    "method": "GET",
+    "endpoint": "`${W6e}?montaznayaPena=${arg102}`",
+    "payload": ""
+  },
+  {
+    "method": "POST",
+    "endpoint": "/marketplace/exchange-items",
+    "payload": "arg102"
+  },
+  {
+    "method": "GET",
+    "endpoint": "`${vm}/${arg102}/all`",
+    "payload": ""
+  },
+  {
+    "method": "POST",
+    "endpoint": "`${vm}/${arg102}/clear`",
+    "payload": ""
+  },
+  {
+    "method": "POST",
+    "endpoint": "`${vm}/${arg102}`",
+    "payload": "arg84"
+  },
+  {
+    "method": "POST",
+    "endpoint": "`${vm}/${arg102}/delete`",
+    "payload": "{\r\n        messageId: arg84\r\n      }"
+  },
+  {
+    "method": "POST",
+    "endpoint": "`${vm}/${arg102}/mute`",
+    "payload": "arg84"
+  },
+  {
+    "method": "POST",
+    "endpoint": "`${vm}/${arg102}/vote`",
+    "payload": "arg84"
+  },
+  {
+    "method": "POST",
+    "endpoint": "`${vm}/${arg102}/dummy`",
+    "payload": "arg84"
+  },
+  {
+    "method": "POST",
+    "endpoint": "`${vm}/${arg102}/pin`",
+    "payload": "{\r\n        messageId: arg84\r\n      }"
+  },
+  {
+    "method": "GET",
+    "endpoint": "\"/dummies\"",
+    "payload": ""
+  },
+  {
+    "method": "GET",
+    "endpoint": "`${Jk}/${arg102}`",
+    "payload": ""
+  },
+  {
+    "method": "GET",
+    "endpoint": "`${Jk}/${arg102}/game-history?game=${arg84}&page=${arg72}`",
+    "payload": ""
+  },
+  {
+    "method": "GET",
+    "endpoint": "`${Jk}/withdraws?page=${arg102}`",
+    "payload": ""
+  },
+  {
+    "method": "GET",
+    "endpoint": "`${Jk}/deposits?page=${arg102}`",
+    "payload": ""
+  },
+  {
+    "method": "GET",
+    "endpoint": "`${Jk}/referral?page=${arg102}`",
+    "payload": ""
+  },
+  {
+    "method": "POST",
+    "endpoint": "/user/update-trade-url",
+    "payload": "{\r\n        tradeUrl: arg102\r\n      }"
+  },
+  {
+    "method": "POST",
+    "endpoint": "/discount",
+    "payload": "arg102"
+  },
+  {
+    "method": "POST",
+    "endpoint": "/discount/is-show-captcha",
+    "payload": "arg102"
+  },
+  {
+    "method": "POST",
+    "endpoint": "/withdraw",
+    "payload": "arg102"
+  },
+  {
+    "method": "POST",
+    "endpoint": "/v1/withdraw",
+    "payload": "arg102"
+  },
+  {
+    "method": "GET",
+    "endpoint": "/withdraw/methods",
+    "payload": ""
+  },
+  {
+    "method": "POST",
+    "endpoint": "/user/read-notifications",
+    "payload": ""
+  },
+  {
+    "method": "POST",
+    "endpoint": "/user/remove-notification",
+    "payload": "arg102"
+  },
+  {
+    "method": "POST",
+    "endpoint": "`${aqe}${arg102}`",
+    "payload": "{\r\n        amount: arg84"
+  },
+  {
+    "method": "POST",
+    "endpoint": "/v1/deposit/cascade",
+    "payload": "arg102"
+  },
+  {
+    "method": "POST",
+    "endpoint": "/v1/deposit/confirm-payment",
+    "payload": "arg102"
+  },
+  {
+    "method": "GET",
+    "endpoint": "`${oqe}?mode=${arg102}`",
+    "payload": ""
+  },
+  {
+    "method": "POST",
+    "endpoint": "/lottery/join",
+    "payload": "arg102"
+  },
+  {
+    "method": "POST",
+    "endpoint": "/use-medkit",
+    "payload": ""
+  },
+  {
+    "method": "GET",
+    "endpoint": "`${bqe}?${arg93.toString(",
+    "payload": ""
+  },
+  {
+    "method": "GET",
+    "endpoint": "`${yqe}?${arg87.toString(",
+    "payload": ""
+  },
+  {
+    "method": "GET",
+    "endpoint": "`${wqe}/?${arg78.toString(",
+    "payload": ""
+  },
+  {
+    "method": "GET",
+    "endpoint": "`${Sqe}?${arg72.toString(",
+    "payload": ""
+  },
+  {
+    "method": "GET",
+    "endpoint": "`${Zk}/match/${arg102}`",
+    "payload": ""
+  },
+  {
+    "method": "GET",
+    "endpoint": "`${jqe}?page=${arg102}`",
+    "payload": ""
+  },
+  {
+    "method": "GET",
+    "endpoint": "`${Zk}/match/${arg102}/players`",
+    "payload": ""
+  },
+  {
+    "method": "GET",
+    "endpoint": "`${Zk}/matches/${arg102}/meetings`",
+    "payload": ""
+  },
+  {
+    "method": "GET",
+    "endpoint": "`${Zk}/matches/${arg102}/last-matches`",
+    "payload": ""
+  },
+  {
+    "method": "GET",
+    "endpoint": "`${uqe}/${arg102}`",
+    "payload": ""
+  },
+  {
+    "method": "GET",
+    "endpoint": "`${Zk}/${arg102}/bets`",
+    "payload": ""
+  },
+  {
+    "method": "POST",
+    "endpoint": "\"/v1/bookmaker/bet\"",
+    "payload": "arg102"
+  },
+  {
+    "method": "GET",
+    "endpoint": "`${dqe}`",
+    "payload": ""
+  },
+  {
+    "method": "GET",
+    "endpoint": "/v1/bookmaker/active-bets",
+    "payload": ""
+  },
+  {
+    "method": "POST",
+    "endpoint": "/bookmaker/sale-bet",
+    "payload": "{\r\n        id: arg102\r\n      }"
+  },
+  {
+    "method": "GET",
+    "endpoint": "/v1/bookmaker/regions",
+    "payload": ""
+  },
+  {
+    "method": "GET",
+    "endpoint": "`${pqe}?${arg93.toString(",
+    "payload": ""
+  },
+  {
+    "method": "GET",
+    "endpoint": "`${hqe}/?${arg78.toString(",
+    "payload": ""
+  },
+  {
+    "method": "GET",
+    "endpoint": "`${gqe}?${arg72.toString(",
+    "payload": ""
+  },
+  {
+    "method": "GET",
+    "endpoint": "`${gb}/matches/${arg102}`",
+    "payload": ""
+  },
+  {
+    "method": "GET",
+    "endpoint": "`${gb}/matches/${arg102}/bets`",
+    "payload": ""
+  },
+  {
+    "method": "GET",
+    "endpoint": "`${gb}/matches/${arg102}/players`",
+    "payload": ""
+  },
+  {
+    "method": "GET",
+    "endpoint": "`${gb}/matches/${arg102}/meetings`",
+    "payload": ""
+  },
+  {
+    "method": "GET",
+    "endpoint": "`${gb}/matches/${arg102}/last-matches`",
+    "payload": ""
+  },
+  {
+    "method": "GET",
+    "endpoint": "`${gb}/${arg102}/bets`",
+    "payload": ""
+  },
+  {
+    "method": "POST",
+    "endpoint": "\"/v1/bookmaker/create\"",
+    "payload": "arg102"
+  },
+  {
+    "method": "GET",
+    "endpoint": "`${mqe}?page=${arg102}`",
+    "payload": ""
+  },
+  {
+    "method": "POST",
+    "endpoint": "/bookmaker/sale-bet",
+    "payload": "{\r\n        id: arg102\r\n      }"
+  },
+  {
+    "method": "POST",
+    "endpoint": "/get-stats",
+    "payload": ""
+  },
+  {
+    "method": "GET",
+    "endpoint": "/v1/statistics/state",
+    "payload": ""
+  },
+  {
+    "method": "GET",
+    "endpoint": "arg102 ? `${HJ}?box_id=${arg102}` : HJ",
+    "payload": ""
+  },
+  {
+    "method": "POST",
+    "endpoint": "/staff/like",
+    "payload": "arg102"
+  },
+  {
+    "method": "POST",
+    "endpoint": "/staff/review",
+    "payload": "arg102"
+  },
+  {
+    "method": "POST",
+    "endpoint": "/staff/tip",
+    "payload": "arg102"
+  },
+  {
+    "method": "POST",
+    "endpoint": "/affiliate/set-random-bonus",
+    "payload": "arg102"
+  },
+  {
+    "method": "POST",
+    "endpoint": "`${GJ}/${arg102}/resolve`",
+    "payload": ""
+  },
+  {
+    "method": "POST",
+    "endpoint": "`${GJ}/${arg102}/reject`",
+    "payload": ""
+  },
+  {
+    "method": "GET",
+    "endpoint": "/roulette/state",
+    "payload": ""
+  },
+  {
+    "method": "POST",
+    "endpoint": "/v1/roulette/make-bet",
+    "payload": "arg102"
+  },
+  {
+    "method": "GET",
+    "endpoint": "`${Dqe}/${arg102}`",
+    "payload": ""
+  },
+  {
+    "method": "GET",
+    "endpoint": "/v1/rollrun/state",
+    "payload": ""
+  },
+  {
+    "method": "POST",
+    "endpoint": "/v1/rollrun/create",
+    "payload": "arg102"
+  },
+  {
+    "method": "POST",
+    "endpoint": "/v1/rollrun/join",
+    "payload": "arg102"
+  },
+  {
+    "method": "POST",
+    "endpoint": "/giver/arg99-lopaty",
+    "payload": "arg102"
+  },
+  {
+    "method": "GET",
+    "endpoint": "/giver/state",
+    "payload": ""
+  },
+  {
+    "method": "POST",
+    "endpoint": "/giver/join",
+    "payload": "arg102"
+  },
+  {
+    "method": "POST",
+    "endpoint": "/giver/reward",
+    "payload": "arg102"
+  },
+  {
+    "method": "POST",
+    "endpoint": "$var371",
+    "payload": "arg102"
+  },
+  {
+    "method": "DELETE",
+    "endpoint": "/giver/destroy-promocode",
+    "payload": ""
+  },
+  {
+    "method": "POST",
+    "endpoint": "/giver/refresh",
+    "payload": "arg102"
+  },
+  {
+    "method": "GET",
+    "endpoint": "/support/answers",
+    "payload": ""
+  },
+  {
+    "method": "POST",
+    "endpoint": "/cashback",
+    "payload": ""
+  },
+  {
+    "method": "GET",
+    "endpoint": "/ping",
+    "payload": ""
+  },
+  {
+    "method": "GET",
+    "endpoint": "/payment/state",
+    "payload": ""
+  },
+  {
+    "method": "GET",
+    "endpoint": "`${Qqe}${arg102}`",
+    "payload": ""
+  },
+  {
+    "method": "POST",
+    "endpoint": "/payment/get-steam-items",
+    "payload": "arg102"
+  },
+  {
+    "method": "POST",
+    "endpoint": "/payment/get-crypto-wallet",
+    "payload": "arg102"
+  },
+  {
+    "method": "GET",
+    "endpoint": "/freebet/state",
+    "payload": ""
+  },
+  {
+    "method": "POST",
+    "endpoint": "/freebet/match-bet",
+    "payload": "arg102"
+  },
+  {
+    "method": "POST",
+    "endpoint": "/freebet/team-bet",
+    "payload": "arg102"
+  },
+  {
+    "method": "POST",
+    "endpoint": "/freebet/claim",
+    "payload": ""
+  },
+  {
+    "method": "GET",
+    "endpoint": "/freebet/leaderboard",
+    "payload": ""
+  },
+  {
+    "method": "GET",
+    "endpoint": "/freebet/bets",
+    "payload": ""
+  },
+  {
+    "method": "GET",
+    "endpoint": "/v1/frozen-freebet/state",
+    "payload": ""
+  },
+  {
+    "method": "GET",
+    "endpoint": "/advent-calendar/state",
+    "payload": ""
+  },
+  {
+    "method": "POST",
+    "endpoint": "/advent-calendar/buy",
+    "payload": "arg102"
+  },
+  {
+    "method": "POST",
+    "endpoint": "/advent-calendar/reward",
+    "payload": "arg102"
+  },
+  {
+    "method": "POST",
+    "endpoint": "/promotions/xplay",
+    "payload": "arg102"
+  },
+  {
+    "method": "GET",
+    "endpoint": "/crash/state",
+    "payload": ""
+  },
+  {
+    "method": "POST",
+    "endpoint": "/v1/crash/create-bet",
+    "payload": "arg102"
+  },
+  {
+    "method": "POST",
+    "endpoint": "/v1/crash/upgrade-bet",
+    "payload": "arg102"
+  },
+  {
+    "method": "POST",
+    "endpoint": "/crash/like-bet",
+    "payload": "arg102"
+  },
+  {
+    "method": "GET",
+    "endpoint": "`${gGe}/${arg102}`",
+    "payload": ""
+  },
+  {
+    "method": "GET",
+    "endpoint": "/jackrun/state",
+    "payload": ""
+  },
+  {
+    "method": "POST",
+    "endpoint": "/v1/jackrun/join",
+    "payload": "arg102"
+  },
+  {
+    "method": "GET",
+    "endpoint": "`${yGe}/${arg102}`",
+    "payload": ""
+  },
+  {
+    "method": "GET",
+    "endpoint": "/bonuses/state",
+    "payload": ""
+  },
+  {
+    "method": "POST",
+    "endpoint": "/user-task/start",
+    "payload": "arg102"
+  },
+  {
+    "method": "POST",
+    "endpoint": "/user-task/perform",
+    "payload": "arg102"
+  },
+  {
+    "method": "POST",
+    "endpoint": "/user-task/fast-reward",
+    "payload": "arg102"
+  },
+  {
+    "method": "GET",
+    "endpoint": "`${jGe}${arg102 ? `?uuid=${arg102}` : \"\"}`",
+    "payload": ""
+  },
+  {
+    "method": "POST",
+    "endpoint": "/support-chat/message/create",
+    "payload": "arg102"
+  },
+  {
+    "method": "POST",
+    "endpoint": "/support-chat/message/read",
+    "payload": "arg102"
+  },
+  {
+    "method": "POST",
+    "endpoint": "/advert-utm-labels/collect",
+    "payload": "arg102"
+  },
+  {
+    "method": "GET",
+    "endpoint": "/homepage/state",
+    "payload": ""
+  },
+  {
+    "method": "GET",
+    "endpoint": "/v1/favorite-boxes",
+    "payload": ""
+  },
+  {
+    "method": "POST",
+    "endpoint": "DGe(arg102",
+    "payload": ""
+  },
+  {
+    "method": "POST",
+    "endpoint": "MGe(arg102",
+    "payload": ""
+  },
+  {
+    "method": "GET",
+    "endpoint": "arg84",
+    "payload": ""
+  },
+  {
+    "method": "GET",
+    "endpoint": "AGe(arg102",
+    "payload": ""
+  },
+  {
+    "method": "POST",
+    "endpoint": "/v1/box/open",
+    "payload": "arg102"
+  },
+  {
+    "method": "POST",
+    "endpoint": "/v1/box/quest/reset",
+    "payload": "arg102"
+  },
+  {
+    "method": "GET",
+    "endpoint": "/runpass/state",
+    "payload": ""
+  },
+  {
+    "method": "POST",
+    "endpoint": "/runpass/join",
+    "payload": "arg102"
+  },
+  {
+    "method": "POST",
+    "endpoint": "/runpass/switch",
+    "payload": "arg102"
+  },
+  {
+    "method": "POST",
+    "endpoint": "/runpass/reset",
+    "payload": "arg102"
+  },
+  {
+    "method": "POST",
+    "endpoint": "/runpass/reward",
+    "payload": "arg102"
+  },
+  {
+    "method": "GET",
+    "endpoint": "/runpass/small-state",
+    "payload": ""
+  },
+  {
+    "method": "POST",
+    "endpoint": "/runpass/gift",
+    "payload": "arg102"
+  },
+  {
+    "method": "POST",
+    "endpoint": "/v1/runpass/passive-reward-claim",
+    "payload": ""
+  },
+  {
+    "method": "POST",
+    "endpoint": "/runpass/quests/steamdep",
+    "payload": ""
+  },
+  {
+    "method": "GET",
+    "endpoint": "/runpass/active-state",
+    "payload": ""
+  },
+  {
+    "method": "POST",
+    "endpoint": "/user/email",
+    "payload": "arg102"
+  },
+  {
+    "method": "GET",
+    "endpoint": "/boxbattle/state",
+    "payload": ""
+  },
+  {
+    "method": "GET",
+    "endpoint": "JGe(arg102",
+    "payload": ""
+  },
+  {
+    "method": "POST",
+    "endpoint": "/v1/boxbattle/create",
+    "payload": "arg102"
+  },
+  {
+    "method": "POST",
+    "endpoint": "/boxbattle/join",
+    "payload": "arg102"
+  },
+  {
+    "method": "GET",
+    "endpoint": "/runbonus/state",
+    "payload": ""
+  },
+  {
+    "method": "GET",
+    "endpoint": "/v1/vip-club/state",
+    "payload": ""
+  },
+  {
+    "method": "POST",
+    "endpoint": "/v1/vip-club/request",
+    "payload": "arg102"
+  },
+  {
+    "method": "GET",
+    "endpoint": "/v1/leagues/state",
+    "payload": ""
+  },
+  {
+    "method": "GET",
+    "endpoint": "/v1/onboarding/status",
+    "payload": ""
+  },
+  {
+    "method": "POST",
+    "endpoint": "/v1/onboarding/first-auth",
+    "payload": "arg102"
+  },
+  {
+    "method": "GET",
+    "endpoint": "eWe(arg102",
+    "payload": ""
+  },
+  {
+    "method": "POST",
+    "endpoint": "/sportsbook/update-session",
+    "payload": ""
+  },
+  {
+    "method": "GET",
+    "endpoint": "/v1/robokeeper/state",
+    "payload": ""
+  },
+  {
+    "method": "POST",
+    "endpoint": "/v1/robokeeper/attempt",
+    "payload": ""
+  },
+  {
+    "method": "POST",
+    "endpoint": "/v1/robokeeper/purchase",
+    "payload": "arg102"
+  },
+  {
+    "method": "GET",
+    "endpoint": "arg93",
+    "payload": ""
+  },
+  {
+    "method": "GET",
+    "endpoint": "/v1/runbirthday/bank",
+    "payload": ""
+  },
+  {
+    "method": "GET",
+    "endpoint": "/v1/runbirthday/tickets-count",
+    "payload": ""
+  },
+  {
+    "method": "GET",
+    "endpoint": "/v1/bookmaker-event-pass/state",
+    "payload": ""
+  },
+  {
+    "method": "GET",
+    "endpoint": "/v1/bookmaker-event-pass/favorite-team/state",
+    "payload": ""
+  },
+  {
+    "method": "POST",
+    "endpoint": "/v1/bookmaker-event-pass/favorite-team/select",
+    "payload": "arg102"
+  },
+  {
+    "method": "GET",
+    "endpoint": "/v1/bookmaker-event-pass/favorite-team/margins",
+    "payload": ""
+  },
+  {
+    "method": "GET",
+    "endpoint": "/v1/bookmaker-event-pass/pickem/state",
+    "payload": ""
+  },
+  {
+    "method": "GET",
+    "endpoint": "vWe(arg102",
+    "payload": ""
+  },
+  {
+    "method": "GET",
+    "endpoint": "/v1/bookmaker-event-pass/bonus-system/state",
+    "payload": ""
+  },
+  {
+    "method": "POST",
+    "endpoint": "/v1/bookmaker-event-pass/bonus-system/select",
+    "payload": "arg102"
+  },
+  {
+    "method": "GET",
+    "endpoint": "/v1/bookmaker-event-pass/pickem/playoff",
+    "payload": ""
+  },
+  {
+    "method": "POST",
+    "endpoint": "/v1/bookmaker-event-pass/pickem/group/save",
+    "payload": "arg102"
+  },
+  {
+    "method": "POST",
+    "endpoint": "/v1/bookmaker-event-pass/pickem/playoff/save",
+    "payload": "arg102"
+  },
+  {
+    "method": "GET",
+    "endpoint": "/v1/user/wallets",
+    "payload": ""
+  },
+  {
+    "method": "POST",
+    "endpoint": "/v1/user/change-wallet",
+    "payload": "arg102"
+  },
+  {
+    "method": "POST",
+    "endpoint": "/v1/user/wallets/set-is-hidden",
+    "payload": "arg102"
+  },
+  {
+    "method": "POST",
+    "endpoint": "/v1/user/wallets/create",
+    "payload": "arg102"
+  },
+  {
+    "method": "GET",
+    "endpoint": "/v1/tournament/state",
+    "payload": ""
+  },
+  {
+    "method": "GET",
+    "endpoint": "TWe(arg102",
+    "payload": ""
+  },
+  {
+    "method": "GET",
+    "endpoint": "RWe(arg102",
+    "payload": ""
+  },
+  {
+    "method": "POST",
+    "endpoint": "zWe(arg102",
+    "payload": ""
+  },
+  {
+    "method": "POST",
+    "endpoint": "_We(arg102.tournamentId",
+    "payload": ""
+  },
+  {
+    "method": "POST",
+    "endpoint": "/v1/public/casino/games",
+    "payload": "arg102"
+  },
+  {
+    "method": "POST",
+    "endpoint": "/v1/public/casino/favourite",
+    "payload": "arg102"
+  },
+  {
+    "method": "GET",
+    "endpoint": "`${NWe(arg102",
+    "payload": ""
+  },
+  {
+    "method": "GET",
+    "endpoint": "/v1/runmoney/wheels",
+    "payload": ""
+  },
+  {
+    "method": "POST",
+    "endpoint": "/v1/runmoney/wheels/open",
+    "payload": "arg102"
+  },
+  {
+    "method": "GET",
+    "endpoint": "`${OWe}?limit=${arg102}&page=${arg84}`",
+    "payload": ""
+  },
+  {
+    "method": "GET",
+    "endpoint": "/v1/cyberpass/state",
+    "payload": ""
+  },
+  {
+    "method": "GET",
+    "endpoint": "`${WJ}?type=${arg102}`",
+    "payload": ""
+  },
+  {
+    "method": "POST",
+    "endpoint": "/v1/cyberpass/reward",
+    "payload": "arg102"
+  },
+  {
+    "method": "POST",
+    "endpoint": "/v1/cyberpass/reward",
+    "payload": "arg102"
+  },
+  {
+    "method": "GET",
+    "endpoint": "/v1/start-bonus/check",
+    "payload": ""
+  },
+  {
+    "method": "POST",
+    "endpoint": "/v1/start-bonus/get",
+    "payload": ""
+  },
+  {
+    "method": "GET",
+    "endpoint": "`${MWe}?page=${arg102}&onlyAmount=${arg84}`",
+    "payload": ""
+  },
+  {
+    "method": "GET",
+    "endpoint": "/v1/runparty-bank/state",
+    "payload": ""
+  },
+  {
+    "method": "GET",
+    "endpoint": "/v1/event-vote/state",
+    "payload": ""
+  },
+  {
+    "method": "POST",
+    "endpoint": "$var181",
+    "payload": "arg102"
+  },
+  {
+    "method": "POST",
+    "endpoint": "/v1/upgrade/do",
+    "payload": "arg102"
+  },
+  {
+    "method": "GET",
+    "endpoint": "`${VWe}?promo=${arg102}`",
+    "payload": ""
+  },
+  {
+    "method": "GET",
+    "endpoint": "`${WWe}/${arg84}/${arg102}`",
+    "payload": ""
+  },
+  {
+    "method": "GET",
+    "endpoint": "`${zqe}?type=1`",
+    "payload": ""
+  },
+  {
+    "method": "GET",
+    "endpoint": "_qe(arg102",
+    "payload": ""
+  },
+  {
+    "method": "POST",
+    "endpoint": "/v1/bonus-wheel/open",
+    "payload": "arg102"
+  },
+  {
+    "method": "GET",
+    "endpoint": "/v1/marathon/state",
+    "payload": ""
+  },
+  {
+    "method": "POST",
+    "endpoint": "/v1/marathon/prize",
+    "payload": "arg102"
+  },
+  {
+    "method": "DELETE",
+    "endpoint": "arg90",
+    "payload": ""
+  },
+  {
+    "method": "DELETE",
+    "endpoint": "arg90",
+    "payload": ""
+  },
+  {
+    "method": "DELETE",
+    "endpoint": "arg99",
+    "payload": ""
+  },
+  {
+    "method": "GET",
+    "endpoint": "arg84",
+    "payload": ""
+  },
+  {
+    "method": "GET",
+    "endpoint": "arg67",
+    "payload": ""
+  },
+  {
+    "method": "GET",
+    "endpoint": "arg67",
+    "payload": ""
+  },
+  {
+    "method": "GET",
+    "endpoint": "arg81",
+    "payload": ""
+  },
+  {
+    "method": "GET",
+    "endpoint": "arg81",
+    "payload": ""
+  },
+  {
+    "method": "DELETE",
+    "endpoint": "arg81",
+    "payload": ""
+  },
+  {
+    "method": "DELETE",
+    "endpoint": "arg110",
+    "payload": ""
+  },
+  {
+    "method": "DELETE",
+    "endpoint": "arg110",
+    "payload": ""
+  },
+  {
+    "method": "DELETE",
+    "endpoint": "arg62",
+    "payload": ""
+  },
+  {
+    "method": "GET",
+    "endpoint": "arg65",
+    "payload": ""
+  },
+  {
+    "method": "GET",
+    "endpoint": "arg102",
+    "payload": ""
+  },
+  {
+    "method": "GET",
+    "endpoint": "arg102",
+    "payload": ""
+  },
+  {
+    "method": "GET",
+    "endpoint": "arg102",
+    "payload": ""
+  },
+  {
+    "method": "GET",
+    "endpoint": "arg78",
+    "payload": ""
+  },
+  {
+    "method": "GET",
+    "endpoint": "arg78",
+    "payload": ""
+  },
+  {
+    "method": "GET",
+    "endpoint": "arg87",
+    "payload": ""
+  },
+  {
+    "method": "GET",
+    "endpoint": "arg87",
+    "payload": ""
+  },
+  {
+    "method": "GET",
+    "endpoint": "arg78",
+    "payload": ""
+  },
+  {
+    "method": "GET",
+    "endpoint": "arg58",
+    "payload": ""
+  },
+  {
+    "method": "GET",
+    "endpoint": "arg84",
+    "payload": ""
+  },
+  {
+    "method": "GET",
+    "endpoint": "arg72",
+    "payload": ""
+  },
+  {
+    "method": "GET",
+    "endpoint": "arg99",
+    "payload": ""
+  },
+  {
+    "method": "GET",
+    "endpoint": "arg99",
+    "payload": ""
+  },
+  {
+    "method": "GET",
+    "endpoint": "$",
+    "payload": "arg106"
+  },
+  {
+    "method": "GET",
+    "endpoint": "$",
+    "payload": "function(arg108"
+  },
+  {
+    "method": "DELETE",
+    "endpoint": "arg55",
+    "payload": ""
+  },
+  {
+    "method": "GET",
+    "endpoint": "arg55",
+    "payload": ""
+  },
+  {
+    "method": "GET",
+    "endpoint": "arg55",
+    "payload": ""
+  },
+  {
+    "method": "GET",
+    "endpoint": "arg68",
+    "payload": ""
+  },
+  {
+    "method": "DELETE",
+    "endpoint": "arg68",
+    "payload": ""
+  },
+  {
+    "method": "DELETE",
+    "endpoint": "arg77",
+    "payload": ""
+  },
+  {
+    "method": "GET",
+    "endpoint": "arg55",
+    "payload": ""
+  },
+  {
+    "method": "GET",
+    "endpoint": "arg77",
+    "payload": ""
+  },
+  {
+    "method": "DELETE",
+    "endpoint": "arg55",
+    "payload": ""
+  },
+  {
+    "method": "DELETE",
+    "endpoint": "arg77",
+    "payload": ""
+  },
+  {
+    "method": "GET",
+    "endpoint": "arg55",
+    "payload": ""
+  },
+  {
+    "method": "DELETE",
+    "endpoint": "arg55",
+    "payload": ""
+  },
+  {
+    "method": "GET",
+    "endpoint": "arg55",
+    "payload": ""
+  },
+  {
+    "method": "GET",
+    "endpoint": "arg77",
+    "payload": ""
+  },
+  {
+    "method": "DELETE",
+    "endpoint": "arg55",
+    "payload": ""
+  },
+  {
+    "method": "DELETE",
+    "endpoint": "arg77",
+    "payload": ""
+  },
+  {
+    "method": "GET",
+    "endpoint": "arg55",
+    "payload": ""
+  },
+  {
+    "method": "GET",
+    "endpoint": "arg15",
+    "payload": ""
+  },
+  {
+    "method": "GET",
+    "endpoint": "arg81",
+    "payload": ""
+  },
+  {
+    "method": "DELETE",
+    "endpoint": "arg90",
+    "payload": ""
+  },
+  {
+    "method": "DELETE",
+    "endpoint": "arg90",
+    "payload": ""
+  },
+  {
+    "method": "DELETE",
+    "endpoint": "arg99",
+    "payload": ""
+  },
+  {
+    "method": "GET",
+    "endpoint": "this.storageKey",
+    "payload": ""
+  },
+  {
+    "method": "DELETE",
+    "endpoint": "arg102",
+    "payload": ""
+  },
+  {
+    "method": "GET",
+    "endpoint": "arg102",
+    "payload": ""
+  },
+  {
+    "method": "GET",
+    "endpoint": "arg102",
+    "payload": ""
+  },
+  {
+    "method": "DELETE",
+    "endpoint": "arg102",
+    "payload": ""
+  },
+  {
+    "method": "GET",
+    "endpoint": "arg84",
+    "payload": ""
+  },
+  {
+    "method": "DELETE",
+    "endpoint": "arg102.id",
+    "payload": ""
+  },
+  {
+    "method": "GET",
+    "endpoint": "arg72",
+    "payload": ""
+  },
+  {
+    "method": "GET",
+    "endpoint": "wfe(arg65",
+    "payload": ""
+  },
+  {
+    "method": "GET",
+    "endpoint": "arg93",
+    "payload": ""
+  },
+  {
+    "method": "GET",
+    "endpoint": "arg67",
+    "payload": ""
+  },
+  {
+    "method": "GET",
+    "endpoint": "arg78.id",
+    "payload": ""
+  },
+  {
+    "method": "GET",
+    "endpoint": "arg65",
+    "payload": ""
+  },
+  {
+    "method": "GET",
+    "endpoint": "arg65",
+    "payload": ""
+  },
+  {
+    "method": "GET",
+    "endpoint": "arg102.interactionId",
+    "payload": ""
+  },
+  {
+    "method": "DELETE",
+    "endpoint": "arg78.id",
+    "payload": ""
+  },
+  {
+    "method": "GET",
+    "endpoint": "this.storageKey",
+    "payload": ""
+  },
+  {
+    "method": "DELETE",
+    "endpoint": "arg65",
+    "payload": ""
+  },
+  {
+    "method": "GET",
+    "endpoint": "arg65",
+    "payload": ""
+  },
+  {
+    "method": "GET",
+    "endpoint": "arg65",
+    "payload": ""
+  },
+  {
+    "method": "GET",
+    "endpoint": "arg102",
+    "payload": ""
+  },
+  {
+    "method": "DELETE",
+    "endpoint": "arg65",
+    "payload": ""
+  },
+  {
+    "method": "DELETE",
+    "endpoint": "arg102",
+    "payload": ""
+  },
+  {
+    "method": "GET",
+    "endpoint": "arg65",
+    "payload": ""
+  },
+  {
+    "method": "DELETE",
+    "endpoint": "arg65",
+    "payload": ""
+  },
+  {
+    "method": "GET",
+    "endpoint": "arg65",
+    "payload": ""
+  },
+  {
+    "method": "GET",
+    "endpoint": "arg102",
+    "payload": ""
+  },
+  {
+    "method": "DELETE",
+    "endpoint": "arg65",
+    "payload": ""
+  },
+  {
+    "method": "DELETE",
+    "endpoint": "arg102",
+    "payload": ""
+  },
+  {
+    "method": "GET",
+    "endpoint": "arg93",
+    "payload": ""
+  },
+  {
+    "method": "DELETE",
+    "endpoint": "arg109",
+    "payload": ""
+  },
+  {
+    "method": "DELETE",
+    "endpoint": "arg81",
+    "payload": ""
+  },
+  {
+    "method": "DELETE",
+    "endpoint": "arg81",
+    "payload": ""
+  },
+  {
+    "method": "DELETE",
+    "endpoint": "arg103",
+    "payload": ""
+  },
+  {
+    "method": "DELETE",
+    "endpoint": "arg78",
+    "payload": ""
+  },
+  {
+    "method": "GET",
+    "endpoint": "`${fe.itemsUrl}?arg107=${new Date(",
+    "payload": ""
+  },
+  {
+    "method": "DELETE",
+    "endpoint": "arg81",
+    "payload": ""
+  },
+  {
+    "method": "DELETE",
+    "endpoint": "arg81",
+    "payload": ""
+  },
+  {
+    "method": "DELETE",
+    "endpoint": "arg10",
+    "payload": ""
+  },
+  {
+    "method": "GET",
+    "endpoint": "arg93",
+    "payload": ""
+  },
+  {
+    "method": "DELETE",
+    "endpoint": "arg102",
+    "payload": ""
+  },
+  {
+    "method": "DELETE",
+    "endpoint": "arg58",
+    "payload": ""
+  },
+  {
+    "method": "GET",
+    "endpoint": "arg65.target",
+    "payload": ""
+  },
+  {
+    "method": "GET",
+    "endpoint": "arg84",
+    "payload": ""
+  },
+  {
+    "method": "DELETE",
+    "endpoint": "arg65",
+    "payload": ""
+  },
+  {
+    "method": "DELETE",
+    "endpoint": "arg103",
+    "payload": ""
+  },
+  {
+    "method": "GET",
+    "endpoint": "arg87",
+    "payload": ""
+  },
+  {
+    "method": "GET",
+    "endpoint": "arg87",
+    "payload": ""
+  },
+  {
+    "method": "DELETE",
+    "endpoint": "this",
+    "payload": ""
+  },
+  {
+    "method": "GET",
+    "endpoint": "arg87",
+    "payload": ""
+  },
+  {
+    "method": "GET",
+    "endpoint": "arg87",
+    "payload": ""
+  },
+  {
+    "method": "DELETE",
+    "endpoint": "this.current",
+    "payload": ""
+  },
+  {
+    "method": "DELETE",
+    "endpoint": "this",
+    "payload": ""
+  },
+  {
+    "method": "DELETE",
+    "endpoint": "arg102",
+    "payload": ""
+  },
+  {
+    "method": "GET",
+    "endpoint": "arg102",
+    "payload": ""
+  },
+  {
+    "method": "DELETE",
+    "endpoint": "arg102",
+    "payload": ""
+  },
+  {
+    "method": "GET",
+    "endpoint": "arg102",
+    "payload": ""
+  },
+  {
+    "method": "DELETE",
+    "endpoint": "arg102",
+    "payload": ""
+  },
+  {
+    "method": "GET",
+    "endpoint": "arg102",
+    "payload": ""
+  },
+  {
+    "method": "DELETE",
+    "endpoint": "arg90",
+    "payload": ""
+  },
+  {
+    "method": "GET",
+    "endpoint": "arg38",
+    "payload": ""
+  },
+  {
+    "method": "DELETE",
+    "endpoint": "arg38",
+    "payload": ""
+  },
+  {
+    "method": "DELETE",
+    "endpoint": "arg18",
+    "payload": ""
+  },
+  {
+    "method": "GET",
+    "endpoint": "arg102",
+    "payload": ""
+  },
+  {
+    "method": "GET",
+    "endpoint": "arg70",
+    "payload": ""
+  },
+  {
+    "method": "GET",
+    "endpoint": "arg65",
+    "payload": ""
+  },
+  {
+    "method": "GET",
+    "endpoint": "arg58",
+    "payload": ""
+  },
+  {
+    "method": "PUT",
+    "endpoint": "this.data.charCodeAt(arg102",
+    "payload": ""
+  },
+  {
+    "method": "GET",
+    "endpoint": "arg84",
+    "payload": ""
+  },
+  {
+    "method": "GET",
+    "endpoint": "arg72",
+    "payload": ""
+  },
+  {
+    "method": "GET",
+    "endpoint": "0",
+    "payload": ""
+  },
+  {
+    "method": "GET",
+    "endpoint": "0",
+    "payload": ""
+  },
+  {
+    "method": "GET",
+    "endpoint": "arg72",
+    "payload": ""
+  },
+  {
+    "method": "GET",
+    "endpoint": "arg72",
+    "payload": ""
+  },
+  {
+    "method": "PUT",
+    "endpoint": "arg99.mode",
+    "payload": "4"
+  },
+  {
+    "method": "PUT",
+    "endpoint": "arg99.getLength(",
+    "payload": ""
+  },
+  {
+    "method": "PUT",
+    "endpoint": "arg87.mode",
+    "payload": "4"
+  },
+  {
+    "method": "PUT",
+    "endpoint": "arg87.getLength(",
+    "payload": ""
+  },
+  {
+    "method": "PUT",
+    "endpoint": "0",
+    "payload": "4"
+  },
+  {
+    "method": "PUT",
+    "endpoint": "ru.PAD0",
+    "payload": "8"
+  },
+  {
+    "method": "PUT",
+    "endpoint": "ru.PAD1",
+    "payload": "8"
+  },
+  {
+    "method": "GET",
+    "endpoint": "arg107",
+    "payload": ""
+  },
+  {
+    "method": "GET",
+    "endpoint": "arg90",
+    "payload": ""
+  },
+  {
+    "method": "DELETE",
+    "endpoint": "arg90",
+    "payload": ""
+  },
+  {
+    "method": "GET",
+    "endpoint": "\"stag\"",
+    "payload": ""
+  },
+  {
+    "method": "DELETE",
+    "endpoint": "\"stag\"",
+    "payload": ""
+  },
+  {
+    "method": "GET",
+    "endpoint": "arg72.value[0]",
+    "payload": ""
+  },
+  {
+    "method": "GET",
+    "endpoint": "arg39",
+    "payload": ""
+  },
+  {
+    "method": "GET",
+    "endpoint": "arg90",
+    "payload": ""
+  },
+  {
+    "method": "GET",
+    "endpoint": "arg84",
+    "payload": ""
+  },
+  {
+    "method": "GET",
+    "endpoint": "arg99",
+    "payload": ""
+  },
+  {
+    "method": "DELETE",
+    "endpoint": "arg99",
+    "payload": ""
+  },
+  {
+    "method": "GET",
+    "endpoint": "arg91",
+    "payload": ""
+  },
+  {
+    "method": "GET",
+    "endpoint": "\"promo\"",
+    "payload": ""
+  },
+  {
+    "method": "DELETE",
+    "endpoint": "\"promo\"",
+    "payload": ""
+  },
+  {
+    "method": "GET",
+    "endpoint": "arg65",
+    "payload": ""
+  },
+  {
+    "method": "GET",
+    "endpoint": "arg65",
+    "payload": ""
+  },
+  {
+    "method": "GET",
+    "endpoint": "arg65",
+    "payload": ""
+  },
+  {
+    "method": "GET",
+    "endpoint": "arg72 == null ? void 0 : arg72.id",
+    "payload": ""
+  },
+  {
+    "method": "GET",
+    "endpoint": "arg70.slotKey",
+    "payload": ""
+  },
+  {
+    "method": "GET",
+    "endpoint": "arg70.slotKey",
+    "payload": ""
+  },
+  {
+    "method": "GET",
+    "endpoint": "arg70.slotKey",
+    "payload": ""
+  },
+  {
+    "method": "GET",
+    "endpoint": "arg74",
+    "payload": ""
+  },
+  {
+    "method": "GET",
+    "endpoint": "arg114",
+    "payload": ""
+  },
+  {
+    "method": "GET",
+    "endpoint": "\"channel\"",
+    "payload": ""
+  },
+  {
+    "method": "GET",
+    "endpoint": "\"access_token\"",
+    "payload": ""
+  },
+  {
+    "method": "GET",
+    "endpoint": "\"user_id\"",
+    "payload": ""
+  },
+  {
+    "method": "GET",
+    "endpoint": "\"one_time_token\"",
+    "payload": ""
+  },
+  {
+    "method": "GET",
+    "endpoint": "\"provider_type\"",
+    "payload": ""
+  },
+  {
+    "method": "GET",
+    "endpoint": "\"provider_payload\"",
+    "payload": ""
+  },
+  {
+    "method": "DELETE",
+    "endpoint": "arg22",
+    "payload": ""
+  },
+  {
+    "method": "DELETE",
+    "endpoint": "arg38",
+    "payload": ""
+  },
+  {
+    "method": "DELETE",
+    "endpoint": "arg39",
+    "payload": ""
+  }
+]
