@@ -581,7 +581,7 @@ async def open_settings_menu(chat_id, bot):
     summary_button_text = "Тихий режим ✅" if settings["summary_silent"] else "Тихий режим ❌"
 
     keyboard = [
-        [InlineKeyboardButton("🔄 Refresh Token", callback_data="settings_refresh")],
+        [InlineKeyboardButton("🔐 Авторизация CSGORUN", callback_data="settings_csgorun_auth")],
         [InlineKeyboardButton("💱 Валюта", callback_data="settings_currency")],
         [InlineKeyboardButton(summary_button_text, callback_data="settings_summary_silent")]
     ]
@@ -696,9 +696,37 @@ async def settings_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
     menu = OPEN_SETTINGS_MESSAGES.get(chat_id)
     if menu and menu.get("menu_type") == "settings_main":
         reset_menu_timer(chat_id, 150)
+        
+    # -----------------------
+    # Авторизация CSGORUN
+    elif query.data == "settings_csgorun_auth":
+        chat_id = query.message.chat.id
+    
+        url = f"https://tg-bot-test-gkbp.onrender.com/auth/start?chat_id={chat_id}"
+    
+        text = (
+            "🔐 Авторизация CSGORUN\n\n"
+            "Нажмите на ссылку ниже для авторизации:\n\n"
+            f"{url}\n\n"
+            "После авторизации вернитесь в бота."
+        )
+    
+        await query.message.edit_text(
+            text,
+            reply_markup=InlineKeyboardMarkup([
+                [InlineKeyboardButton("⬅️ Назад", callback_data="settings_back")]
+            ])
+        )
+    
+        reset_menu_timer(chat_id, 180)
+        return
+    
+    elif query.data == "settings_back":
+        await open_settings_menu(chat_id, bot)
+        return
     # -----------------------
     # Настройки Refresh Token
-    if query.data == "settings_refresh":
+    elif query.data == "settings_refresh":
         await query.message.delete()
         settings["waiting_for_refresh"] = True
         keyboard = [[InlineKeyboardButton("❌ Отменить", callback_data="refresh_cancel")]]
@@ -877,7 +905,7 @@ async def settings_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
         )
     
         keyboard = [
-            [InlineKeyboardButton("🔄 Refresh Token", callback_data="settings_refresh")],
+            [InlineKeyboardButton("🔐 Авторизация CSGORUN", callback_data="settings_csgorun_auth")],
             [InlineKeyboardButton("💱 Валюта", callback_data="settings_currency")],
             [InlineKeyboardButton(summary_button_text, callback_data="settings_summary_silent")]
         ]
@@ -909,10 +937,27 @@ async def settings_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
         if chat_id in OPEN_SETTINGS_MESSAGES:
             del OPEN_SETTINGS_MESSAGES[chat_id]
         await send_message_to_user(bot, chat_id, text="Меню", reply_markup=build_reply_keyboard(chat_id))
+        
+        
+# -----------------------
+# Аварийная команда обновления токена
+# -----------------------
+async def token_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    chat_id = update.effective_chat.id
+    settings = get_user_settings(chat_id)
+
+    settings["waiting_for_refresh"] = True
+
+    msg = await update.message.reply_text("Отправьте  Token:")
+
+    settings["waiting_for_refresh_message_id"] = msg.message_id
+        
+        
 # -----------------------
 # Регистрация обработчиков
 # -----------------------
 app.add_handler(CommandHandler("start", start))
+app.add_handler(CommandHandler("token", token_command))
 app.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, handle_message))
 app.add_handler(MessageHandler(filters.Document.FileExtension("txt"), handle_yourun_file))
 app.add_handler(CallbackQueryHandler(admin_users_module.handle_callback, pattern="^notify_(all|user|cancel)$"))
