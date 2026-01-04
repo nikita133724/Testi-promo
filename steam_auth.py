@@ -1,7 +1,7 @@
 from fastapi import APIRouter, Request
 from fastapi.responses import RedirectResponse, JSONResponse
 import asyncio
-import refresh_token  # твой модуль
+import refresh_tokens  # твой модуль
 
 router = APIRouter()
 
