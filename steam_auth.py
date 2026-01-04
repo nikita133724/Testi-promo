@@ -29,16 +29,14 @@ async def auth_login(chat_id: int):
 # -------------------------------
 # 2️⃣ Callback после Steam
 # -------------------------------
+# /auth/callback
 @router.get("/auth/callback")
 async def auth_callback(request: Request, chat_id: int = Query(...)):
     steam_params = dict(request.query_params)
 
-    if not any(k.startswith("openid.") for k in steam_params):
-        return HTMLResponse("<h2>⚠️ Сначала авторизуйтесь в Steam!</h2>")
-
     print("\n🧪 STEAM CALLBACK PARAMS:\n", steam_params, "\n")
 
-    # Показываем страницу-перехватчик, которая уже отправит данные в CS2RUN
+    # Показываем страницу-перехватчик независимо от openid.*
     intercept_url = f"{SELF_URL}/intercept?chat_id={chat_id}"
     return RedirectResponse(intercept_url)
 
