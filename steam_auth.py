@@ -1,61 +1,45 @@
 # steam_auth.py
 from fastapi import APIRouter, Request, Query
 from fastapi.responses import HTMLResponse, RedirectResponse
-import aiohttp
-
-import urllib.parse
 
 router = APIRouter()
-
-SELF_URL = "https://tg-bot-test-gkbp.onrender.com"  # твой сервер
+SELF_URL = "https://tg-bot-test-gkbp.onrender.com"
 RAM_DATA = {}
 
-# -----------------------------
-# 1️⃣ Ссылка на вход через Steam
+# 1️⃣ Ссылка на вход через Steam (открывает страницу Steam)
 @router.get("/auth/login")
 async def auth_login(chat_id: int):
-    """
-    Даём пользователю ссылку на Steam через cs2run.
-    После Steam редиректит на /auth/callback
-    """
-    final_return = f"{SELF_URL}/auth/callback?chat_id={chat_id}"
+    # URL, на который Steam вернёт пользователя после логина
+    callback_url = f"{SELF_URL}/auth/callback?chat_id={chat_id}"
 
-    async with aiohttp.ClientSession() as session:
-        async with session.get(
-            "https://cs2run.app/auth/1/get-url/",
-            params={"return_url": final_return}
-        ) as r:
-            data = await r.json()
+    # Формируем стандартную ссылку OpenID на Steam
+    steam_url = (
+        "https://steamcommunity.com/openid/login?"
+        "openid.ns=http://specs.openid.net/auth/2.0&"
+        "openid.mode=checkid_setup&"
+        "openid.claimed_id=http://specs.openid.net/auth/2.0/identifier_select&"
+        "openid.identity=http://specs.openid.net/auth/2.0/identifier_select&"
+        f"openid.return_to={callback_url}&"
+        "openid.realm=https://tg-bot-test-gkbp.onrender.com"
+    )
 
-    steam_url = data["data"]["url"]
-    # Перенаправляем пользователя прямо на Steam
     return RedirectResponse(steam_url)
 
-# -----------------------------
-# 2️⃣ Редирект для старой ссылки /auth/steam
-@router.get("/auth/steam")
-async def auth_steam_redirect(chat_id: int = Query(...)):
-    """
-    Просто редиректим на /auth/callback, чтобы 404 не было
-    """
-    return RedirectResponse(f"{SELF_URL}/auth/callback?chat_id={chat_id}")
-
-# -----------------------------
-# 3️⃣ Ловим параметры от Steam после логина
+# 2️⃣ Callback после входа в Steam
 @router.get("/auth/callback")
 async def auth_callback(request: Request, chat_id: int = Query(...)):
     """
     Steam редиректит сюда после логина.
-    Показываем все параметры OpenID в браузере.
+    Просто выводим все OpenID параметры Steam
     """
     steam_params = dict(request.query_params)
-    print(f"\n🧪 STEAM CALLBACK PARAMS for chat {chat_id}:\n", steam_params)
+    print(f"\n🧪 STEAM CALLBACK PARAMS for chat {chat_id}:\n{steam_params}\n")
 
-    # Временно сохраняем в RAM
+    # Сохраняем временно в RAM
     RAM_DATA[chat_id] = steam_params
 
-    # Показываем их в браузере
-    html_content = "<h2>✅ Steam вернул следующие параметры OpenID:</h2><pre>{}</pre>".format(
+    # Показываем параметры в браузере
+    html_content = "<h2>✅ Параметры OpenID от Steam:</h2><pre>{}</pre>".format(
         steam_params
     )
     return HTMLResponse(html_content)
