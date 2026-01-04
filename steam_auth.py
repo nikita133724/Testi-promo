@@ -11,16 +11,19 @@ SELF_URL = "https://tg-bot-test-gkbp.onrender.com"
 # ============================================================
 # 1️⃣ Точка входа для пользователя
 # ============================================================
-
+import httpx
 @router.get("/auth/login")
 async def auth_login(chat_id: int):
-    """
-    Сюда ведёт кнопка из Telegram.
-    Запускает официальный поток авторизации CS2RUN → Steam.
-    """
     return_url = f"{SELF_URL}/auth/callback?chat_id={chat_id}"
-    url = f"https://cs2run.app/auth/1/get-url/?return_url={urllib.parse.quote(return_url)}"
-    return RedirectResponse(url)
+    api_url = f"https://cs2run.app/auth/1/get-url/?return_url={urllib.parse.quote(return_url)}"
+
+    async with httpx.AsyncClient() as client:
+        r = await client.get(api_url)
+        data = r.json()
+
+    steam_url = data["data"]["url"]
+
+    return RedirectResponse(steam_url)
 
 # ============================================================
 # 2️⃣ Страница перехвата токенов (уже после csgoyz.run)
