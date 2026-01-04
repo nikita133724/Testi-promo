@@ -10,7 +10,7 @@ SELF_URL = "https://tg-bot-test-gkbp.onrender.com"
 @router.get("/auth/login")
 async def auth_login(chat_id: int):
     import aiohttp
-
+    import urllib.parse
     final_return = f"{SELF_URL}/auth/steam?chat_id={chat_id}"
     encoded_return = urllib.parse.quote(final_return, safe='')  # ⚠️ важно: закодировать полностью
     
