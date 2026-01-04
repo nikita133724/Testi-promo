@@ -1,3 +1,8 @@
+from fastapi import APIRouter, Request, Query, HTTPException
+from fastapi.responses import HTMLResponse, RedirectResponse, JSONResponse
+import urllib.parse
+
+router = APIRouter()
 @router.get("/portal")
 async def portal(chat_id: int):
     return HTMLResponse(f"""
