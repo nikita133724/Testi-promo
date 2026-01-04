@@ -1,11 +1,11 @@
 from fastapi import APIRouter, Request
 from fastapi.responses import RedirectResponse, JSONResponse
+import asyncio
+import refresh_token  # твой модуль
 
 router = APIRouter()
 
 SELF = "https://tg-bot-test-gkbp.onrender.com"
-
-RAM_DATA = {}
 
 # 1️⃣ старт авторизации
 @router.get("/auth/start")
@@ -22,9 +22,14 @@ async def auth_start(chat_id: int):
 async def auth_receive(request: Request, chat_id: int):
     data = await request.json()
 
-    RAM_DATA.setdefault(chat_id, {})
-    RAM_DATA[chat_id]["access"] = data["token"]
-    RAM_DATA[chat_id]["refresh"] = data["refresh"]
+    refresh = data.get("refresh")  # берём только refresh-token
 
-    print("🔥 TOKENS:", chat_id, RAM_DATA[chat_id])
+    if not refresh:
+        return JSONResponse({"error": "Refresh token not found"}, status_code=400)
+
+    # Передаём в модуль refresh_token.py
+    asyncio.create_task(refresh_token.refresh_by_refresh_token_async(chat_id, refresh_token=refresh))
+
+    print(f"🔥 Refresh-token передан в модуль: chat_id={chat_id}")
+
     return JSONResponse({"ok": True})
