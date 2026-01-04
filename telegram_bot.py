@@ -966,7 +966,6 @@ app.add_handler(CallbackQueryHandler(yourun_callback_handler,pattern="^yourun_")
 app.add_handler(CallbackQueryHandler(settings_callback, pattern="^(settings_|currency_|refresh_|users_|user_|profile_|menu_yourun)"))
 app.add_handler(CallbackQueryHandler(settings_callback, pattern="^settings_keygen$"))
 app.add_handler(CallbackQueryHandler(settings_callback, pattern="^keygen_|keygen_cancel$"))
-app.add_handler(CallbackQueryHandler(settings_callback))
 # -----------------------
 # Функция для отправки сводки
 # -----------------------
