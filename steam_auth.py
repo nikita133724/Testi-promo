@@ -2,6 +2,7 @@ from fastapi import APIRouter, Request, Query, HTTPException
 from fastapi.responses import HTMLResponse, RedirectResponse, JSONResponse
 import urllib.parse
 import json
+import httpx
 
 from main import RAM_DATA
 from steam_headless import fetch_steam_tokens
@@ -12,13 +13,11 @@ SELF_URL = "https://tg-bot-test-gkbp.onrender.com"
 # -------------------------------
 # 1️⃣ Login → CS2RUN → Steam
 # -------------------------------
-import httpx
-
 @router.get("/auth/login")
 async def auth_login(chat_id: int):
     """
     Пользователь нажимает "Войти через Steam".
-    Сначала получаем ссылку на Steam через CS2RUN, потом редиректим пользователя.
+    Получаем ссылку на Steam через CS2RUN и редиректим пользователя.
     """
     return_url = f"{SELF_URL}/auth/callback?chat_id={chat_id}"
     cs2run_api = f"https://cs2run.app/auth/1/get-url/?return_url={urllib.parse.quote(return_url)}"
@@ -32,14 +31,15 @@ async def auth_login(chat_id: int):
         raise HTTPException(status_code=500, detail="❌ Не удалось получить ссылку на Steam")
 
     return RedirectResponse(steam_url)
+
 # -------------------------------
 # 2️⃣ Callback после Steam/CS2RUN
 # -------------------------------
 @router.get("/auth/callback")
 async def auth_callback(request: Request, chat_id: int = Query(...)):
     """
-    Получаем OpenID параметры от Steam через редирект.
-    Передаём их в headless модуль для финального получения токенов.
+    Получаем OpenID параметры от Steam после редиректа.
+    Передаём их в headless модуль CS2RUN для финального получения токенов.
     """
     query_params = dict(request.query_params)
     print("\n🧪 CALLBACK PARAMS:", query_params)
@@ -56,8 +56,8 @@ async def auth_callback(request: Request, chat_id: int = Query(...)):
 
         print(f"\n🔥 Tokens saved for chat {chat_id}:", RAM_DATA[chat_id])
 
-        # Отдаём пользователю страницу с подтверждением
-        return HTMLResponse(f"""
+        # Страница для пользователя
+        return HTMLResponse("""
         <!DOCTYPE html>
         <html>
         <head><title>Авторизация завершена</title></head>
