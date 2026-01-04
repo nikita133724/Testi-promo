@@ -37,12 +37,14 @@ async def auth_login(chat_id: int):
 async def auth_callback(request: Request, chat_id: int = Query(...)):
     steam_params = dict(request.query_params)
 
+    if not any(k.startswith("openid.") for k in steam_params):
+        # Если openid параметров нет — значит пользователь ещё не авторизован
+        return HTMLResponse("<h2>⚠️ Пожалуйста, сначала авторизуйтесь в Steam!</h2>")
+
     print("\n🧪 STEAM CALLBACK PARAMS:\n", steam_params, "\n")
 
-    # ✅ ВАЖНО: returnUrl должен быть ТОЛЬКО таким
     final_url = "https://csgoyz.run/auth"
 
-    # В cs2run передаём ТОЛЬКО openid-параметры
     query = {
         "returnUrl": final_url,
         **{k: v for k, v in steam_params.items() if k.startswith("openid.")}
