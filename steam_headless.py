@@ -1,38 +1,33 @@
 from playwright.async_api import async_playwright, TimeoutError as PlaywrightTimeoutError
-from urllib.parse import urlencode
 import json
 
-async def fetch_steam_tokens(openid_params: dict, timeout: int = 60000):
+async def fetch_steam_tokens_headless(cs2run_url: str, timeout: int = 60000):
     """
-    Headless flow: получаем реальные токены через CS2RUN + Steam.
-    openid_params - словарь query-параметров от Steam OpenID
+    Headless flow: полностью серверный способ получения токенов через CS2RUN.
+    Вход: cs2run_url от /auth/1/get-url/
     """
     try:
-        # Формируем URL для финального CS2RUN start-sign-in
-        base_url = "https://cs2run.app/auth/1/start-sign-in/"
-        query = urlencode(openid_params)  # <--- ключи Steam как GET-параметры
-        final_url = f"{base_url}?{query}"
-
         async with async_playwright() as pw:
             browser = await pw.chromium.launch(headless=True)
             page = await browser.new_page()
+            
+            # Переходим на CS2RUN URL
+            await page.goto(cs2run_url)
 
-            # Переходим на финальный URL для получения токенов
-            await page.goto(final_url)
-
-            # Ждём JSON на странице (обычно в <pre>)
+            # Ждем JSON с токенами
             try:
+                # Обычно CS2RUN отдаёт <pre> с JSON
                 await page.wait_for_selector("pre", timeout=timeout)
                 content = await page.text_content("pre")
                 tokens = json.loads(content)
             except PlaywrightTimeoutError:
                 await browser.close()
-                raise Exception("❌ Timeout: не удалось получить токены с CS2RUN")
+                raise Exception("❌ Timeout: не дождались токенов от CS2RUN")
 
             await browser.close()
 
             if not tokens.get("token") or not tokens.get("refreshToken"):
-                raise Exception("❌ Токены не получены")
+                raise Exception("❌ Токены не получены от CS2RUN")
 
             return tokens
 
