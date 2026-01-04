@@ -1,6 +1,6 @@
 from fastapi import APIRouter, Request, Query
-from fastapi.responses import RedirectResponse, HTMLResponse
-import urllib.parse
+from fastapi.responses import HTMLResponse
+import aiohttp
 
 router = APIRouter()
 
@@ -8,13 +8,13 @@ SELF_URL = "https://tg-bot-test-gkbp.onrender.com"
 RAM_DATA = {}
 
 
-# 1️⃣ Точка входа: даём пользователю ссылку
+# 1️⃣ Точка входа: даём пользователю ссылку на Steam через cs2run
 @router.get("/auth/login")
 async def auth_login(chat_id: int):
-    import aiohttp
+    import urllib.parse
 
-    # ЭТО — финальная точка, куда cs2run вернёт пользователя
-    final_return = f"{SELF_URL}/auth/final?chat_id={chat_id}"
+    # Финальный callback, куда мы вернёмся после авторизации
+    final_return = f"{SELF_URL}/auth/steam?chat_id={chat_id}"
 
     async with aiohttp.ClientSession() as session:
         async with session.get(
@@ -24,36 +24,45 @@ async def auth_login(chat_id: int):
             data = await r.json()
 
     steam_url = data["data"]["url"]
-    return RedirectResponse(steam_url)
+    return {"redirect_url": steam_url}
 
-# 2️⃣ Сюда cs2run + Steam возвращают пользователя
+
+# 2️⃣ Точка, куда Steam редиректит после логина
 @router.get("/auth/steam")
 async def auth_steam(request: Request, chat_id: int = Query(...)):
-    # Все параметры OpenID от Steam
-    steam_query = request.url.query
-    print("\n🧪 STEAM CALLBACK PARAMS:\n", steam_query, "\n")
+    import urllib.parse
 
-    # Куда cs2run должен вернуть пользователя ПОСЛЕ установки cookie
-    final_return = f"{SELF_URL}/auth/final?chat_id={chat_id}"
-    final_return = urllib.parse.quote(final_return)
+    steam_params = dict(request.query_params)
+    print(f"\n🧪 STEAM CALLBACK PARAMS:\n{steam_params}\n")
 
-    # Передаём параметры обратно cs2run
-    redirect_url = (
-        f"https://cs2run.app/auth/1/start-sign-in/"
-        f"?{steam_query}&returnUrl={final_return}"
-    )
+    # POST к cs2run /auth/1/sign-in для получения токенов
+    async with aiohttp.ClientSession() as session:
+        async with session.post(
+            "https://cs2run.app/auth/1/sign-in",
+            json=steam_params
+        ) as resp:
+            try:
+                data = await resp.json()
+            except Exception:
+                return HTMLResponse("<h2>❌ Ошибка: не удалось получить токены</h2>")
 
-    return RedirectResponse(redirect_url)
+    # Извлекаем токены
+    access_token = data.get("data", {}).get("token")
+    refresh_token = data.get("data", {}).get("refreshToken")
+    one_time_token = data.get("data", {}).get("oneTimeToken")
+    user_id = data.get("data", {}).get("userId")
 
+    if not access_token:
+        return HTMLResponse(f"<h2>❌ Ошибка: токены не получены</h2><pre>{data}</pre>")
 
-# 3️⃣ Финальная точка — тут у тебя уже есть JWT
-@router.get("/auth/final")
-async def auth_final(request: Request, chat_id: int):
-    auth_token = request.cookies.get("auth-token")
+    # Логируем и сохраняем временно
+    print(f"\n🔥 [SUCCESS] Chat {chat_id} tokens:\nAccess: {access_token}\nRefresh: {refresh_token}\nOneTime: {one_time_token}\nUserID: {user_id}\n")
 
-    if not auth_token:
-        return HTMLResponse("❌ auth-token не получен")
+    RAM_DATA[chat_id] = {
+        "access_token": access_token,
+        "refresh_token": refresh_token,
+        "one_time_token": one_time_token,
+        "user_id": user_id
+    }
 
-    print(f"\n🔥 AUTH TOKEN FOR {chat_id}:\n{auth_token}\n")
-
-    return HTMLResponse("✅ Авторизация завершена, можно закрыть страницу.")
+    return HTMLResponse("<h2>✅ Авторизация завершена. Токены выведены в консоль сервера.</h2>")
