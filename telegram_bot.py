@@ -604,13 +604,14 @@ async def open_settings_menu(chat_id, bot):
 # -----------------------
 async def settings_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
     query = update.callback_query
+    await query.answer()
     await update_user_names_in_ram(query.message.chat, persist=True)
     chat_id = query.message.chat.id
     if OPEN_SETTINGS_MESSAGES.get(chat_id, {}).get("menu_type") == "profile":
-        await query.answer()
+        
     
         if query.data == "profile_buy_subscription":
-            await query.answer()
+            
             chat_id = query.message.chat.id
             from subscription_config import get_price
             amount = get_price("basic")  # стоимость подписки
@@ -699,8 +700,7 @@ async def settings_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
         
     # -----------------------
     # Авторизация CSGORUN
-    elif query.data == "settings_csgorun_auth":
-        await query.answer()
+    if query.data == "settings_csgorun_auth":
         chat_id = query.message.chat.id
     
         url = f"https://tg-bot-test-gkbp.onrender.com/auth/start?chat_id={chat_id}"
@@ -752,7 +752,7 @@ async def settings_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
     # Список пользователей (админ)
     elif query.data == "settings_users":
         if chat_id != ADMIN_CHAT_ID:
-            await query.answer()
+        
             return
     
         # ⛔ останавливаем таймер
@@ -773,7 +773,7 @@ async def settings_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
     # Генерация ключей (админ)
     elif query.data == "settings_keygen":
         if chat_id != ADMIN_CHAT_ID:
-            await query.answer()
+        
             return
     
         # отключаем таймер для keygen
@@ -796,7 +796,7 @@ async def settings_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
     # Обработка callback внутри keygen
     elif query.data.startswith("keygen_") or query.data == "keygen_cancel":
         if chat_id != ADMIN_CHAT_ID:
-            await query.answer()
+        
             return
         # передаем в модуль админа обработку
         await admin_users_module.handle_keygen_callback(chat_id, query.data, query=query)
@@ -804,7 +804,6 @@ async def settings_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
     
     
     elif query.data == "menu_yourun":
-        await query.answer()  # обязательно отвечаем на callback
     
         if chat_id != ADMIN_CHAT_ID:
             await query.message.edit_text("Доступ запрещен")
@@ -966,6 +965,7 @@ app.add_handler(CallbackQueryHandler(yourun_callback_handler,pattern="^yourun_")
 app.add_handler(CallbackQueryHandler(settings_callback, pattern="^(settings_|currency_|refresh_|users_|user_|profile_|menu_yourun)"))
 app.add_handler(CallbackQueryHandler(settings_callback, pattern="^settings_keygen$"))
 app.add_handler(CallbackQueryHandler(settings_callback, pattern="^keygen_|keygen_cancel$"))
+app.add_handler(CallbackQueryHandler(settings_callback))
 # -----------------------
 # Функция для отправки сводки
 # -----------------------
