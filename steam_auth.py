@@ -1,6 +1,7 @@
 # steam_auth.py
-from fastapi import APIRouter, Request, Query
-from fastapi.responses import HTMLResponse, RedirectResponse
+from fastapi import APIRouter, Query
+import httpx
+import urllib.parse
 import json
 
 router = APIRouter()
@@ -8,69 +9,72 @@ SELF_URL = "https://tg-bot-test-gkbp.onrender.com"
 
 
 # -------------------------------
-# 1️⃣ Login → CS2RUN → Steam
+# 1️⃣ Login → Steam → CS2RUN
 # -------------------------------
 @router.get("/auth/login")
 async def auth_login(chat_id: int):
     """
-    Пользователь нажимает "Войти через Steam" в боте.
-    Сначала редиректим на cs2run.app/get-url для генерации ссылки на Steam.
+    Генерируем ссылку на Steam OpenID через CS2RUN,
+    чтобы пользователь мог войти через Steam.
     """
-    cs2run_url = f"https://cs2run.app/auth/1/get-url/?return_url={SELF_URL}/auth/callback?chat_id={chat_id}"
-    return RedirectResponse(cs2run_url)
+    return_url = f"{SELF_URL}/auth/callback?chat_id={chat_id}"
+    cs2run_get_url = f"https://cs2run.app/auth/1/get-url/?return_url={urllib.parse.quote(return_url)}"
+    return {"cs2run_url": cs2run_get_url}
 
 
 # -------------------------------
-# 2️⃣ Callback после Steam / CS2RUN
+# 2️⃣ Callback после Steam
 # -------------------------------
 @router.get("/auth/callback")
-async def auth_callback(chat_id: int):
+async def auth_callback(
+    chat_id: int,
+    openid_ns: str = Query(..., alias="openid.ns"),
+    openid_mode: str = Query(..., alias="openid.mode"),
+    openid_op_endpoint: str = Query(..., alias="openid.op_endpoint"),
+    openid_claimed_id: str = Query(..., alias="openid.claimed_id"),
+    openid_identity: str = Query(..., alias="openid.identity"),
+    openid_return_to: str = Query(..., alias="openid.return_to"),
+    openid_response_nonce: str = Query(..., alias="openid.response_nonce"),
+    openid_assoc_handle: str = Query(..., alias="openid.assoc_handle"),
+    openid_signed: str = Query(..., alias="openid.signed"),
+    openid_sig: str = Query(..., alias="openid.sig")
+):
     """
-    Пользователь вернулся с Steam → CS2RUN.
-    Отдаем страницу, которая ждёт токены в localStorage.
+    Получаем параметры OpenID от Steam.
+    Делаем POST к CS2RUN для получения токенов.
     """
-    return HTMLResponse(f"""
-<!DOCTYPE html>
-<html>
-<head><title>Авторизация…</title></head>
-<body>
-<h3>🔐 Пожалуйста, дождитесь окончания авторизации</h3>
-<p>После получения токенов окно закроется автоматически</p>
+    openid_params = {
+        "openid.ns": openid_ns,
+        "openid.mode": openid_mode,
+        "openid.op_endpoint": openid_op_endpoint,
+        "openid.claimed_id": openid_claimed_id,
+        "openid.identity": openid_identity,
+        "openid.return_to": openid_return_to,
+        "openid.response_nonce": openid_response_nonce,
+        "openid.assoc_handle": openid_assoc_handle,
+        "openid.signed": openid_signed,
+        "openid.sig": openid_sig
+    }
 
-<script>
-(async function() {{
-    function sleep(ms) {{ return new Promise(r => setTimeout(r, ms)); }}
+    # Делаем POST к CS2RUN
+    async with httpx.AsyncClient(timeout=15) as client:
+        resp = await client.post(
+            "https://cs2run.app/auth/1/sign-in",
+            json=openid_params,
+        )
+        if resp.status_code != 200:
+            return {"error": "Failed to fetch tokens from CS2RUN", "status": resp.status_code}
 
-    let token, refresh;
-    for(let i=0;i<20;i++){{
-        token = localStorage.getItem("auth-token");
-        refresh = localStorage.getItem("auth-refresh-token");
-        if(token && refresh) break;
-        await sleep(500);
-    }}
+        data = resp.json()  # Тут уже токены
+        tokens = data.get("data", {})
 
-    if(token && refresh){{
-        console.log("🔥 Tokens found:", token, refresh);
+        # Отправляем токены на сервер для бота
+        await client.post(
+            f"{SELF_URL}/bot/receive?chat_id={chat_id}",
+            json=tokens
+        )
 
-        await fetch('{SELF_URL}/bot/receive?chat_id={chat_id}', {{
-            method: 'POST',
-            headers: {{ 'Content-Type': 'application/json' }},
-            body: JSON.stringify({{ token, refresh }})
-        }});
-
-        document.body.innerHTML = "<h3>✅ Токены получены! Окно можно закрыть</h3>";
-
-        // Если открыто в Telegram WebApp
-        if(window.Telegram?.WebApp) window.Telegram.WebApp.close();
-
-    }} else {{
-        document.body.innerHTML = "<h3>❌ Не удалось получить токены. Попробуйте еще раз</h3>";
-    }}
-}})();
-</script>
-</body>
-</html>
-""")
+    return {"ok": True, "message": "Tokens fetched and sent to bot", "tokens": tokens}
 
 
 # -------------------------------
@@ -79,7 +83,7 @@ async def auth_callback(chat_id: int):
 @router.post("/bot/receive")
 async def receive_tokens(chat_id: int, payload: dict):
     """
-    Получаем токены, чтобы бот мог действовать от имени пользователя.
+    Получаем токены от CS2RUN для использования в боте.
     """
     print(f"\n🔥 GOT TOKENS FOR CHAT {chat_id}:\n", json.dumps(payload, indent=2))
     # Здесь можно положить токены в RAM или в базу
