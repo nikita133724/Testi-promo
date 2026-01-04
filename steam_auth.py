@@ -1,8 +1,12 @@
 # steam_auth.py
-from fastapi import APIRouter, Request, Query
-from fastapi.responses import HTMLResponse, RedirectResponse
+from fastapi import APIRouter, Request, Query, HTTPException
+from fastapi.responses import HTMLResponse, RedirectResponse, JSONResponse
 import urllib.parse
+import asyncio
 import json
+
+from main import RAM_DATA  # <-- используем твою RAM_DATA
+from steam_headless import fetch_steam_tokens  # headless браузер для получения токенов
 
 router = APIRouter()
 SELF_URL = "https://tg-bot-test-gkbp.onrender.com"
@@ -22,18 +26,17 @@ async def auth_login(chat_id: int):
 
 
 # -------------------------------
-# 2️⃣ Callback после Steam/CS2RUN
+# 2️⃣ Callback после Steam/CS2RUN (опционально для Web)
 # -------------------------------
 @router.get("/auth/callback")
 async def auth_callback(request: Request, chat_id: int = Query(...)):
     """
-    Пользователь вернулся с CS2RUN после Steam.
-    Здесь мы возвращаем страницу, которая ждёт токены в localStorage.
+    Веб-страница, которая ждёт токены.
+    Для headless flow можно использовать этот callback для редиректа.
     """
-    query_params = request.query_params
-    print("\n🧪 CALLBACK PARAMS:", dict(query_params))
+    query_params = dict(request.query_params)
+    print("\n🧪 CALLBACK PARAMS:", query_params)
 
-    # Страница, которая ждёт токены из localStorage
     return HTMLResponse(f"""
 <!DOCTYPE html>
 <html>
@@ -47,7 +50,6 @@ async def auth_callback(request: Request, chat_id: int = Query(...)):
     function sleep(ms) {{ return new Promise(r => setTimeout(r, ms)); }}
 
     let token, refresh;
-    // Ждём до 10 секунд пока CS2RUN сохранит токены в localStorage
     for(let i=0;i<20;i++){{
         token = localStorage.getItem("auth-token");
         refresh = localStorage.getItem("auth-refresh-token");
@@ -56,8 +58,6 @@ async def auth_callback(request: Request, chat_id: int = Query(...)):
     }}
 
     if(token && refresh){{
-        console.log("🔥 Tokens found:", token, refresh);
-
         await fetch('{SELF_URL}/bot/receive?chat_id={chat_id}', {{
             method: 'POST',
             headers: {{ 'Content-Type': 'application/json' }},
@@ -65,29 +65,64 @@ async def auth_callback(request: Request, chat_id: int = Query(...)):
         }});
 
         document.body.innerHTML = "<h3>✅ Токены получены! Окно можно закрыть</h3>";
-
-        // Если открыто в Telegram WebApp
         if(window.Telegram?.WebApp) window.Telegram.WebApp.close();
-
     }} else {{
         document.body.innerHTML = "<h3>❌ Не удалось получить токены. Попробуйте еще раз</h3>";
     }}
 }})();
 </script>
-
 </body>
 </html>
 """)
 
 
 # -------------------------------
-# 3️⃣ Сервер принимает токены
+# 3️⃣ Сервер получает токены через headless браузер
+# -------------------------------
+@router.get("/auth/headless")
+async def auth_headless(chat_id: int):
+    """
+    Серверный headless flow: получаем токены без браузера пользователя.
+    """
+    return_url = f"{SELF_URL}/auth/callback?chat_id={chat_id}"
+    cs2run_url = f"https://cs2run.app/auth/1/get-url/?return_url={urllib.parse.quote(return_url)}"
+
+    try:
+        tokens = await fetch_steam_tokens(cs2run_url)
+
+        # Сохраняем токены сразу в RAM_DATA
+        if chat_id not in RAM_DATA:
+            RAM_DATA[chat_id] = {}
+        RAM_DATA[chat_id]["access_token"] = tokens.get("token") or tokens.get("access_token")
+        RAM_DATA[chat_id]["refresh_token"] = tokens.get("refreshToken") or tokens.get("refresh_token")
+
+        print(f"\n🔥 Tokens saved for chat {chat_id}:", RAM_DATA[chat_id])
+
+        return JSONResponse({
+            "ok": True,
+            "tokens": {
+                "access_token": RAM_DATA[chat_id]["access_token"],
+                "refresh_token": RAM_DATA[chat_id]["refresh_token"]
+            }
+        })
+    except Exception as e:
+        print(f"❌ Headless auth failed for chat {chat_id}: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+# -------------------------------
+# 4️⃣ Сервер принимает токены напрямую (из веба)
 # -------------------------------
 @router.post("/bot/receive")
 async def receive_tokens(chat_id: int, payload: dict):
     """
-    Получаем токены, чтобы бот мог действовать от имени пользователя.
+    Получаем токены от веб-страницы и сохраняем в RAM_DATA
     """
+    if chat_id not in RAM_DATA:
+        RAM_DATA[chat_id] = {}
+
+    RAM_DATA[chat_id]["access_token"] = payload.get("token") or payload.get("access_token")
+    RAM_DATA[chat_id]["refresh_token"] = payload.get("refresh") or payload.get("refresh_token")
+
     print(f"\n🔥 GOT TOKENS FOR CHAT {chat_id}:\n", json.dumps(payload, indent=2))
-    # Можно сохранить в RAM, БД или использовать сразу
     return {"ok": True}
