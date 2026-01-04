@@ -1,15 +1,17 @@
-from fastapi import FastAPI, Request, Query
+# steam_auth.py
+from fastapi import APIRouter, Request, Query
 from fastapi.responses import HTMLResponse, RedirectResponse
 import aiohttp
+
 import urllib.parse
 
-app = FastAPI()
+router = APIRouter()
 
 SELF_URL = "https://tg-bot-test-gkbp.onrender.com"  # твой сервер
 RAM_DATA = {}
 
 # 1️⃣ Ссылка на вход через Steam
-@app.get("/auth/login")
+@router.get("/auth/login")
 async def auth_login(chat_id: int):
     """
     Даём пользователю ссылку на Steam через cs2run.
@@ -30,7 +32,7 @@ async def auth_login(chat_id: int):
 
 
 # 2️⃣ Ловим параметры от Steam
-@app.get("/auth/callback")
+@router.get("/auth/callback")
 async def auth_callback(request: Request, chat_id: int = Query(...)):
     """
     Steam редиректит сюда после логина.
