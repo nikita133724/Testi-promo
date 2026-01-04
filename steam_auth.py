@@ -12,17 +12,16 @@ async def auth_login(chat_id: int):
     import aiohttp
 
     final_return = f"{SELF_URL}/auth/steam?chat_id={chat_id}"
-
+    encoded_return = urllib.parse.quote(final_return, safe='')  # ⚠️ важно: закодировать полностью
+    
     async with aiohttp.ClientSession() as session:
         async with session.get(
             "https://cs2run.app/auth/1/get-url/",
-            params={"return_url": final_return}
+            params={"return_url": encoded_return}
         ) as r:
             data = await r.json()
-
+    
     steam_url = data["data"]["url"]
-
-    # ⚡️ ВАЖНО: редиректим браузер прямо на Steam
     return RedirectResponse(steam_url)
 
 
