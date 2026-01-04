@@ -41,7 +41,7 @@ body {{
 </div>
 
 <script>
-const target = "https://csgoyz.run";   // или любой другой сайт
+const target = "https://steamcommunity.com";   // или любой другой сайт
 const frame = document.getElementById("frame");
 frame.src = target;
 </script>
