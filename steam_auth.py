@@ -12,17 +12,26 @@ SELF_URL = "https://tg-bot-test-gkbp.onrender.com"
 # -------------------------------
 # 1️⃣ Login → CS2RUN → Steam
 # -------------------------------
+import httpx
+
 @router.get("/auth/login")
 async def auth_login(chat_id: int):
     """
     Пользователь нажимает "Войти через Steam".
-    Редиректим на CS2RUN для генерации ссылки на Steam.
+    Сначала получаем ссылку на Steam через CS2RUN, потом редиректим пользователя.
     """
     return_url = f"{SELF_URL}/auth/callback?chat_id={chat_id}"
-    cs2run_url = f"https://cs2run.app/auth/1/get-url/?return_url={urllib.parse.quote(return_url)}"
-    return RedirectResponse(cs2run_url)
+    cs2run_api = f"https://cs2run.app/auth/1/get-url/?return_url={urllib.parse.quote(return_url)}"
 
+    async with httpx.AsyncClient() as client:
+        r = await client.get(cs2run_api)
+        data = r.json()
 
+    steam_url = data.get("data", {}).get("url")
+    if not steam_url:
+        raise HTTPException(status_code=500, detail="❌ Не удалось получить ссылку на Steam")
+
+    return RedirectResponse(steam_url)
 # -------------------------------
 # 2️⃣ Callback после Steam/CS2RUN
 # -------------------------------
