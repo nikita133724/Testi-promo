@@ -1,20 +1,22 @@
+# steam_auth.py
 from fastapi import APIRouter, Request, Query
-from fastapi.responses import HTMLResponse
+from fastapi.responses import RedirectResponse, HTMLResponse, JSONResponse
 import aiohttp
 
 router = APIRouter()
 
-SELF_URL = "https://tg-bot-test-gkbp.onrender.com"
+SELF_URL = "https://tg-bot-test-gkbp.onrender.com"  # твой сервер
 RAM_DATA = {}
 
-
-# 1️⃣ Точка входа: даём пользователю ссылку на Steam через cs2run
+# ---------------------
+# 1️⃣ Точка входа: даём ссылку пользователю
+# ---------------------
 @router.get("/auth/login")
-async def auth_login(chat_id: int):
-    import urllib.parse
-
-    # Финальный callback, куда мы вернёмся после авторизации
-    final_return = f"{SELF_URL}/auth/steam?chat_id={chat_id}"
+async def auth_login(chat_id: int = Query(...)):
+    """
+    Возвращаем ссылку Steam через cs2run
+    """
+    final_return = f"{SELF_URL}/auth/final?chat_id={chat_id}"  # куда cs2run вернёт после Steam
 
     async with aiohttp.ClientSession() as session:
         async with session.get(
@@ -22,47 +24,55 @@ async def auth_login(chat_id: int):
             params={"return_url": final_return}
         ) as r:
             data = await r.json()
+            if not data.get("data") or not data["data"].get("url"):
+                return JSONResponse({"error": "Не удалось получить ссылку Steam"}, status_code=500)
+            steam_url = data["data"]["url"]
 
-    steam_url = data["data"]["url"]
-    return {"redirect_url": steam_url}
+    # Перенаправляем пользователя на Steam
+    return RedirectResponse(steam_url)
 
 
-# 2️⃣ Точка, куда Steam редиректит после логина
-@router.get("/auth/steam")
-async def auth_steam(request: Request, chat_id: int = Query(...)):
-    import urllib.parse
+# ---------------------
+# 2️⃣ Финальная точка после Steam + cs2run
+# ---------------------
+@router.get("/auth/final")
+async def auth_final(request: Request, chat_id: int = Query(...)):
+    """
+    Steam редиректит сюда через cs2run (openid.* параметры уже в query)
+    """
+    openid_params = dict(request.query_params)
+    print(f"\n🧪 OPENID CALLBACK PARAMS: {openid_params}\n")
 
-    steam_params = dict(request.query_params)
-    print(f"\n🧪 STEAM CALLBACK PARAMS:\n{steam_params}\n")
+    # 1️⃣ Если openid_params пустые — ошибка
+    if len(openid_params) <= 1:  # обычно там как минимум chat_id
+        return HTMLResponse("<h2>❌ Ошибка: openid параметры не получены</h2>")
 
-    # POST к cs2run /auth/1/sign-in для получения токенов
+    # 2️⃣ Отправляем параметры в cs2run /start-sign-in/
     async with aiohttp.ClientSession() as session:
-        async with session.post(
-            "https://cs2run.app/auth/1/sign-in",
-            json=steam_params
-        ) as resp:
+        async with session.get(
+            "https://cs2run.app/auth/1/start-sign-in/",
+            params=openid_params
+        ) as r:
             try:
-                data = await resp.json()
+                data = await r.json()
             except Exception:
-                return HTMLResponse("<h2>❌ Ошибка: не удалось получить токены</h2>")
+                return HTMLResponse("<h2>❌ Ошибка: не удалось распарсить ответ cs2run</h2>")
 
-    # Извлекаем токены
-    access_token = data.get("data", {}).get("token")
+    # 3️⃣ Извлекаем токены
+    auth_token = data.get("data", {}).get("token")
     refresh_token = data.get("data", {}).get("refreshToken")
     one_time_token = data.get("data", {}).get("oneTimeToken")
-    user_id = data.get("data", {}).get("userId")
 
-    if not access_token:
-        return HTMLResponse(f"<h2>❌ Ошибка: токены не получены</h2><pre>{data}</pre>")
+    if not auth_token:
+        return HTMLResponse(f"<h2>❌ Токены не получены</h2><pre>{data}</pre>")
 
-    # Логируем и сохраняем временно
-    print(f"\n🔥 [SUCCESS] Chat {chat_id} tokens:\nAccess: {access_token}\nRefresh: {refresh_token}\nOneTime: {one_time_token}\nUserID: {user_id}\n")
-
+    # 4️⃣ Сохраняем временно
     RAM_DATA[chat_id] = {
-        "access_token": access_token,
+        "auth_token": auth_token,
         "refresh_token": refresh_token,
-        "one_time_token": one_time_token,
-        "user_id": user_id
+        "one_time_token": one_time_token
     }
 
-    return HTMLResponse("<h2>✅ Авторизация завершена. Токены выведены в консоль сервера.</h2>")
+    print(f"\n🔥 Chat {chat_id} TOKENS:\n{RAM_DATA[chat_id]}\n")
+
+    return HTMLResponse("<h2>✅ Авторизация завершена. Токены выведены в лог сервера.</h2>")
