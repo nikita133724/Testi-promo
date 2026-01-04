@@ -1,15 +1,16 @@
 from playwright.async_api import async_playwright, TimeoutError as PlaywrightTimeoutError
-from urllib.parse import urlencode, urlparse, parse_qs
+from urllib.parse import urlencode
+import json
 
 async def fetch_steam_tokens(openid_params: dict, timeout: int = 60000):
     """
-    Headless flow для получения реальных токенов через CS2RUN + Steam.
-    Входные параметры - query params от Steam (OpenID).
+    Headless flow: получаем реальные токены через CS2RUN + Steam.
+    openid_params - словарь query-параметров от Steam OpenID
     """
     try:
-        # Формируем URL для финальной CS2RUN проверки
+        # Формируем URL для финального CS2RUN start-sign-in
         base_url = "https://cs2run.app/auth/1/start-sign-in/"
-        query = urlencode({"openid_params": json.dumps(openid_params)})
+        query = urlencode(openid_params)  # <--- ключи Steam как GET-параметры
         final_url = f"{base_url}?{query}"
 
         async with async_playwright() as pw:
@@ -19,9 +20,8 @@ async def fetch_steam_tokens(openid_params: dict, timeout: int = 60000):
             # Переходим на финальный URL для получения токенов
             await page.goto(final_url)
 
-            # Ждём ответа, который CS2RUN отдаёт с токенами (обычно JSON на странице)
+            # Ждём JSON на странице (обычно в <pre>)
             try:
-                # Ждём, пока на странице появится <pre> с JSON токенов
                 await page.wait_for_selector("pre", timeout=timeout)
                 content = await page.text_content("pre")
                 tokens = json.loads(content)
