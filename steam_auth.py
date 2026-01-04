@@ -10,6 +10,7 @@ router = APIRouter()
 SELF_URL = "https://tg-bot-test-gkbp.onrender.com"  # твой сервер
 RAM_DATA = {}
 
+# -----------------------------
 # 1️⃣ Ссылка на вход через Steam
 @router.get("/auth/login")
 async def auth_login(chat_id: int):
@@ -30,8 +31,17 @@ async def auth_login(chat_id: int):
     # Перенаправляем пользователя прямо на Steam
     return RedirectResponse(steam_url)
 
+# -----------------------------
+# 2️⃣ Редирект для старой ссылки /auth/steam
+@router.get("/auth/steam")
+async def auth_steam_redirect(chat_id: int = Query(...)):
+    """
+    Просто редиректим на /auth/callback, чтобы 404 не было
+    """
+    return RedirectResponse(f"{SELF_URL}/auth/callback?chat_id={chat_id}")
 
-# 2️⃣ Ловим параметры от Steam
+# -----------------------------
+# 3️⃣ Ловим параметры от Steam после логина
 @router.get("/auth/callback")
 async def auth_callback(request: Request, chat_id: int = Query(...)):
     """
