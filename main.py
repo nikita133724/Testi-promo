@@ -20,6 +20,17 @@ SECRET_KEY = "vAGavYNa1WzrymonUQIEJ9ZW9mEDf"
 SELF_URL = os.environ.get("SELF_URL", "https://tg-bot-test-gkbp.onrender.com")
 
 app_fastapi = FastAPI()
+
+from fastapi.middleware.cors import CORSMiddleware
+
+app_fastapi.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],  # можно ограничить конкретным доменом csgoyz.run
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+
 app_fastapi.add_middleware(SessionMiddleware, secret_key=SECRET_KEY)
 from fastapi.staticfiles import StaticFiles
 
