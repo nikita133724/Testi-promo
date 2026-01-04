@@ -1,49 +1,36 @@
 # steam_headless.py
-import asyncio
 from playwright.async_api import async_playwright, TimeoutError as PlaywrightTimeoutError
-import json
 
-async def fetch_steam_tokens(cs2run_url: str, timeout: int = 15) -> dict:
+async def fetch_steam_tokens(cs2run_url: str, timeout: int = 60000):
     """
-    Headless flow: открывает ссылку CS2RUN → Steam и ждёт выдачи токенов в localStorage.
-    Возвращает словарь с токенами {"token": ..., "refreshToken": ...}
+    Headless браузер для получения токенов Steam через CS2RUN.
+    Возвращает словарь {"token": ..., "refreshToken": ...}
     """
-    async with async_playwright() as p:
-        browser = await p.chromium.launch(headless=True)  # без GUI
-        context = await browser.new_context()
-        page = await context.new_page()
+    try:
+        async with async_playwright() as pw:
+            browser = await pw.chromium.launch(headless=True)
+            page = await browser.new_page()
+            
+            # Переходим на CS2RUN URL
+            await page.goto(cs2run_url)
 
-        try:
-            # 1. Открываем страницу CS2RUN
-            await page.goto(cs2run_url, timeout=timeout*1000)
+            # Ждём редиректа на callback, где обычно сохраняются токены
+            try:
+                await page.wait_for_url("**/auth/callback**", timeout=timeout)
+            except PlaywrightTimeoutError:
+                await browser.close()
+                raise Exception("❌ Timeout: не дождались callback после CS2RUN")
 
-            # 2. Ждём редиректа на Steam и авторизации
-            # Подразумевается, что пользователь уже вошёл в Steam
-            # Ждём появления localStorage ключей
-            token = None
-            refresh = None
-            for _ in range(timeout*2):  # каждые 0.5 сек, до timeout секунд
-                token = await page.evaluate("localStorage.getItem('auth-token')")
-                refresh = await page.evaluate("localStorage.getItem('auth-refresh-token')")
-                if token and refresh:
-                    break
-                await asyncio.sleep(0.5)
+            # Достаём токены из localStorage
+            token = await page.evaluate("() => localStorage.getItem('auth-token')")
+            refresh = await page.evaluate("() => localStorage.getItem('auth-refresh-token')")
+
+            await browser.close()
 
             if not token or not refresh:
-                raise RuntimeError("Не удалось получить токены из localStorage")
+                raise Exception("❌ Токены не найдены в localStorage")
 
             return {"token": token, "refreshToken": refresh}
 
-        except PlaywrightTimeoutError as e:
-            raise RuntimeError(f"Playwright timeout: {e}") from e
-        finally:
-            await context.close()
-            await browser.close()
-
-
-# -------------------------------
-# Для синхронного использования из main.py
-def get_steam_tokens_sync(cs2run_url: str) -> dict:
-    import nest_asyncio
-    nest_asyncio.apply()  # чтобы можно было вызывать внутри уже работающего loop
-    return asyncio.get_event_loop().run_until_complete(fetch_steam_tokens(cs2run_url))
+    except Exception as e:
+        raise Exception(f"Headless Steam auth failed: {e}")
