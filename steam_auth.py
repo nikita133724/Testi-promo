@@ -1,5 +1,5 @@
-from fastapi import APIRouter, Request, Query
-from fastapi.responses import HTMLResponse
+from fastapi import APIRouter, Query
+from fastapi.responses import RedirectResponse
 
 router = APIRouter()
 
@@ -9,9 +9,8 @@ SELF_URL = "https://tg-bot-test-gkbp.onrender.com"
 # 1️⃣ Точка входа: даём пользователю ссылку на Steam через cs2run
 @router.get("/auth/login")
 async def auth_login(chat_id: int):
-    import aiohttp, urllib.parse
+    import aiohttp
 
-    # Финальная точка, куда вернёмся после Steam
     final_return = f"{SELF_URL}/auth/steam?chat_id={chat_id}"
 
     async with aiohttp.ClientSession() as session:
@@ -22,19 +21,19 @@ async def auth_login(chat_id: int):
             data = await r.json()
 
     steam_url = data["data"]["url"]
-    # Возвращаем ссылку на Steam
-    return {"redirect_url": steam_url}
+
+    # ⚡️ ВАЖНО: редиректим браузер прямо на Steam
+    return RedirectResponse(steam_url)
 
 
-# 2️⃣ Точка, куда Steam редиректит после логина
+# 2️⃣ Точка, куда Steam вернёт пользователя после логина
 @router.get("/auth/steam")
-async def auth_steam(request: Request, chat_id: int = Query(...)):
-    # Смотрим все параметры, которые Steam прислал
+async def auth_steam(request, chat_id: int = Query(...)):
+    # Здесь уже реально придут параметры от Steam после логина
     steam_params = dict(request.query_params)
     print(f"\n🧪 STEAM CALLBACK PARAMS for chat {chat_id}:\n", steam_params, "\n")
 
-    # Показываем их на странице
-    html = "<h2>Steam вернул следующие параметры:</h2><pre>{}</pre>".format(
-        steam_params
+    from fastapi.responses import HTMLResponse
+    return HTMLResponse(
+        f"<h2>Steam вернул параметры:</h2><pre>{steam_params}</pre>"
     )
-    return HTMLResponse(html)
