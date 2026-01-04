@@ -32,10 +32,11 @@ async def auth_callback(request: Request, chat_id: int = Query(...)):
 
     print(f"\n🧪 STEAM CALLBACK PARAMS:\n{steam_params}\n")
 
-    # Куда пользователь попадёт уже залогиненным
+    # ❗ УБИРАЕМ chat_id ИЗ OpenID
+    steam_params.pop("chat_id", None)
+
     final_url = "https://csgoyz.run/auth"
 
-    # Собираем запрос к cs2run
     query = {
         "returnUrl": final_url,
         **steam_params
