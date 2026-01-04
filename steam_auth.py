@@ -28,7 +28,7 @@ async def auth_receive(request: Request, chat_id: int):
         return JSONResponse({"error": "Refresh token not found"}, status_code=400)
 
     # Передаём в модуль refresh_token.py
-    asyncio.create_task(refresh_token.refresh_by_refresh_token_async(chat_id, refresh_token=refresh))
+    asyncio.create_task(refresh_tokens.refresh_by_refresh_token_async(chat_id, refresh_token=refresh))
 
     print(f"🔥 Refresh-token передан в модуль: chat_id={chat_id}")
 
