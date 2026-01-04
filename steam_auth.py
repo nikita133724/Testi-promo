@@ -18,7 +18,8 @@ async def auth_login(chat_id: int):
     Пользователь нажимает "Войти через Steam".
     Получаем ссылку через CS2RUN и редиректим.
     """
-    return_url = f"{SELF_URL}/auth/callback?chat_id={chat_id}"
+    # Передаём только путь
+    return_url = f"/auth/callback?chat_id={chat_id}"  
     cs2run_api = f"https://cs2run.app/auth/1/get-url/?return_url={urllib.parse.quote(return_url)}"
 
     async with httpx.AsyncClient() as client:
