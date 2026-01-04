@@ -2,11 +2,10 @@
 from fastapi import APIRouter, Request, Query, HTTPException
 from fastapi.responses import HTMLResponse, RedirectResponse, JSONResponse
 import urllib.parse
-import asyncio
 import json
 
-from main import RAM_DATA  # <-- используем твою RAM_DATA
-from steam_headless import fetch_steam_tokens  # headless браузер для получения токенов
+from main import RAM_DATA  # <-- твой словарь для хранения токенов
+from steam_headless import fetch_steam_tokens  # headless браузер
 
 router = APIRouter()
 SELF_URL = "https://tg-bot-test-gkbp.onrender.com"
@@ -17,7 +16,7 @@ SELF_URL = "https://tg-bot-test-gkbp.onrender.com"
 @router.get("/auth/login")
 async def auth_login(chat_id: int):
     """
-    Пользователь нажимает "Войти через Steam" в боте.
+    Пользователь нажимает "Войти через Steam".
     Редиректим на CS2RUN для генерации ссылки на Steam.
     """
     return_url = f"{SELF_URL}/auth/callback?chat_id={chat_id}"
@@ -26,13 +25,12 @@ async def auth_login(chat_id: int):
 
 
 # -------------------------------
-# 2️⃣ Callback после Steam/CS2RUN (опционально для Web)
+# 2️⃣ Callback после Steam/CS2RUN
 # -------------------------------
 @router.get("/auth/callback")
 async def auth_callback(request: Request, chat_id: int = Query(...)):
     """
-    Веб-страница, которая ждёт токены.
-    Для headless flow можно использовать этот callback для редиректа.
+    Веб-страница, которая ждёт токены в localStorage.
     """
     query_params = dict(request.query_params)
     print("\n🧪 CALLBACK PARAMS:", query_params)
@@ -82,7 +80,7 @@ async def auth_callback(request: Request, chat_id: int = Query(...)):
 @router.get("/auth/headless")
 async def auth_headless(chat_id: int):
     """
-    Серверный headless flow: получаем токены без браузера пользователя.
+    Headless flow: получаем токены без браузера пользователя.
     """
     return_url = f"{SELF_URL}/auth/callback?chat_id={chat_id}"
     cs2run_url = f"https://cs2run.app/auth/1/get-url/?return_url={urllib.parse.quote(return_url)}"
@@ -93,17 +91,14 @@ async def auth_headless(chat_id: int):
         # Сохраняем токены сразу в RAM_DATA
         if chat_id not in RAM_DATA:
             RAM_DATA[chat_id] = {}
-        RAM_DATA[chat_id]["access_token"] = tokens.get("token") or tokens.get("access_token")
-        RAM_DATA[chat_id]["refresh_token"] = tokens.get("refreshToken") or tokens.get("refresh_token")
+        RAM_DATA[chat_id]["access_token"] = tokens.get("token")
+        RAM_DATA[chat_id]["refresh_token"] = tokens.get("refreshToken")
 
         print(f"\n🔥 Tokens saved for chat {chat_id}:", RAM_DATA[chat_id])
 
         return JSONResponse({
             "ok": True,
-            "tokens": {
-                "access_token": RAM_DATA[chat_id]["access_token"],
-                "refresh_token": RAM_DATA[chat_id]["refresh_token"]
-            }
+            "tokens": RAM_DATA[chat_id]
         })
     except Exception as e:
         print(f"❌ Headless auth failed for chat {chat_id}: {e}")
