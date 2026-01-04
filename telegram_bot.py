@@ -700,6 +700,7 @@ async def settings_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
     # -----------------------
     # Авторизация CSGORUN
     elif query.data == "settings_csgorun_auth":
+        await query.answer()
         chat_id = query.message.chat.id
     
         url = f"https://tg-bot-test-gkbp.onrender.com/auth/start?chat_id={chat_id}"
