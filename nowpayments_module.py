@@ -11,7 +11,7 @@ from fastapi import APIRouter, Request
 router = APIRouter()
 
 # -----------------------
-NOWPAYMENTS_API_KEY = "ВАШ_NOWPAYMENTS_API_KEY"  # <-- Вставь свой ключ
+NOWPAYMENTS_API_KEY = "8HFD9KZ-ST94FV1-J32B132-WBJ0S9N"  # <-- Вставь свой ключ
 NOWPAYMENTS_API_URL = "https://api.nowpayments.io/v1/invoice"
 NOWPAYMENTS_ORDERS_KEY = "nowpayments_orders"
 MSK = timezone(timedelta(hours=3))
@@ -45,7 +45,7 @@ def get_next_order_id():
 # ----------------------- Создание инвойса
 async def create_invoice(chat_id, amount, currency="USD"):
     order_id = get_next_order_id()
-    callback_url = f"https://ваш_сервер/payment/nowpayments/ipn"  # <-- укажи свой URL
+    callback_url = f"https://tg-bot-test-gkbp.onrender.com/payment/nowpayments/ipn"  # <-- укажи свой URL
     description = f"Подписка 30 дней, заказ #{order_id}"
 
     payload = {
