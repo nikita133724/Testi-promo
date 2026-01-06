@@ -83,6 +83,9 @@ async def logout(request: Request):
 from steam_auth import router
 app_fastapi.include_router(router)
 
+from nowpayments_module import router as nowpayments_router, load_orders_from_redis
+app_fastapi.include_router(nowpayments_router
+
 # Admin Users
 @app_fastapi.get("/admin/users", response_class=HTMLResponse)
 async def admin_users_page(
