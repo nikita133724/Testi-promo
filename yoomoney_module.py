@@ -108,7 +108,8 @@ async def send_payment_link(bot, chat_id, amount):
     url, order_id = create_payment_link(chat_id, amount)
 
     now_ts = datetime.now(timezone.utc).timestamp()
-    current_until = float(RAM_DATA.get(chat_id, {}).get("subscription_until", 0))
+    raw_until = RAM_DATA.get(chat_id, {}).get("subscription_until")
+    current_until = float(raw_until) if isinstance(raw_until, (int, float)) else 0
     suspended = RAM_DATA.get(chat_id, {}).get("suspended", False)
     was_active = current_until > now_ts and not suspended
 
@@ -183,7 +184,8 @@ async def yoomoney_ipn(operation_id, amount, currency,
 
         # Продление подписки
         now = datetime.now(timezone.utc).timestamp()
-        current = float(RAM_DATA.get(int(chat_id), {}).get("subscription_until", 0))
+        raw_current = RAM_DATA.get(int(chat_id), {}).get("subscription_until")
+        current = float(raw_current) if isinstance(raw_current, (int, float)) else 0
         suspended = RAM_DATA.get(int(chat_id), {}).get("suspended", False)
     
         base = current if current > now and not suspended else now
