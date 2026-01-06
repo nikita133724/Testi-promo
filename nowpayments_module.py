@@ -43,15 +43,20 @@ def get_next_order_id():
     return oid
 
 # ----------------------- Создание инвойса
-async def create_invoice(chat_id, amount, currency="USD"):
+# ----------------------- Создание инвойса только в крипте
+async def create_invoice(chat_id, amount, currency="USDT"):
     order_id = get_next_order_id()
     callback_url = f"https://tg-bot-test-gkbp.onrender.com/payment/nowpayments/ipn"  # <-- укажи свой URL
     description = f"Подписка 30 дней, заказ #{order_id}"
 
+    currency = currency.upper()
+    if currency not in ["USDT", "TRX", "TON"]:
+        raise Exception("Выбранная валюта недоступна. Доступно: USDT, TRX, TON")
+
     payload = {
         "price_amount": float(amount),
-        "price_currency": "USD",        # базовая валюта (USD)
-        "pay_currency": currency.upper(),  # валюта для оплаты (USD/TRX/TON)
+        "price_currency": currency,     # базовая валюта = крипта
+        "pay_currency": currency,       # оплата только в выбранной крипте
         "order_id": str(order_id),
         "order_description": description,
         "ipn_callback_url": callback_url
@@ -72,7 +77,7 @@ async def create_invoice(chat_id, amount, currency="USD"):
     ORDERS[order_id] = {
         "chat_id": chat_id,
         "amount": float(amount),
-        "currency": currency.upper(),
+        "currency": currency,
         "status": "pending",
         "created_at": int(datetime.now(timezone.utc).timestamp()),
         "invoice_id": data.get("id"),
@@ -84,8 +89,17 @@ async def create_invoice(chat_id, amount, currency="USD"):
     asyncio.create_task(pending_order_timeout(order_id))
     return data.get("invoice_url"), order_id
 
+
 # ----------------------- Отправка ссылки пользователю
-async def send_payment_link(bot, chat_id, amount, currency="USD"):
+async def send_payment_link(bot, chat_id, amount, currency):
+    """
+    Отправка пользователю ссылки на оплату выбранной криптой.
+    Валюта должна приходить из Telegram кнопок: USDT/TRX/TON
+    """
+    currency = currency.upper()
+    if currency not in ["USDT", "TRX", "TON"]:
+        raise Exception("Выбранная валюта недоступна. Доступно: USDT, TRX, TON")
+
     url, order_id = await create_invoice(chat_id, amount, currency=currency)
     text = (
         f"💳 Оплата криптой: {amount} {currency}\n"
