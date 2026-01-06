@@ -11,7 +11,7 @@ from fastapi import APIRouter, Request
 router = APIRouter()
 
 # -----------------------
-NOWPAYMENTS_API_KEY = "ВАШ_NOWPAYMENTS_API_KEY"
+NOWPAYMENTS_API_KEY = "ВАШ_NOWPAYMENTS_API_KEY"  # <-- Вставь свой ключ
 NOWPAYMENTS_API_URL = "https://api.nowpayments.io/v1/invoice"
 NOWPAYMENTS_ORDERS_KEY = "nowpayments_orders"
 MSK = timezone(timedelta(hours=3))
@@ -42,16 +42,16 @@ def get_next_order_id():
     NEXT_ORDER_ID += 1
     return oid
 
-# ----------------------- Create invoice
+# ----------------------- Создание инвойса
 async def create_invoice(chat_id, amount, currency="USD"):
     order_id = get_next_order_id()
-    callback_url = f"https://ваш_сервер/payment/nowpayments/ipn"  # <-- поменять на SELF_URL
+    callback_url = f"https://ваш_сервер/payment/nowpayments/ipn"  # <-- укажи свой URL
     description = f"Подписка 30 дней, заказ #{order_id}"
 
     payload = {
         "price_amount": float(amount),
-        "price_currency": currency.upper(),
-        "pay_currency": currency.upper(),  # Можно выбрать другую валюту: BTC, TRX, TON
+        "price_currency": "USD",        # базовая валюта (USD)
+        "pay_currency": currency.upper(),  # валюта для оплаты (USD/TRX/TON)
         "order_id": str(order_id),
         "order_description": description,
         "ipn_callback_url": callback_url
@@ -84,11 +84,11 @@ async def create_invoice(chat_id, amount, currency="USD"):
     asyncio.create_task(pending_order_timeout(order_id))
     return data.get("invoice_url"), order_id
 
-# ----------------------- Send payment link
+# ----------------------- Отправка ссылки пользователю
 async def send_payment_link(bot, chat_id, amount, currency="USD"):
-    url, order_id = await create_invoice(chat_id, amount, currency)
+    url, order_id = await create_invoice(chat_id, amount, currency=currency)
     text = (
-        f"💳 Оплата криптой: {amount} {currency.upper()}\n"
+        f"💳 Оплата криптой: {amount} {currency}\n"
         f"Заказ: #{order_id}\n"
         f"⏳ Время на оплату: 5 минут"
     )
@@ -97,7 +97,7 @@ async def send_payment_link(bot, chat_id, amount, currency="USD"):
     ORDERS[order_id]["message_id"] = msg.message_id
     save_order_to_redis(order_id, ORDERS[order_id])
 
-# ----------------------- Pending order timeout
+# ----------------------- Таймер для неоплаченных заказов
 async def pending_order_timeout(order_id, timeout=300):
     await asyncio.sleep(timeout)
     order = ORDERS.get(order_id)
@@ -115,7 +115,7 @@ async def pending_order_timeout(order_id, timeout=300):
         save_order_to_redis(order_id, order)
         await bot.send_message(order["chat_id"], f"⏳ Время на оплату истекло. Заказ #{order_id}")
 
-# ----------------------- NOWPayments IPN
+# ----------------------- NOWPayments IPN (Webhook)
 @router.post("/payment/nowpayments/ipn")
 async def nowpayments_ipn_endpoint(request: Request):
     data = await request.json()
@@ -181,15 +181,15 @@ async def nowpayments_ipn(ipn_data: dict):
                     f"💰 Новая покупка подписки\nПользователь: {chat_id}\n"
                     f"Сумма: {amount} {currency}\nЗаказ: #{order_id}\nАктивна до: {until_text}"
                 )
-            except:
-                pass
+            except Exception as e:
+                print(f"[ADMIN NOTIFY ERROR] {e}")
     finally:
         order["processing"] = False
         save_order_to_redis(order_id, order)
 
     return {"status": "ok"}
 
-# ----------------------- Получение последних заказов
+# ----------------------- Получение последних заказов пользователя
 def get_last_orders(chat_id, count=4):
     orders = [(oid, o) for oid, o in ORDERS.items() if o["chat_id"] == chat_id]
     orders.sort(key=lambda x: x[1]["created_at"], reverse=True)
