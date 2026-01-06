@@ -193,7 +193,7 @@ init_yourun(
 # -----------------------
 # Добавляем команду для покупки подписки
 from yoomoney_module import send_payment_link
-
+from nowpayments_module import send_payment_link as send_crypto_payment_link
 async def buy_subscription(update, context):
     chat_id = update.effective_chat.id
     from subscription_config import get_price
@@ -608,7 +608,8 @@ async def settings_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
     await update_user_names_in_ram(query.message.chat, persist=True)
     chat_id = query.message.chat.id
     if OPEN_SETTINGS_MESSAGES.get(chat_id, {}).get("menu_type") == "profile":
-        
+    
+        # Нажатие "Купить подписку"
         if query.data == "profile_buy_confirm":
             keyboard = InlineKeyboardMarkup([
                 [
@@ -616,39 +617,54 @@ async def settings_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
                     InlineKeyboardButton("❌ Нет", callback_data="profile_buy_no")
                 ]
             ])
-
             await query.message.edit_text(
                 "Вы уверены, что хотите приобрести подписку на 30 дней?",
                 reply_markup=keyboard
             )
             return
-        
+    
+        # Нажатие "Нет" — возвращаем профиль
         elif query.data == "profile_buy_no":
             await query.message.delete()
             await open_user_profile(chat_id)
             return
-            
+    
+        # Нажатие "Да" — показываем выбор способа оплаты
         elif query.data == "profile_buy_yes":
-            from subscription_config import get_price
-            from yoomoney_module import send_payment_link
-
-            amount = get_price("basic")
-            await query.message.delete()
-            await send_payment_link(bot, chat_id, amount)
+            keyboard = InlineKeyboardMarkup([
+                [InlineKeyboardButton("💳 Карта РФ", callback_data="pay_yoomoney")],
+                [InlineKeyboardButton("₿ Крипта", callback_data="pay_crypto")],
+                [InlineKeyboardButton("❌ Отмена", callback_data="profile_buy_no")]
+            ])
+            await query.message.edit_text(
+                "Выберите способ оплаты подписки на 30 дней:",
+                reply_markup=keyboard
+            )
             return
-            
-        if query.data == "profile_buy_subscription":
-            
-            chat_id = query.message.chat.id
+    
+        # ✅ Оплата картой
+        elif query.data == "pay_yoomoney":
             from subscription_config import get_price
-            amount = get_price("basic")  # стоимость подписки
             from yoomoney_module import send_payment_link
+    
+            amount = get_price("basic")
             await send_payment_link(bot, chat_id, amount)
-            # удаляем старое сообщение с кнопкой "Оплатить"
-            try:
-                await query.message.delete()
-            except:
-                pass
+    
+            await query.message.delete()
+            await open_user_profile(chat_id)  # возвращаем профиль
+            return
+    
+        # ✅ Оплата криптой
+        elif query.data == "pay_crypto":
+            from subscription_config import get_price
+            from nowpayments_module import send_payment_link as send_crypto_payment_link
+    
+            amount = get_price("basic")
+            await send_crypto_payment_link(bot, chat_id, amount)
+    
+            await query.message.delete()
+            await open_user_profile(chat_id)  # возвращаем профиль
+            return
         
         if query.data == "profile_transactions":
             from yoomoney_module import get_last_orders
