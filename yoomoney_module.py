@@ -10,7 +10,7 @@ import urllib.parse
 def safe_telegram_call(coro):
     tg_app.create_task(coro)
 
-INSTRUCTION_URL = "https://t.me/your_channel/123"
+INSTRUCTION_URL = "https://telegra.ph/Instrukciya-po-ispolzovaniyu-tg-bota-01-06"
 YOOMONEY_WALLET = "4100117872411525"
 SUCCESS_REDIRECT_URI = "https://t.me/promo_run_bot"
 
