@@ -631,39 +631,78 @@ async def settings_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
     
         # Нажатие "Да" — показываем выбор способа оплаты
         elif query.data == "profile_buy_yes":
-            keyboard = InlineKeyboardMarkup([
+            # Выбор способа оплаты
+            keyboard = [
                 [InlineKeyboardButton("💳 Карта РФ", callback_data="pay_yoomoney")],
                 [InlineKeyboardButton("₿ Крипта", callback_data="pay_crypto")],
                 [InlineKeyboardButton("❌ Отмена", callback_data="profile_buy_no")]
-            ])
+            ]
             await query.message.edit_text(
                 "Выберите способ оплаты подписки на 30 дней:",
-                reply_markup=keyboard
+                reply_markup=InlineKeyboardMarkup(keyboard)
             )
             return
-    
-        # ✅ Оплата картой
+        
+        # -----------------------
+        # Оплата картой РФ
         elif query.data == "pay_yoomoney":
             from subscription_config import get_price
             from yoomoney_module import send_payment_link
-    
+        
             amount = get_price("basic")
-            await send_payment_link(bot, chat_id, amount)
-    
+            await send_payment_link(bot, query.message.chat.id, amount)
+        
             await query.message.delete()
-            await open_user_profile(chat_id)  # возвращаем профиль
+            await open_user_profile(query.message.chat.id)
             return
-    
-        # ✅ Оплата криптой
+        
+        # -----------------------
+        # Выбор крипты
         elif query.data == "pay_crypto":
+            # показываем выбор валюты
+            keyboard = [
+                [InlineKeyboardButton("💵 USD", callback_data="crypto_usd")],
+                [InlineKeyboardButton("🌐 TRX", callback_data="crypto_trx")],
+                [InlineKeyboardButton("🪙 TON", callback_data="crypto_ton")],
+                [InlineKeyboardButton("❌ Отмена", callback_data="profile_buy_no")]
+            ]
+            await query.message.edit_text(
+                "Выберите криптовалюту для оплаты подписки:",
+                reply_markup=InlineKeyboardMarkup(keyboard)
+            )
+            return
+        
+        # -----------------------
+        # Обработка выбора криптовалюты
+        elif query.data in ["crypto_usd", "crypto_trx", "crypto_ton"]:
+            crypto_map = {
+                "crypto_usd": "USD",
+                "crypto_trx": "TRX",
+                "crypto_ton": "TON"
+            }
+            currency = crypto_map[query.data]
+        
             from subscription_config import get_price
             from nowpayments_module import send_payment_link as send_crypto_payment_link
-    
+        
             amount = get_price("basic")
-            await send_crypto_payment_link(bot, chat_id, amount)
-    
+        
+            # отправляем ссылку на оплату криптой
+            await send_crypto_payment_link(bot, query.message.chat.id, amount, currency=currency)
+        
+            # уведомляем админа
+            try:
+                await bot.send_message(
+                    ADMIN_CHAT_ID,
+                    f"💰 Пользователь {query.message.chat.id} выбрал оплату криптой.\n"
+                    f"Сумма: {amount} {currency}"
+                )
+            except Exception as e:
+                print(f"[ADMIN NOTIFY ERROR] {e}")
+        
+            # закрываем меню выбора
             await query.message.delete()
-            await open_user_profile(chat_id)  # возвращаем профиль
+            await open_user_profile(query.message.chat.id)
             return
         
         if query.data == "profile_transactions":
