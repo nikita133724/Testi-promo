@@ -10,6 +10,7 @@ import urllib.parse
 def safe_telegram_call(coro):
     tg_app.create_task(coro)
 
+INSTRUCTION_URL = "https://t.me/your_channel/123"
 YOOMONEY_WALLET = "4100117872411525"
 SUCCESS_REDIRECT_URI = "https://t.me/promo_run_bot"
 
@@ -196,11 +197,24 @@ async def yoomoney_ipn(operation_id, amount, currency,
         until_text = datetime.fromtimestamp(new_until, tz=MSK).strftime("%d.%m.%Y %H:%M") + " МСК"
     
         if was_suspended:
+            from telegram import InlineKeyboardMarkup, InlineKeyboardButton
             from telegram_bot import build_reply_keyboard
+            
+            inline = InlineKeyboardMarkup([
+                [InlineKeyboardButton("📘 Инструкция", url=INSTRUCTION_URL)]
+            ])
+            
             await send_message_to_user(
                 bot,
                 int(chat_id),
                 f"✅ Подписка активна до {until_text}. Заказ: #{order_id}",
+                reply_markup=inline
+            )
+            
+            # затем отправляем обычную клавиатуру отдельно
+            await bot.send_message(
+                int(chat_id),
+                "Выберите действие:",
                 reply_markup=build_reply_keyboard(int(chat_id))
             )
         else:
