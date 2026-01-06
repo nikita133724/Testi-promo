@@ -297,7 +297,7 @@ async def open_user_profile(chat_id):
 
     # Кнопки
     keyboard = [
-        [InlineKeyboardButton("💳 Купить подписку", callback_data="profile_buy_subscription")],
+        [InlineKeyboardButton("💳 Купить подписку", callback_data="profile_buy_confirm")],
         [InlineKeyboardButton("📄 Транзакции", callback_data="profile_transactions")],
         [InlineKeyboardButton("⚙️ Настройки", callback_data="profile_settings")],
         [InlineKeyboardButton("❌ Закрыть", callback_data="profile_exit")]
@@ -609,7 +609,34 @@ async def settings_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
     chat_id = query.message.chat.id
     if OPEN_SETTINGS_MESSAGES.get(chat_id, {}).get("menu_type") == "profile":
         
-    
+        if query.data == "profile_buy_confirm":
+            keyboard = InlineKeyboardMarkup([
+                [
+                    InlineKeyboardButton("✅ Да", callback_data="profile_buy_yes"),
+                    InlineKeyboardButton("❌ Нет", callback_data="profile_buy_no")
+                ]
+            ])
+
+            await query.message.edit_text(
+                "Вы уверены, что хотите приобрести подписку на 30 дней?",
+                reply_markup=keyboard
+            )
+            return
+        
+        elif query.data == "profile_buy_no":
+            await query.message.delete()
+            await open_user_profile(chat_id)
+            return
+            
+        elif query.data == "profile_buy_yes":
+            from subscription_config import get_price
+            from yoomoney_module import send_payment_link
+
+            amount = get_price("basic")
+            await query.message.delete()
+            await send_payment_link(bot, chat_id, amount)
+            return
+            
         if query.data == "profile_buy_subscription":
             
             chat_id = query.message.chat.id
