@@ -676,7 +676,7 @@ async def settings_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
         # Обработка выбора криптовалюты
         elif query.data in ["crypto_usd", "crypto_trx", "crypto_ton"]:
             crypto_map = {
-                "crypto_usd": "USD",
+                "crypto_usd": "USDT",
                 "crypto_trx": "TRX",
                 "crypto_ton": "TON"
             }
