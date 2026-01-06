@@ -6,7 +6,7 @@ from datetime import datetime, timedelta, timezone
 from telegram_bot import RAM_DATA, _save_to_redis_partial, bot, send_message_to_user, app as tg_app
 import hashlib
 import urllib.parse
-
+from telegram_bot import ADMIN_CHAT_ID
 def safe_telegram_call(coro):
     tg_app.create_task(coro)
 
@@ -222,6 +222,17 @@ async def yoomoney_ipn(operation_id, amount, currency,
         else:
             await bot.send_message(int(chat_id), f"✅ Подписка активна до {until_text}. Заказ: #{order_id}")
         print(f"[YOOMONEY IPN] заказ {order_id} оплачен для  chat {chat_id}, подписка до {until_text}")
+        try:
+            await bot.send_message(
+                ADMIN_CHAT_ID,
+                f"💰 Новая покупка подписки\n\n"
+                f"Пользователь: {chat_id}\n"
+                f"Заказ: #{order_id}\n"
+                f"Сумма: {amount}₽\n"
+                f"Активна до: {until_text}"
+            )
+        except Exception as e:
+            print(f"[ADMIN NOTIFY ERROR] {e}")
     finally:
         order["processing"] = False
         save_order_to_redis(order_id, order)
