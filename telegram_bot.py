@@ -395,7 +395,7 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
     
         # Потом отправляем Reply-кнопку «Активировать доступ»
         await update.message.reply_text(
-            "Нажмите кнопку ниже, чтобы активировать доступ:",
+            "Нажмите кнопку ниже, чтобы активировать доступ.\n\n при нажатие активировать доступ создается ссылка на оплату",
             reply_markup=reply_keyboard
         )
     else:
