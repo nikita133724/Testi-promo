@@ -58,8 +58,7 @@ async def create_invoice(chat_id, amount, currency="USDT", network=None):
         "pay_currency": pay_currency,
         "order_id": label,
         "order_description": description,
-        "ipn_callback_url": callback_url,
-        "payable_fee": "buyer"  # <-- комиссия сети на покупателя
+        "ipn_callback_url": callback_url
     }
 
     headers = {
