@@ -60,8 +60,7 @@ async def create_invoice(chat_id, amount, currency="USDT", network=None):
         "price_currency": "usd",       # сумма в долларах
         "pay_currency": pay_currency,  # выбранная крипта с сетью для USDT
         "order_description": description,
-        "ipn_callback_url": callback_url,
-        "expiration_time": 20*60
+        "ipn_callback_url": callback_url
     }
 
     headers = {
@@ -169,6 +168,11 @@ async def nowpayments_ipn(ipn_data: dict):
     if order.get("status") == "paid" or order.get("processing"):
         return {"status": "ok"}
 
+    # --- если заказ просрочен — не принимаем платёж
+    if order.get("status") == "expired":
+        print(f"Платёж по просроченному заказу #{local_order_id}")
+        return {"status": "ok"}
+        
     # --- проверка суммы
     if actually_paid <= 0:
         print(f"Не хватает суммы: поступило {actually_paid}, ожидаем {order['amount']}")
