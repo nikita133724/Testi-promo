@@ -723,17 +723,6 @@ async def settings_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
         
             # Передаём network в функцию
             await send_crypto_payment_link(bot, chat_id, amount, currency="USDT", network=network)
-        
-            # уведомление администратору
-            try:
-                await bot.send_message(
-                    ADMIN_CHAT_ID,
-                    f"💰 Пользователь {chat_id} выбрал оплату USDT через сеть {network.upper()}.\n"
-                    f"Сумма: {amount} USDT"
-                )
-            except Exception as e:
-                print(f"[ADMIN NOTIFY ERROR] {e}")
-        
             await query.message.delete()
             return
         
