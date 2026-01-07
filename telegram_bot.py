@@ -749,7 +749,7 @@ async def settings_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
             return
         
         if query.data == "profile_transactions":
-            from yoomoney_module import get_last_orders
+            from orders_store import get_last_orders
             
             last_orders = get_last_orders(chat_id, 4)
             if not last_orders:
