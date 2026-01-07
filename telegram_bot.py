@@ -720,7 +720,7 @@ async def settings_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
             chat_id = query.message.chat.id
         
             # Конвертируем рубли в USDT
-            amount_crypto = await rub_to_crypto(price_rub, "USDT")
+            amount_crypto = await rub_to_crypto(price_rub)
             await send_crypto_payment_link(bot, chat_id, amount_crypto, currency="USDT", network=network)
             await query.message.delete()
             return
