@@ -42,7 +42,8 @@ async def create_invoice(chat_id, amount, currency="USDT", network=None):
         "price_currency": price_currency,
         "pay_currency": pay_currency,
         "order_description": description,
-        "ipn_callback_url": callback_url
+        "ipn_callback_url": callback_url,
+        "expiration_time": 20 * 60
     }
 
     headers = {
