@@ -12,7 +12,7 @@ router = APIRouter()
 NOWPAYMENTS_API_KEY = "8HFD9KZ-ST94FV1-J32B132-WBJ0S9N"
 NOWPAYMENTS_API_URL = "https://api.nowpayments.io/v1/invoice"
 MSK = timezone(timedelta(hours=3))
-
+MAX_DIFF_PERCENT = 0.03  # допустимая погрешность суммы 3%
 SECRET_LABEL_KEY = "superqownsnms18191wnwnw181991wnsnsm199192nwnnsjs292992snnejsjs"
 
 # ----------------------- MAKE ORDER LABEL
