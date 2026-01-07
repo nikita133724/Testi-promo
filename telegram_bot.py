@@ -724,22 +724,23 @@ async def settings_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
             from nowpayments_module import send_payment_link as send_crypto_payment_link
         
             network_map = {
-                "usdt_trc": "usdttrc20",
-                "usdt_bsc": "usdtbsc",
-                "usdt_ton": "usdtton"
+                "usdt_trc": "trc20",
+                "usdt_bsc": "bsc",
+                "usdt_ton": "ton"
             }
-            currency = network_map[query.data]
+            network = network_map[query.data]
             amount = get_price("basic")
             chat_id = query.message.chat.id
         
-            await send_crypto_payment_link(bot, chat_id, amount, currency=currency)
+            # Передаём network в функцию
+            await send_crypto_payment_link(bot, chat_id, amount, currency="USDT", network=network)
         
-            # уведомляем админа
+            # уведомление администратору
             try:
                 await bot.send_message(
                     ADMIN_CHAT_ID,
-                    f"💰 Пользователь {chat_id} выбрал оплату USDT.\n"
-                    f"Сумма: {amount} {currency}"
+                    f"💰 Пользователь {chat_id} выбрал оплату USDT через сеть {network.upper()}.\n"
+                    f"Сумма: {amount} USDT"
                 )
             except Exception as e:
                 print(f"[ADMIN NOTIFY ERROR] {e}")
