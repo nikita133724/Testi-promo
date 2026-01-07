@@ -1,38 +1,21 @@
 import asyncio
-import hashlib
 from datetime import datetime, timezone, timedelta
 import aiohttp
 from telegram import InlineKeyboardButton, InlineKeyboardMarkup
 from telegram_bot import bot, RAM_DATA, _save_to_redis_partial, send_message_to_user, ADMIN_CHAT_ID
-from orders_store import next_order_id, save_order, get_order
+from orders_store import next_order_id, save_order, get_order, find_order_by_invoice
 from fastapi import APIRouter, Request
 
-router = APIRouter() 
+router = APIRouter()
 
 NOWPAYMENTS_API_KEY = "8HFD9KZ-ST94FV1-J32B132-WBJ0S9N"
 NOWPAYMENTS_API_URL = "https://api.nowpayments.io/v1/invoice"
 MSK = timezone(timedelta(hours=3))
-MAX_DIFF_PERCENT = 0.03  # допустимая погрешность суммы 3%
-SECRET_LABEL_KEY = "superqownsnms18191wnwnw181991wnsnsm199192nwnnsjs292992snnejsjs"
-
-# ----------------------- MAKE ORDER LABEL
-def make_order_label(chat_id, local_order_id, amount):
-    """
-    Формируем order_id для NowPayments:
-    <chat_id>|<локальный_номер_заказа>|<сумма>|<хэш>
-    """
-    plain = f"{chat_id}|{local_order_id}|{int(amount)}"
-    h = hashlib.sha256((plain + SECRET_LABEL_KEY).encode()).hexdigest()
-    return f"{plain}|{h}"
-
 
 # ----------------------- CREATE INVOICE
 async def create_invoice(chat_id, amount, currency="USDT", network=None):
-    """
-    Создаём инвойс на NowPayments с комиссией сети на покупателя.
-    """
+
     local_order_id = next_order_id()
-    label = make_order_label(chat_id, local_order_id, amount)
 
     callback_url = "https://tg-bot-test-gkbp.onrender.com/payment/nowpayments/ipn"
     description = f"Подписка 30 дней, заказ #{local_order_id}"
@@ -56,7 +39,6 @@ async def create_invoice(chat_id, amount, currency="USDT", network=None):
         "price_amount": float(amount),
         "price_currency": price_currency,
         "pay_currency": pay_currency,
-        "order_id": label,
         "order_description": description,
         "ipn_callback_url": callback_url
     }
@@ -95,7 +77,9 @@ async def create_invoice(chat_id, amount, currency="USDT", network=None):
 
 # ----------------------- SEND PAYMENT LINK
 async def send_payment_link(bot, chat_id, amount, currency="USDT", network=None):
+
     url, order_id = await create_invoice(chat_id, amount, currency, network)
+
     network_text = f" {network.upper()}" if network else ""
 
     text = (
@@ -114,6 +98,7 @@ async def send_payment_link(bot, chat_id, amount, currency="USDT", network=None)
 
 # ----------------------- PENDING TIMEOUT
 async def pending_order_timeout(order_id, timeout=300):
+
     await asyncio.sleep(timeout)
 
     order = get_order(order_id)
@@ -121,13 +106,13 @@ async def pending_order_timeout(order_id, timeout=300):
         return
 
     try:
-        if "message_id" in order:
-            await bot.delete_message(order["chat_id"], order["message_id"])
+        await bot.delete_message(order["chat_id"], order["message_id"])
     except:
         pass
 
     order["status"] = "expired"
     save_order(order_id, order)
+
     await bot.send_message(order["chat_id"], f"⏳ Время оплаты истекло. Заказ #{order_id}")
 
 
@@ -139,39 +124,28 @@ async def nowpayments_ipn_endpoint(request: Request):
 
 
 async def nowpayments_ipn(ipn_data: dict):
+
     print("NOWPayments IPN:", ipn_data)
 
-    # --- извлекаем label
-    label = ipn_data.get("order_id")
-    if not label:
-        return {"status": "error", "reason": "missing_order_id"}
+    invoice_id = ipn_data.get("invoice_id")
+    status = ipn_data.get("payment_status")
 
-    try:
-        chat_id_str, local_order_id_str, expected_amount_str, provided_hash = label.split("|")
-        chat_id = int(chat_id_str)
-        local_order_id = int(local_order_id_str)
+    if not invoice_id:
+        return {"status": "error", "reason": "missing_invoice_id"}
 
-        # проверка хэша
-        plain = f"{chat_id}|{local_order_id}|{expected_amount_str}"
-        expected_hash = hashlib.sha256((plain + SECRET_LABEL_KEY).encode()).hexdigest()
-        if expected_hash != provided_hash:
-            return {"status": "error", "reason": "invalid_label_hash"}
+    if status != "finished":
+        return {"status": "ok"}
 
-        # проверка суммы убрана
-        # price_amount = float(ipn_data.get("price_amount", 0))
-        # if price_amount < expected_amount * (1 - MAX_DIFF_PERCENT):
-        #     return {"status": "error", "reason": "wrong_amount"}
+    local_order_id, order = find_order_by_invoice(invoice_id)
 
-        # статус платежа
-        status = ipn_data.get("payment_status")
-        if status != "finished":  # начисляем подписку только на finished
-            return {"status": "ok"}
+    if not order:
+        print("Order not found for invoice:", invoice_id)
+        return {"status": "ok"}
 
-    except Exception as e:
-        return {"status": "error", "reason": f"invalid_label_format {e}"}
+    if order.get("status") == "paid":
+        return {"status": "ok"}
 
-    order = get_order(local_order_id)
-    if not order or order.get("processing"):
+    if order.get("processing"):
         return {"status": "ok"}
 
     order["processing"] = True
@@ -183,11 +157,13 @@ async def nowpayments_ipn(ipn_data: dict):
         save_order(local_order_id, order)
 
         try:
-            await bot.delete_message(order["chat_id"], order.get("message_id"))
+            await bot.delete_message(order["chat_id"], order["message_id"])
         except:
             pass
 
-        # --- начисляем подписку
+        chat_id = order["chat_id"]
+
+        # --- НАЧИСЛЕНИЕ ПОДПИСКИ ---
         now_ts = datetime.now(timezone.utc).timestamp()
         current_until = float(RAM_DATA.get(chat_id, {}).get("subscription_until", 0))
         base = max(current_until, now_ts)
@@ -196,10 +172,18 @@ async def nowpayments_ipn(ipn_data: dict):
         RAM_DATA.setdefault(chat_id, {})
         RAM_DATA[chat_id]["subscription_until"] = new_until
         RAM_DATA[chat_id]["suspended"] = False
-        _save_to_redis_partial(chat_id, {"subscription_until": new_until, "suspended": False})
+
+        _save_to_redis_partial(chat_id, {
+            "subscription_until": new_until,
+            "suspended": False
+        })
 
         until_text = datetime.fromtimestamp(new_until, tz=MSK).strftime("%d.%m.%Y %H:%M")
-        await send_message_to_user(bot, chat_id, f"✅ Подписка активна до {until_text}. Заказ #{local_order_id}")
+
+        await send_message_to_user(
+            bot, chat_id,
+            f"✅ Подписка активна до {until_text}. Заказ #{local_order_id}"
+        )
 
         await bot.send_message(
             ADMIN_CHAT_ID,
