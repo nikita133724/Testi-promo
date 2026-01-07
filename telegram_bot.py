@@ -653,7 +653,6 @@ async def settings_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
             await send_payment_link(bot, query.message.chat.id, amount)
         
             await query.message.delete()
-            await open_user_profile(query.message.chat.id)
             return
         
         # -----------------------
@@ -716,7 +715,6 @@ async def settings_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
                 print(f"[ADMIN NOTIFY ERROR] {e}")
         
             await query.message.delete()
-            await open_user_profile(chat_id)
             return
         
         # -----------------------
@@ -747,7 +745,6 @@ async def settings_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
                 print(f"[ADMIN NOTIFY ERROR] {e}")
         
             await query.message.delete()
-            await open_user_profile(chat_id)
             return
         
         if query.data == "profile_transactions":
