@@ -12,7 +12,7 @@ NOWPAYMENTS_API_KEY = "8HFD9KZ-ST94FV1-J32B132-WBJ0S9N"
 NOWPAYMENTS_API_URL = "https://api.nowpayments.io/v1/invoice"
 MSK = timezone(timedelta(hours=3))
 
-async def rub_to_crypto(amount_rub: float):
+async def rub_to_usd(amount_rub: float) -> float:
     url = "https://open.er-api.com/v6/latest/RUB"
     async with aiohttp.ClientSession() as session:
         async with session.get(url) as resp:
@@ -21,9 +21,8 @@ async def rub_to_crypto(amount_rub: float):
     if "rates" not in data or "USD" not in data["rates"]:
         raise Exception(f"Не удалось получить курс RUB → USD: {data}")
 
-    rate = float(data["rates"]["USD"])  # 1 RUB → ? USD
-    amount_usd = round(amount_rub * rate, 2)  # округляем до 2 знаков
-    return amount_usd
+    rate = float(data["rates"]["USD"])
+    return round(amount_rub * rate, 2)
     
 # ----------------------- CREATE INVOICE
 async def create_invoice(chat_id, amount, currency="USDT", network=None):
@@ -48,8 +47,7 @@ async def create_invoice(chat_id, amount, currency="USDT", network=None):
     else:
         raise Exception("Недоступная валюта")
 
-    # price_amount всегда в долларах
-    price_amount = await rub_to_crypto(amount)
+    price_amount = await rub_to_usd(amount)
     
     # pay_currency — выбранная крипта (USDT с сетью, TRX или TON)
     if currency == "USDT":
