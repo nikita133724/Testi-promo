@@ -12,7 +12,7 @@ NOWPAYMENTS_API_KEY = "8HFD9KZ-ST94FV1-J32B132-WBJ0S9N"
 NOWPAYMENTS_API_URL = "https://api.nowpayments.io/v1/invoice"
 MSK = timezone(timedelta(hours=3))
 
-async def rub_to_usd(amount_rub: float):
+async def rub_to_crypto(amount_rub: float):
     url = "https://open.er-api.com/v6/latest/RUB"
     async with aiohttp.ClientSession() as session:
         async with session.get(url) as resp:
