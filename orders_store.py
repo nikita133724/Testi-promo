@@ -32,6 +32,12 @@ def get_user_orders(chat_id):
 def get_order(order_id):
     return ORDERS.get(order_id)
     
+def find_order_by_invoice(invoice_id):
+    for oid, order in ORDERS.items():
+        if order.get("invoice_id") == invoice_id:
+            return oid, order
+    return None, None
+    
 def get_last_orders(chat_id, count=4):
     orders = [(oid, o) for oid, o in ORDERS.items() if o["chat_id"] == chat_id]
     orders.sort(key=lambda x: x[1]["created_at"], reverse=True)
