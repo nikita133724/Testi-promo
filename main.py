@@ -83,7 +83,8 @@ async def logout(request: Request):
 from steam_auth import router
 app_fastapi.include_router(router)
 
-from nowpayments_module import router as nowpayments_router, load_orders_from_redis
+from nowpayments_module import router as nowpayments_router
+from orders_store import load_orders
 app_fastapi.include_router(nowpayments_router)
 
 # Admin Users
@@ -546,7 +547,7 @@ from yoomoney_module import load_orders_from_redis, yoomoney_ipn as yoomoney_ipn
 @app_fastapi.on_event("startup")
 async def startup_event():
     # Загружаем ORDERS из Redis
-    load_orders_from_redis()
+    load_orders()
 
     # Запуск остальных фоновых задач
     asyncio.create_task(keep_alive())
