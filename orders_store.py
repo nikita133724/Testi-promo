@@ -33,8 +33,9 @@ def get_order(order_id):
     return ORDERS.get(order_id)
     
 def find_order_by_invoice(invoice_id):
+    invoice_id_str = str(invoice_id)
     for oid, order in ORDERS.items():
-        if order.get("invoice_id") == invoice_id:
+        if order.get("invoice_id") == invoice_id_str:
             return oid, order
     return None, None
     
