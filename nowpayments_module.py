@@ -17,7 +17,7 @@ MSK = timezone(timedelta(hours=3))
 # ----------------------- СОЗДАНИЕ ИНВОЙСА
 async def create_invoice(chat_id, amount, currency="USDT", network=None):
 
-    order_id = next_order_id()
+    order_id = next_order_id()  # Локальный номер заказа
     callback_url = "https://tg-bot-test-gkbp.onrender.com/payment/nowpayments/ipn"
     description = f"Подписка 30 дней, заказ #{order_id}"
 
@@ -28,15 +28,12 @@ async def create_invoice(chat_id, amount, currency="USDT", network=None):
             raise Exception("Для USDT необходимо выбрать сеть")
         price_currency = f"usdt{network.lower()}"
         pay_currency = price_currency
-
     elif currency == "TRX":
         price_currency = "trx"
         pay_currency = "trx"
-
     elif currency == "TON":
         price_currency = "ton"
         pay_currency = "ton"
-
     else:
         raise Exception("Недоступная валюта")
 
@@ -44,7 +41,7 @@ async def create_invoice(chat_id, amount, currency="USDT", network=None):
         "price_amount": float(amount),
         "price_currency": price_currency,
         "pay_currency": pay_currency,
-        "order_id": str(order_id),
+        "order_id": str(order_id),           # <-- ВАЖНО: свой локальный order_id
         "order_description": description,
         "ipn_callback_url": callback_url
     }
@@ -68,7 +65,7 @@ async def create_invoice(chat_id, amount, currency="USDT", network=None):
         "network": network,
         "status": "pending",
         "created_at": int(datetime.now(timezone.utc).timestamp()),
-        "invoice_id": data["id"],
+        "invoice_id": data["id"],           # <-- теперь это их internal ID, на всякий случай
         "invoice_url": data["invoice_url"],
         "provider": "crypto",
         "processing": False,
@@ -79,7 +76,6 @@ async def create_invoice(chat_id, amount, currency="USDT", network=None):
     asyncio.create_task(pending_order_timeout(order_id))
 
     return data["invoice_url"], order_id
-
 
 # ----------------------- ОТПРАВКА ССЫЛКИ
 async def send_payment_link(bot, chat_id, amount, currency, network=None):
