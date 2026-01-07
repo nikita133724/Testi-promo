@@ -661,7 +661,7 @@ async def settings_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
         elif query.data == "pay_crypto":
             # показываем выбор валюты
             keyboard = [
-                [InlineKeyboardButton("💵 USD", callback_data="crypto_usd")],
+                [InlineKeyboardButton("💵 USDT", callback_data="crypto_usd")],
                 [InlineKeyboardButton("🌐 TRX", callback_data="crypto_trx")],
                 [InlineKeyboardButton("🪙 TON", callback_data="crypto_ton")],
                 [InlineKeyboardButton("❌ Отмена", callback_data="profile_buy_no")]
@@ -672,37 +672,82 @@ async def settings_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
             )
             return
         
-        # -----------------------
-        # Обработка выбора криптовалюты
+        # Обработка выбора крипты
         elif query.data in ["crypto_usd", "crypto_trx", "crypto_ton"]:
+            from subscription_config import get_price
+            from nowpayments_module import send_payment_link as send_crypto_payment_link
+        
+            amount = get_price("basic")
+            chat_id = query.message.chat.id
+        
+            # -----------------------
+            # Если USDT, показываем выбор сети
+            if query.data == "crypto_usd":
+                keyboard = [
+                    [InlineKeyboardButton("TRC20", callback_data="usdt_trc")],
+                    [InlineKeyboardButton("BSC", callback_data="usdt_bsc")],
+                    [InlineKeyboardButton("TON", callback_data="usdt_ton")],
+                    [InlineKeyboardButton("❌ Отмена", callback_data="profile_buy_no")]
+                ]
+                await query.message.edit_text(
+                    "💵 Выберите сеть для оплаты USDT:",
+                    reply_markup=InlineKeyboardMarkup(keyboard)
+                )
+                return
+        
+            # -----------------------
+            # Для TRX и TON создаём платеж сразу
             crypto_map = {
-                "crypto_usd": "USDT",
                 "crypto_trx": "TRX",
                 "crypto_ton": "TON"
             }
             currency = crypto_map[query.data]
         
-            from subscription_config import get_price
-            from nowpayments_module import send_payment_link as send_crypto_payment_link
-        
-            amount = get_price("basic")
-        
-            # отправляем ссылку на оплату криптой
-            await send_crypto_payment_link(bot, query.message.chat.id, amount, currency=currency)
+            await send_crypto_payment_link(bot, chat_id, amount, currency=currency)
         
             # уведомляем админа
             try:
                 await bot.send_message(
                     ADMIN_CHAT_ID,
-                    f"💰 Пользователь {query.message.chat.id} выбрал оплату криптой.\n"
+                    f"💰 Пользователь {chat_id} выбрал оплату криптой.\n"
                     f"Сумма: {amount} {currency}"
                 )
             except Exception as e:
                 print(f"[ADMIN NOTIFY ERROR] {e}")
         
-            # закрываем меню выбора
             await query.message.delete()
-            await open_user_profile(query.message.chat.id)
+            await open_user_profile(chat_id)
+            return
+        
+        # -----------------------
+        # Обработка выбора сети для USDT
+        elif query.data in ["usdt_trc", "usdt_bsc", "usdt_ton"]:
+            from subscription_config import get_price
+            from nowpayments_module import send_payment_link as send_crypto_payment_link
+        
+            network_map = {
+                "usdt_trc": "usdttrc20",
+                "usdt_bsc": "usdtbsc",
+                "usdt_ton": "usdtton"
+            }
+            currency = network_map[query.data]
+            amount = get_price("basic")
+            chat_id = query.message.chat.id
+        
+            await send_crypto_payment_link(bot, chat_id, amount, currency=currency)
+        
+            # уведомляем админа
+            try:
+                await bot.send_message(
+                    ADMIN_CHAT_ID,
+                    f"💰 Пользователь {chat_id} выбрал оплату USDT.\n"
+                    f"Сумма: {amount} {currency}"
+                )
+            except Exception as e:
+                print(f"[ADMIN NOTIFY ERROR] {e}")
+        
+            await query.message.delete()
+            await open_user_profile(chat_id)
             return
         
         if query.data == "profile_transactions":
