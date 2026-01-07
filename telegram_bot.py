@@ -676,12 +676,11 @@ async def settings_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
             from subscription_config import get_price
             from nowpayments_module import send_payment_link as send_crypto_payment_link
         
-            amount = get_price("basic")
+            price_rub = get_price("basic")
             chat_id = query.message.chat.id
         
-            # -----------------------
-            # Если USDT, показываем выбор сети
             if query.data == "crypto_usd":
+                # показываем выбор сети
                 keyboard = [
                     [InlineKeyboardButton("TRC20", callback_data="usdt_trc")],
                     [InlineKeyboardButton("BSC", callback_data="usdt_bsc")],
@@ -694,15 +693,14 @@ async def settings_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
                 )
                 return
         
-            # -----------------------
-            # Для TRX и TON создаём платеж сразу
+            # TRX или TON — сразу конвертируем
             crypto_map = {
                 "crypto_trx": "TRX",
                 "crypto_ton": "TON"
             }
             currency = crypto_map[query.data]
-        
-            await send_crypto_payment_link(bot, chat_id, amount, currency=currency)
+            amount_crypto = await rub_to_crypto(price_rub, currency)
+            await send_crypto_payment_link(bot, chat_id, amount_crypto, currency=currency)
             await query.message.delete()
             return
         
@@ -718,11 +716,12 @@ async def settings_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
                 "usdt_ton": "ton"
             }
             network = network_map[query.data]
-            amount = get_price("basic")
+            price_rub = get_price("basic")
             chat_id = query.message.chat.id
         
-            # Передаём network в функцию
-            await send_crypto_payment_link(bot, chat_id, amount, currency="USDT", network=network)
+            # Конвертируем рубли в USDT
+            amount_crypto = await rub_to_crypto(price_rub, "USDT")
+            await send_crypto_payment_link(bot, chat_id, amount_crypto, currency="USDT", network=network)
             await query.message.delete()
             return
         
