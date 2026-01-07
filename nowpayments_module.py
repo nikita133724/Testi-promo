@@ -44,19 +44,30 @@ def get_next_order_id():
 
 # ----------------------- Создание инвойса
 # ----------------------- Создание инвойса только в крипте
-async def create_invoice(chat_id, amount, currency="USDT"):
+async def create_invoice(chat_id, amount, currency="USDT", network=None):
+    """
+    Создание инвойса в криптовалюте.
+    Для USDT можно указать сеть: TRC20, BSC, TON
+    """
     order_id = get_next_order_id()
-    callback_url = f"https://tg-bot-test-gkbp.onrender.com/payment/nowpayments/ipn"  # <-- укажи свой URL
+    callback_url = "https://tg-bot-test-gkbp.onrender.com/payment/nowpayments/ipn"
     description = f"Подписка 30 дней, заказ #{order_id}"
 
     currency = currency.upper()
     if currency not in ["USDT", "TRX", "TON"]:
         raise Exception("Выбранная валюта недоступна. Доступно: USDT, TRX, TON")
 
+    # -----------------------
+    # Добавляем сеть только для USDT
+    pay_currency = currency
+    if currency == "USDT" and network:
+        # сеть в нижнем регистре
+        pay_currency = f"usdt{network.lower()}"  # пример: usdttrc20, usdtbsc, usdtton
+
     payload = {
         "price_amount": float(amount),
-        "price_currency": currency,     # базовая валюта = крипта
-        "pay_currency": currency,       # оплата только в выбранной крипте
+        "price_currency": currency,  # базовая валюта
+        "pay_currency": pay_currency, # валюта с сетью
         "order_id": str(order_id),
         "order_description": description,
         "ipn_callback_url": callback_url
@@ -78,6 +89,7 @@ async def create_invoice(chat_id, amount, currency="USDT"):
         "chat_id": chat_id,
         "amount": float(amount),
         "currency": currency,
+        "network": network,  # сохраняем выбранную сеть
         "status": "pending",
         "created_at": int(datetime.now(timezone.utc).timestamp()),
         "invoice_id": data.get("id"),
