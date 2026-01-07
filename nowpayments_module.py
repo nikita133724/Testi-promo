@@ -5,6 +5,9 @@ import aiohttp
 from telegram import InlineKeyboardButton, InlineKeyboardMarkup
 from telegram_bot import bot, RAM_DATA, _save_to_redis_partial, send_message_to_user
 from orders_store import next_order_id, save_order, get_order
+from fastapi import APIRouter, Request
+
+router = APIRouter() 
 
 NOWPAYMENTS_API_KEY = "8HFD9KZ-ST94FV1-J32B132-WBJ0S9N"
 NOWPAYMENTS_API_URL = "https://api.nowpayments.io/v1/invoice"
