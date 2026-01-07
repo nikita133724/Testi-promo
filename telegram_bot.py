@@ -699,8 +699,7 @@ async def settings_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
                 "crypto_ton": "TON"
             }
             currency = crypto_map[query.data]
-            amount_usd = price_rub
-            await send_crypto_payment_link(bot, chat_id, amount_crypto, currency=currency)
+            await send_crypto_payment_link(bot, chat_id, price_rub, currency=currency)
             await query.message.delete()
             return
         
@@ -718,10 +717,8 @@ async def settings_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
             network = network_map[query.data]
             price_rub = get_price("basic")
             chat_id = query.message.chat.id
-        
-            # Конвертируем рубли в USDT
-            amount_usd = price_rub
-            await send_crypto_payment_link(bot, chat_id, amount_crypto, currency="USDT", network=network)
+
+            await send_crypto_payment_link(bot, chat_id, price_rub, currency="USDT", network=network)
             await query.message.delete()
             return
         
