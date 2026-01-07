@@ -703,17 +703,6 @@ async def settings_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
             currency = crypto_map[query.data]
         
             await send_crypto_payment_link(bot, chat_id, amount, currency=currency)
-        
-            # уведомляем админа
-            try:
-                await bot.send_message(
-                    ADMIN_CHAT_ID,
-                    f"💰 Пользователь {chat_id} выбрал оплату криптой.\n"
-                    f"Сумма: {amount} {currency}"
-                )
-            except Exception as e:
-                print(f"[ADMIN NOTIFY ERROR] {e}")
-        
             await query.message.delete()
             return
         
