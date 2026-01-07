@@ -49,7 +49,7 @@ async def create_invoice(chat_id, amount, currency="USDT", network=None):
         raise Exception("Недоступная валюта")
 
     # price_amount всегда в долларах
-    price_amount = await rub_to_usd(amount)
+    price_amount = await rub_to_crypto(amount)
     
     # pay_currency — выбранная крипта (USDT с сетью, TRX или TON)
     if currency == "USDT":
