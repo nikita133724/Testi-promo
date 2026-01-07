@@ -83,9 +83,6 @@ async def logout(request: Request):
 from steam_auth import router
 app_fastapi.include_router(router)
 
-from nowpayments_module import router as nowpayments_router
-from orders_store import load_orders
-app_fastapi.include_router(nowpayments_router)
 
 # Admin Users
 @app_fastapi.get("/admin/users", response_class=HTMLResponse)
@@ -542,7 +539,11 @@ async def start_telegram():
     await client.run_until_disconnected()
 
 # -----------------------
-from yoomoney_module import load_orders_from_redis, yoomoney_ipn as yoomoney_ipn_handler, ORDERS
+from yoomoney_module import yoomoney_ipn as yoomoney_ipn_handler
+from nowpayments_module import router as nowpayments_router
+from orders_store import load_orders, ORDERS
+
+app_fastapi.include_router(nowpayments_router)
 
 @app_fastapi.on_event("startup")
 async def startup_event():
