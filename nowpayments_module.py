@@ -12,7 +12,25 @@ NOWPAYMENTS_API_KEY = "8HFD9KZ-ST94FV1-J32B132-WBJ0S9N"
 NOWPAYMENTS_API_URL = "https://api.nowpayments.io/v1/invoice"
 MSK = timezone(timedelta(hours=3))
 
+async def rub_to_crypto(amount_rub: float, currency: str):
+    """
+    Конвертируем рубли в крипту через NOWPayments API.
+    currency: USDT, TRX, TON
+    """
+    url = "https://api.nowpayments.io/v1/rate"
+    params = {"from": "RUB", "to": currency.upper()}
+    headers = {"x-api-key": NOWPAYMENTS_API_KEY}
 
+    async with aiohttp.ClientSession() as session:
+        async with session.get(url, headers=headers, params=params) as resp:
+            data = await resp.json()
+
+    if "price" not in data:
+        raise Exception(f"Не удалось получить курс RUB → {currency}: {data}")
+
+    rate = float(data["price"])
+    return round(amount_rub / rate, 6)  # 6 знаков после запятой достаточно
+    
 # ----------------------- CREATE INVOICE
 async def create_invoice(chat_id, amount, currency="USDT", network=None):
 
