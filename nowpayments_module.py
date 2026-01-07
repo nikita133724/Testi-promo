@@ -3,7 +3,7 @@ import hashlib
 from datetime import datetime, timezone, timedelta
 import aiohttp
 from telegram import InlineKeyboardButton, InlineKeyboardMarkup
-from telegram_bot import bot, RAM_DATA, _save_to_redis_partial, send_message_to_user
+from telegram_bot import bot, RAM_DATA, _save_to_redis_partial, send_message_to_user, ADMIN_CHAT_ID
 from orders_store import next_order_id, save_order, get_order
 from fastapi import APIRouter, Request
 
