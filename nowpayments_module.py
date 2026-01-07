@@ -12,24 +12,18 @@ NOWPAYMENTS_API_KEY = "8HFD9KZ-ST94FV1-J32B132-WBJ0S9N"
 NOWPAYMENTS_API_URL = "https://api.nowpayments.io/v1/invoice"
 MSK = timezone(timedelta(hours=3))
 
-async def rub_to_crypto(amount_rub: float, currency: str):
-    """
-    Конвертируем рубли в крипту через NOWPayments API.
-    currency: USDT, TRX, TON
-    """
-    url = "https://api.nowpayments.io/v1/rate"
-    params = {"from": "RUB", "to": currency.upper()}
-    headers = {"x-api-key": NOWPAYMENTS_API_KEY}
-
+async def rub_to_usd(amount_rub: float):
+    url = "https://open.er-api.com/v6/latest/RUB"
     async with aiohttp.ClientSession() as session:
-        async with session.get(url, headers=headers, params=params) as resp:
+        async with session.get(url) as resp:
             data = await resp.json()
 
-    if "price" not in data:
-        raise Exception(f"Не удалось получить курс RUB → {currency}: {data}")
+    if "rates" not in data or "USD" not in data["rates"]:
+        raise Exception(f"Не удалось получить курс RUB → USD: {data}")
 
-    rate = float(data["price"])
-    return round(amount_rub / rate, 6)  # 6 знаков после запятой достаточно
+    rate = float(data["rates"]["USD"])  # 1 RUB → ? USD
+    amount_usd = round(amount_rub * rate, 2)  # округляем до 2 знаков
+    return amount_usd
     
 # ----------------------- CREATE INVOICE
 async def create_invoice(chat_id, amount, currency="USDT", network=None):
@@ -54,14 +48,22 @@ async def create_invoice(chat_id, amount, currency="USDT", network=None):
     else:
         raise Exception("Недоступная валюта")
 
-    # --- формируем инвойс
+    # price_amount всегда в долларах
+    price_amount = await rub_to_usd(amount)
+    
+    # pay_currency — выбранная крипта (USDT с сетью, TRX или TON)
+    if currency == "USDT":
+        pay_currency = f"usdt{network.lower()}"  # TRC20 → usdttrc
+    else:
+        pay_currency = currency.lower()  # trx или ton
+    
     payload = {
-        "price_amount": float(amount),
-        "price_currency": price_currency,
-        "pay_currency": pay_currency,
+        "price_amount": price_amount,
+        "price_currency": "usd",       # сумма в долларах
+        "pay_currency": pay_currency,  # выбранная крипта с сетью для USDT
         "order_description": description,
         "ipn_callback_url": callback_url,
-        "expiration_time": 20 * 60
+        "expiration_time": 20*60
     }
 
     headers = {
