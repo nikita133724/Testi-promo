@@ -170,7 +170,7 @@ async def nowpayments_ipn(ipn_data: dict):
         return {"status": "ok"}
 
     # --- проверка суммы
-    if actually_paid < order["amount"]:
+    if actually_paid <= 0:
         print(f"Не хватает суммы: поступило {actually_paid}, ожидаем {order['amount']}")
         return {"status": "ok"}
 
