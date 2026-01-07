@@ -12,6 +12,7 @@ NOWPAYMENTS_API_KEY = "8HFD9KZ-ST94FV1-J32B132-WBJ0S9N"
 NOWPAYMENTS_API_URL = "https://api.nowpayments.io/v1/invoice"
 MSK = timezone(timedelta(hours=3))
 
+
 # ----------------------- CREATE INVOICE
 async def create_invoice(chat_id, amount, currency="USDT", network=None):
 
@@ -35,12 +36,14 @@ async def create_invoice(chat_id, amount, currency="USDT", network=None):
     else:
         raise Exception("Недоступная валюта")
 
+    # --- формируем инвойс
     payload = {
         "price_amount": float(amount),
         "price_currency": price_currency,
         "pay_currency": pay_currency,
         "order_description": description,
-        "ipn_callback_url": callback_url
+        "ipn_callback_url": callback_url,
+        "pay_amount_additional": "network_fee"  # комиссия сети добавляется на покупателя
     }
 
     headers = {
@@ -55,14 +58,15 @@ async def create_invoice(chat_id, amount, currency="USDT", network=None):
     if "invoice_url" not in data:
         raise Exception(f"NOWPayments error: {data}")
 
+    # --- сохраняем заказ в нашей системе
     order = {
         "chat_id": chat_id,
-        "amount": float(amount),
+        "amount": float(amount),  # сумма, которую мы хотим получить
         "currency": currency,
         "network": network,
         "status": "pending",
         "created_at": int(datetime.now(timezone.utc).timestamp()),
-        "invoice_id": data["id"],
+        "invoice_id": str(data["id"]),
         "invoice_url": data["invoice_url"],
         "provider": "crypto",
         "processing": False,
@@ -85,7 +89,7 @@ async def send_payment_link(bot, chat_id, amount, currency="USDT", network=None)
     text = (
         f"💳 Оплата: {amount} {currency}{network_text}\n"
         f"🧾 Заказ: #{order_id}\n"
-        f"⏳ Время на оплату: 5 минут"
+        f"⏳ Время на оплату: 20 минут"
     )
 
     keyboard = InlineKeyboardMarkup([[InlineKeyboardButton("Оплатить", url=url)]])
@@ -97,7 +101,7 @@ async def send_payment_link(bot, chat_id, amount, currency="USDT", network=None)
 
 
 # ----------------------- PENDING TIMEOUT
-async def pending_order_timeout(order_id, timeout=300):
+async def pending_order_timeout(order_id, timeout=1200):
 
     await asyncio.sleep(timeout)
 
@@ -123,18 +127,20 @@ async def nowpayments_ipn_endpoint(request: Request):
     return await nowpayments_ipn(data)
 
 
+# ----------------------- ОБРАБОТКА IPN
 async def nowpayments_ipn(ipn_data: dict):
 
     print("NOWPayments IPN:", ipn_data)
 
-    invoice_id = ipn_data.get("invoice_id")
+    invoice_id = str(ipn_data.get("invoice_id"))
     status = ipn_data.get("payment_status")
+    actually_paid = float(ipn_data.get("actually_paid", 0))  # реально получено
 
     if not invoice_id:
         return {"status": "error", "reason": "missing_invoice_id"}
 
     if status != "finished":
-        return {"status": "ok"}
+        return {"status": "ok"}  # ждём оплаты
 
     local_order_id, order = find_order_by_invoice(invoice_id)
 
@@ -142,12 +148,15 @@ async def nowpayments_ipn(ipn_data: dict):
         print("Order not found for invoice:", invoice_id)
         return {"status": "ok"}
 
-    if order.get("status") == "paid":
+    if order.get("status") == "paid" or order.get("processing"):
         return {"status": "ok"}
 
-    if order.get("processing"):
+    # --- проверка суммы
+    if actually_paid < order["amount"]:
+        print(f"Не хватает суммы: поступило {actually_paid}, ожидаем {order['amount']}")
         return {"status": "ok"}
 
+    # --- отмечаем обработку
     order["processing"] = True
     save_order(local_order_id, order)
 
@@ -157,7 +166,7 @@ async def nowpayments_ipn(ipn_data: dict):
         save_order(local_order_id, order)
 
         try:
-            await bot.delete_message(order["chat_id"], order["message_id"])
+            await bot.delete_message(order["chat_id"], order.get("message_id"))
         except:
             pass
 
@@ -185,6 +194,7 @@ async def nowpayments_ipn(ipn_data: dict):
             f"✅ Подписка активна до {until_text}. Заказ #{local_order_id}"
         )
 
+        # --- сообщение админам только после факта оплаты ---
         await bot.send_message(
             ADMIN_CHAT_ID,
             f"💰 Оплата получена\nПользователь: {chat_id}\nЗаказ: #{local_order_id}"
