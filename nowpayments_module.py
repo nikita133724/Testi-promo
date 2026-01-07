@@ -103,7 +103,7 @@ async def create_invoice(chat_id, amount, currency="USDT", network=None):
 
 
 # ----------------------- Отправка ссылки пользователю
-async def send_payment_link(bot, chat_id, amount, currency):
+async def send_payment_link(bot, chat_id, amount, currency, network=None):
     """
     Отправка пользователю ссылки на оплату выбранной криптой.
     Валюта должна приходить из Telegram кнопок: USDT/TRX/TON
@@ -112,9 +112,10 @@ async def send_payment_link(bot, chat_id, amount, currency):
     if currency not in ["USDT", "TRX", "TON"]:
         raise Exception("Выбранная валюта недоступна. Доступно: USDT, TRX, TON")
 
-    url, order_id = await create_invoice(chat_id, amount, currency=currency)
+    url, order_id = await create_invoice(chat_id, amount, currency=currency, network=network)
+    network_text = f" {network.upper()}" if network else ""
     text = (
-        f"💳 Оплата криптой: {amount} {currency}\n"
+        f"💳 Оплата криптой: {amount} {currency}{network_text}\n"
         f"Заказ: #{order_id}\n"
         f"⏳ Время на оплату: 5 минут"
     )
