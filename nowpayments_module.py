@@ -47,27 +47,34 @@ def get_next_order_id():
 async def create_invoice(chat_id, amount, currency="USDT", network=None):
     """
     Создание инвойса в криптовалюте.
-    Для USDT можно указать сеть: TRC20, BSC, TON
+    Для USDT нужно указать сеть: TRC20, BSC, TON
     """
     order_id = get_next_order_id()
     callback_url = "https://tg-bot-test-gkbp.onrender.com/payment/nowpayments/ipn"
     description = f"Подписка 30 дней, заказ #{order_id}"
 
     currency = currency.upper()
-    if currency not in ["USDT", "TRX", "TON"]:
-        raise Exception("Выбранная валюта недоступна. Доступно: USDT, TRX, TON")
 
     # -----------------------
-    # Добавляем сеть только для USDT
-    pay_currency = currency
-    if currency == "USDT" and network:
-        # сеть в нижнем регистре
-        pay_currency = f"usdt{network.lower()}"  # пример: usdttrc20, usdtbsc, usdtton
+    # Формируем валюты корректно для NOWPayments
+    if currency == "USDT":
+        if not network:
+            raise Exception("Для USDT необходимо выбрать сеть")
+        pay_currency = f"usdt{network.lower()}"  # usdttrc20 / usdtbsc / usdtton
+        price_currency = pay_currency
+    elif currency == "TRX":
+        price_currency = "trx"
+        pay_currency = "trx"
+    elif currency == "TON":
+        price_currency = "ton"
+        pay_currency = "ton"
+    else:
+        raise Exception("Выбранная валюта недоступна. Доступно: USDT, TRX, TON")
 
     payload = {
         "price_amount": float(amount),
-        "price_currency": currency,  # базовая валюта
-        "pay_currency": pay_currency, # валюта с сетью
+        "price_currency": price_currency,
+        "pay_currency": pay_currency,
         "order_id": str(order_id),
         "order_description": description,
         "ipn_callback_url": callback_url
@@ -104,10 +111,7 @@ async def create_invoice(chat_id, amount, currency="USDT", network=None):
 
 # ----------------------- Отправка ссылки пользователю
 async def send_payment_link(bot, chat_id, amount, currency, network=None):
-    """
-    Отправка пользователю ссылки на оплату выбранной криптой.
-    Валюта должна приходить из Telegram кнопок: USDT/TRX/TON
-    """
+    
     currency = currency.upper()
     if currency not in ["USDT", "TRX", "TON"]:
         raise Exception("Выбранная валюта недоступна. Доступно: USDT, TRX, TON")
@@ -123,6 +127,7 @@ async def send_payment_link(bot, chat_id, amount, currency, network=None):
     msg = await bot.send_message(chat_id, text, reply_markup=keyboard)
     ORDERS[order_id]["message_id"] = msg.message_id
     save_order_to_redis(order_id, ORDERS[order_id])
+
 
 # ----------------------- Таймер для неоплаченных заказов
 async def pending_order_timeout(order_id, timeout=300):
@@ -141,6 +146,7 @@ async def pending_order_timeout(order_id, timeout=300):
         order["status"] = "expired"
         save_order_to_redis(order_id, order)
         await bot.send_message(order["chat_id"], f"⏳ Время на оплату истекло. Заказ #{order_id}")
+
 
 # ----------------------- NOWPayments IPN (Webhook)
 @router.post("/payment/nowpayments/ipn")
@@ -215,6 +221,7 @@ async def nowpayments_ipn(ipn_data: dict):
         save_order_to_redis(order_id, order)
 
     return {"status": "ok"}
+
 
 # ----------------------- Получение последних заказов пользователя
 def get_last_orders(chat_id, count=4):
