@@ -150,22 +150,21 @@ async def nowpayments_ipn(ipn_data: dict):
         chat_id_str, local_order_id_str, expected_amount_str, provided_hash = label.split("|")
         chat_id = int(chat_id_str)
         local_order_id = int(local_order_id_str)
-        expected_amount = float(expected_amount_str)
 
         # проверка хэша
-        plain = f"{chat_id}|{local_order_id}|{int(expected_amount)}"
+        plain = f"{chat_id}|{local_order_id}|{expected_amount_str}"
         expected_hash = hashlib.sha256((plain + SECRET_LABEL_KEY).encode()).hexdigest()
-        if not expected_hash.startswith(provided_hash):
+        if expected_hash != provided_hash:
             return {"status": "error", "reason": "invalid_label_hash"}
 
-        # проверка суммы
-        price_amount = float(ipn_data.get("price_amount", 0))
-        if price_amount < expected_amount * (1 - MAX_DIFF_PERCENT):
-            return {"status": "error", "reason": "wrong_amount"}
+        # проверка суммы убрана
+        # price_amount = float(ipn_data.get("price_amount", 0))
+        # if price_amount < expected_amount * (1 - MAX_DIFF_PERCENT):
+        #     return {"status": "error", "reason": "wrong_amount"}
 
         # статус платежа
         status = ipn_data.get("payment_status")
-        if status not in ["finished"]:  # начисляем подписку только на finished
+        if status != "finished":  # начисляем подписку только на finished
             return {"status": "ok"}
 
     except Exception as e:
@@ -204,7 +203,7 @@ async def nowpayments_ipn(ipn_data: dict):
 
         await bot.send_message(
             ADMIN_CHAT_ID,
-            f"💰 Оплата получена\nПользователь: {chat_id}\nЗаказ: #{local_order_id}\nСумма: {price_amount}"
+            f"💰 Оплата получена\nПользователь: {chat_id}\nЗаказ: #{local_order_id}"
         )
 
     finally:
