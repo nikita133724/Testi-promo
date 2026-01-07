@@ -1,75 +1,44 @@
-# nowpayments_module.py
 import asyncio
 import json
 from datetime import datetime, timezone, timedelta
 import aiohttp
 from telegram import InlineKeyboardButton, InlineKeyboardMarkup
 from telegram_bot import bot, RAM_DATA, _save_to_redis_partial, send_message_to_user, ADMIN_CHAT_ID
-from redis_client import r
 from fastapi import APIRouter, Request
+from orders_store import next_order_id, save_order, get_order, ORDERS
 
 router = APIRouter()
 
-# -----------------------
-NOWPAYMENTS_API_KEY = "8HFD9KZ-ST94FV1-J32B132-WBJ0S9N"  # <-- Вставь свой ключ
+NOWPAYMENTS_API_KEY = "8HFD9KZ-ST94FV1-J32B132-WBJ0S9N"
 NOWPAYMENTS_API_URL = "https://api.nowpayments.io/v1/invoice"
-NOWPAYMENTS_ORDERS_KEY = "nowpayments_orders"
 MSK = timezone(timedelta(hours=3))
 
-ORDERS = {}
-NEXT_ORDER_ID = 1
 
-# ----------------------- Redis
-def save_order_to_redis(order_id, data):
-    r.hset(NOWPAYMENTS_ORDERS_KEY, order_id, json.dumps(data))
-
-def load_orders_from_redis():
-    global ORDERS, NEXT_ORDER_ID
-    ORDERS.clear()
-    all_orders = r.hgetall(NOWPAYMENTS_ORDERS_KEY)
-    max_order_id = 0
-    for k, v in all_orders.items():
-        oid = int(k.decode())
-        data = json.loads(v.decode())
-        ORDERS[oid] = data
-        max_order_id = max(max_order_id, oid)
-    NEXT_ORDER_ID = max_order_id + 1
-
-# -----------------------
-def get_next_order_id():
-    global NEXT_ORDER_ID
-    oid = NEXT_ORDER_ID
-    NEXT_ORDER_ID += 1
-    return oid
-
-# ----------------------- Создание инвойса
-# ----------------------- Создание инвойса только в крипте
+# ----------------------- СОЗДАНИЕ ИНВОЙСА
 async def create_invoice(chat_id, amount, currency="USDT", network=None):
-    """
-    Создание инвойса в криптовалюте.
-    Для USDT нужно указать сеть: TRC20, BSC, TON
-    """
-    order_id = get_next_order_id()
+
+    order_id = next_order_id()
     callback_url = "https://tg-bot-test-gkbp.onrender.com/payment/nowpayments/ipn"
     description = f"Подписка 30 дней, заказ #{order_id}"
 
     currency = currency.upper()
 
-    # -----------------------
-    # Формируем валюты корректно для NOWPayments
     if currency == "USDT":
         if not network:
             raise Exception("Для USDT необходимо выбрать сеть")
-        pay_currency = f"usdt{network.lower()}"  # usdttrc20 / usdtbsc / usdtton
-        price_currency = pay_currency
+        price_currency = f"usdt{network.lower()}"
+        pay_currency = price_currency
+
     elif currency == "TRX":
         price_currency = "trx"
         pay_currency = "trx"
+
     elif currency == "TON":
         price_currency = "ton"
         pay_currency = "ton"
+
     else:
-        raise Exception("Выбранная валюта недоступна. Доступно: USDT, TRX, TON")
+        raise Exception("Недоступная валюта")
 
     payload = {
         "price_amount": float(amount),
@@ -90,141 +59,130 @@ async def create_invoice(chat_id, amount, currency="USDT", network=None):
             data = await resp.json()
 
     if "invoice_url" not in data:
-        raise Exception(f"Ошибка создания invoice: {data}")
+        raise Exception(f"NOWPayments error: {data}")
 
-    ORDERS[order_id] = {
+    order = {
         "chat_id": chat_id,
         "amount": float(amount),
         "currency": currency,
-        "network": network,  # сохраняем выбранную сеть
+        "network": network,
         "status": "pending",
         "created_at": int(datetime.now(timezone.utc).timestamp()),
-        "invoice_id": data.get("id"),
-        "invoice_url": data.get("invoice_url"),
+        "invoice_id": data["id"],
+        "invoice_url": data["invoice_url"],
+        "provider": "crypto",
         "processing": False,
         "paid_at": None
     }
-    save_order_to_redis(order_id, ORDERS[order_id])
+
+    save_order(order_id, order)
     asyncio.create_task(pending_order_timeout(order_id))
-    return data.get("invoice_url"), order_id
+
+    return data["invoice_url"], order_id
 
 
-# ----------------------- Отправка ссылки пользователю
+# ----------------------- ОТПРАВКА ССЫЛКИ
 async def send_payment_link(bot, chat_id, amount, currency, network=None):
-    
-    currency = currency.upper()
-    if currency not in ["USDT", "TRX", "TON"]:
-        raise Exception("Выбранная валюта недоступна. Доступно: USDT, TRX, TON")
 
-    url, order_id = await create_invoice(chat_id, amount, currency=currency, network=network)
+    url, order_id = await create_invoice(chat_id, amount, currency, network)
+
     network_text = f" {network.upper()}" if network else ""
+
     text = (
-        f"💳 Оплата криптой: {amount} {currency}{network_text}\n"
-        f"Заказ: #{order_id}\n"
+        f"💳 Оплата: {amount} {currency}{network_text}\n"
+        f"🧾 Заказ: #{order_id}\n"
         f"⏳ Время на оплату: 5 минут"
     )
+
     keyboard = InlineKeyboardMarkup([[InlineKeyboardButton("Оплатить", url=url)]])
     msg = await bot.send_message(chat_id, text, reply_markup=keyboard)
-    ORDERS[order_id]["message_id"] = msg.message_id
-    save_order_to_redis(order_id, ORDERS[order_id])
+
+    order = get_order(order_id)
+    order["message_id"] = msg.message_id
+    save_order(order_id, order)
 
 
-# ----------------------- Таймер для неоплаченных заказов
+# ----------------------- ТАЙМЕР
 async def pending_order_timeout(order_id, timeout=300):
     await asyncio.sleep(timeout)
-    order = ORDERS.get(order_id)
-    if not order:
+
+    order = get_order(order_id)
+    if not order or order["status"] != "pending":
         return
 
-    if order.get("message_id"):
-        try:
+    try:
+        if "message_id" in order:
             await bot.delete_message(order["chat_id"], order["message_id"])
-        except:
-            pass
+    except:
+        pass
 
-    if order["status"] == "pending":
-        order["status"] = "expired"
-        save_order_to_redis(order_id, order)
-        await bot.send_message(order["chat_id"], f"⏳ Время на оплату истекло. Заказ #{order_id}")
+    order["status"] = "expired"
+    save_order(order_id, order)
+
+    await bot.send_message(order["chat_id"], f"⏳ Время оплаты истекло. Заказ #{order_id}")
 
 
-# ----------------------- NOWPayments IPN (Webhook)
+# ----------------------- IPN
 @router.post("/payment/nowpayments/ipn")
 async def nowpayments_ipn_endpoint(request: Request):
     data = await request.json()
     return await nowpayments_ipn(data)
 
+
 async def nowpayments_ipn(ipn_data: dict):
-    """
-    Обработка webhook от NOWPayments
-    """
+
     order_id = int(ipn_data.get("order_id"))
     status = ipn_data.get("payment_status")
-    amount = float(ipn_data.get("price_amount", 0))
-    currency = ipn_data.get("pay_currency", "USD").upper()
 
-    order = ORDERS.get(order_id)
-    if not order:
-        return {"status": "error", "reason": "order_not_found"}
-
-    if order.get("processing"):
+    order = get_order(order_id)
+    if not order or order.get("processing"):
         return {"status": "ok"}
 
     order["processing"] = True
-    save_order_to_redis(order_id, order)
+    save_order(order_id, order)
 
     try:
         if status in ["finished", "confirmed"]:
+
             order["status"] = "paid"
             order["paid_at"] = int(datetime.now(timezone.utc).timestamp())
-            save_order_to_redis(order_id, order)
+            save_order(order_id, order)
 
-            # Удаляем кнопку
-            if "message_id" in order:
-                try:
-                    await bot.delete_message(order["chat_id"], order["message_id"])
-                except:
-                    pass
+            try:
+                await bot.delete_message(order["chat_id"], order.get("message_id"))
+            except:
+                pass
 
-            # Продление подписки на 30 дней
             chat_id = order["chat_id"]
             now_ts = datetime.now(timezone.utc).timestamp()
-            raw_until = RAM_DATA.get(chat_id, {}).get("subscription_until")
-            current_until = float(raw_until) if isinstance(raw_until, (int, float)) else 0
-            suspended = RAM_DATA.get(chat_id, {}).get("suspended", False)
-            base = current_until if current_until > now_ts and not suspended else now_ts
+            current_until = float(RAM_DATA.get(chat_id, {}).get("subscription_until", 0))
+            base = max(current_until, now_ts)
+
             new_until = base + 30 * 24 * 60 * 60
 
-            was_suspended = RAM_DATA[chat_id].get("suspended", True)
+            RAM_DATA.setdefault(chat_id, {})
             RAM_DATA[chat_id]["subscription_until"] = new_until
             RAM_DATA[chat_id]["suspended"] = False
             _save_to_redis_partial(chat_id, {"subscription_until": new_until, "suspended": False})
 
-            until_text = datetime.fromtimestamp(new_until, tz=MSK).strftime("%d.%m.%Y %H:%M") + " МСК"
+            until_text = datetime.fromtimestamp(new_until, tz=MSK).strftime("%d.%m.%Y %H:%M")
 
-            if was_suspended:
-                await send_message_to_user(bot, chat_id, f"✅ Подписка активна до {until_text}. Заказ #{order_id}")
-            else:
-                await bot.send_message(chat_id, f"✅ Подписка продлена до {until_text}. Заказ #{order_id}")
+            await bot.send_message(chat_id, f"✅ Подписка активна до {until_text}. Заказ #{order_id}")
 
-            # Уведомление администратору
-            try:
-                await bot.send_message(
-                    ADMIN_CHAT_ID,
-                    f"💰 Новая покупка подписки\nПользователь: {chat_id}\n"
-                    f"Сумма: {amount} {currency}\nЗаказ: #{order_id}\nАктивна до: {until_text}"
-                )
-            except Exception as e:
-                print(f"[ADMIN NOTIFY ERROR] {e}")
+            await bot.send_message(
+                ADMIN_CHAT_ID,
+                f"💰 Оплата получена\nЗаказ #{order_id}\nПользователь {chat_id}"
+            )
+
     finally:
         order["processing"] = False
-        save_order_to_redis(order_id, order)
+        save_order(order_id, order)
 
     return {"status": "ok"}
 
 
-# ----------------------- Получение последних заказов пользователя
-def get_last_orders(chat_id, count=4):
+# ----------------------- ИСТОРИЯ ПЛАТЕЖЕЙ
+def get_last_orders(chat_id, count=5):
     orders = [(oid, o) for oid, o in ORDERS.items() if o["chat_id"] == chat_id]
     orders.sort(key=lambda x: x[1]["created_at"], reverse=True)
     return orders[:count]
