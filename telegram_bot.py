@@ -193,7 +193,7 @@ init_yourun(
 # -----------------------
 # Добавляем команду для покупки подписки
 from yoomoney_module import send_payment_link
-from nowpayments_module import send_payment_link as send_crypto_payment_link
+from nowpayments_module import send_payment_link as send_crypto_payment_link, rub_to_crypto
 async def buy_subscription(update, context):
     chat_id = update.effective_chat.id
     from subscription_config import get_price
@@ -674,7 +674,7 @@ async def settings_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
         # Обработка выбора крипты
         elif query.data in ["crypto_usd", "crypto_trx", "crypto_ton"]:
             from subscription_config import get_price
-            from nowpayments_module import send_payment_link as send_crypto_payment_link
+            from nowpayments_module import send_payment_link as send_crypto_payment_link, rub_to_crypto
         
             price_rub = get_price("basic")
             chat_id = query.message.chat.id
@@ -708,7 +708,7 @@ async def settings_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
         # Обработка выбора сети для USDT
         elif query.data in ["usdt_trc", "usdt_bsc", "usdt_ton"]:
             from subscription_config import get_price
-            from nowpayments_module import send_payment_link as send_crypto_payment_link
+            from nowpayments_module import send_payment_link as send_crypto_payment_link, rub_to_crypto
         
             network_map = {
                 "usdt_trc": "trc20",
