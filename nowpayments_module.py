@@ -1,28 +1,40 @@
 import asyncio
-import json
+import hashlib
 from datetime import datetime, timezone, timedelta
 import aiohttp
 from telegram import InlineKeyboardButton, InlineKeyboardMarkup
-from telegram_bot import bot, RAM_DATA, _save_to_redis_partial, send_message_to_user, ADMIN_CHAT_ID
-from fastapi import APIRouter, Request
-from orders_store import next_order_id, save_order, get_order, ORDERS
-
-router = APIRouter()
+from telegram_bot import bot, RAM_DATA, _save_to_redis_partial, send_message_to_user
+from orders_store import next_order_id, save_order, get_order
 
 NOWPAYMENTS_API_KEY = "8HFD9KZ-ST94FV1-J32B132-WBJ0S9N"
 NOWPAYMENTS_API_URL = "https://api.nowpayments.io/v1/invoice"
 MSK = timezone(timedelta(hours=3))
 
+SECRET_LABEL_KEY = "superqownsnms18191wnwnw181991wnsnsm199192nwnnsjs292992snnejsjs"
 
-# ----------------------- СОЗДАНИЕ ИНВОЙСА
+# ----------------------- MAKE ORDER LABEL
+def make_order_label(chat_id, local_order_id, amount):
+    """
+    Формируем order_id для NowPayments:
+    <chat_id>|<локальный_номер_заказа>|<сумма>|<хэш>
+    """
+    plain = f"{chat_id}|{local_order_id}|{int(amount)}"
+    h = hashlib.sha256((plain + SECRET_LABEL_KEY).encode()).hexdigest()
+    return f"{plain}|{h}"
+
+
+# ----------------------- CREATE INVOICE
 async def create_invoice(chat_id, amount, currency="USDT", network=None):
+    """
+    Создаём инвойс на NowPayments с комиссией сети на покупателя.
+    """
+    local_order_id = next_order_id()
+    label = make_order_label(chat_id, local_order_id, amount)
 
-    order_id = next_order_id()  # Локальный номер заказа
     callback_url = "https://tg-bot-test-gkbp.onrender.com/payment/nowpayments/ipn"
-    description = f"Подписка 30 дней, заказ #{order_id}"
+    description = f"Подписка 30 дней, заказ #{local_order_id}"
 
     currency = currency.upper()
-
     if currency == "USDT":
         if not network:
             raise Exception("Для USDT необходимо выбрать сеть")
@@ -41,9 +53,10 @@ async def create_invoice(chat_id, amount, currency="USDT", network=None):
         "price_amount": float(amount),
         "price_currency": price_currency,
         "pay_currency": pay_currency,
-        "order_id": str(order_id),           # <-- ВАЖНО: свой локальный order_id
+        "order_id": label,
         "order_description": description,
-        "ipn_callback_url": callback_url
+        "ipn_callback_url": callback_url,
+        "payable_fee": "buyer"  # <-- комиссия сети на покупателя
     }
 
     headers = {
@@ -65,23 +78,22 @@ async def create_invoice(chat_id, amount, currency="USDT", network=None):
         "network": network,
         "status": "pending",
         "created_at": int(datetime.now(timezone.utc).timestamp()),
-        "invoice_id": data["id"],           # <-- теперь это их internal ID, на всякий случай
+        "invoice_id": data["id"],
         "invoice_url": data["invoice_url"],
         "provider": "crypto",
         "processing": False,
         "paid_at": None
     }
 
-    save_order(order_id, order)
-    asyncio.create_task(pending_order_timeout(order_id))
+    save_order(local_order_id, order)
+    asyncio.create_task(pending_order_timeout(local_order_id))
 
-    return data["invoice_url"], order_id
+    return data["invoice_url"], local_order_id
 
-# ----------------------- ОТПРАВКА ССЫЛКИ
-async def send_payment_link(bot, chat_id, amount, currency, network=None):
 
+# ----------------------- SEND PAYMENT LINK
+async def send_payment_link(bot, chat_id, amount, currency="USDT", network=None):
     url, order_id = await create_invoice(chat_id, amount, currency, network)
-
     network_text = f" {network.upper()}" if network else ""
 
     text = (
@@ -98,7 +110,7 @@ async def send_payment_link(bot, chat_id, amount, currency, network=None):
     save_order(order_id, order)
 
 
-# ----------------------- ТАЙМЕР
+# ----------------------- PENDING TIMEOUT
 async def pending_order_timeout(order_id, timeout=300):
     await asyncio.sleep(timeout)
 
@@ -114,11 +126,10 @@ async def pending_order_timeout(order_id, timeout=300):
 
     order["status"] = "expired"
     save_order(order_id, order)
-
     await bot.send_message(order["chat_id"], f"⏳ Время оплаты истекло. Заказ #{order_id}")
 
 
-# ----------------------- IPN
+# ----------------------- IPN ENDPOINT
 @router.post("/payment/nowpayments/ipn")
 async def nowpayments_ipn_endpoint(request: Request):
     data = await request.json()
@@ -126,59 +137,76 @@ async def nowpayments_ipn_endpoint(request: Request):
 
 
 async def nowpayments_ipn(ipn_data: dict):
+    print("NOWPayments IPN:", ipn_data)
 
-    order_id = int(ipn_data.get("order_id"))
-    status = ipn_data.get("payment_status")
+    # --- извлекаем label
+    label = ipn_data.get("order_id")
+    if not label:
+        return {"status": "error", "reason": "missing_order_id"}
 
-    order = get_order(order_id)
+    try:
+        chat_id_str, local_order_id_str, expected_amount_str, provided_hash = label.split("|")
+        chat_id = int(chat_id_str)
+        local_order_id = int(local_order_id_str)
+        expected_amount = float(expected_amount_str)
+
+        # проверка хэша
+        plain = f"{chat_id}|{local_order_id}|{int(expected_amount)}"
+        expected_hash = hashlib.sha256((plain + SECRET_LABEL_KEY).encode()).hexdigest()
+        if not expected_hash.startswith(provided_hash):
+            return {"status": "error", "reason": "invalid_label_hash"}
+
+        # проверка суммы
+        price_amount = float(ipn_data.get("price_amount", 0))
+        if price_amount < expected_amount * (1 - MAX_DIFF_PERCENT):
+            return {"status": "error", "reason": "wrong_amount"}
+
+        # статус платежа
+        status = ipn_data.get("payment_status")
+        if status not in ["finished"]:  # начисляем подписку только на finished
+            return {"status": "ok"}
+
+    except Exception as e:
+        return {"status": "error", "reason": f"invalid_label_format {e}"}
+
+    order = get_order(local_order_id)
     if not order or order.get("processing"):
         return {"status": "ok"}
 
     order["processing"] = True
-    save_order(order_id, order)
+    save_order(local_order_id, order)
 
     try:
-        if status in ["finished", "confirmed"]:
+        order["status"] = "paid"
+        order["paid_at"] = int(datetime.now(timezone.utc).timestamp())
+        save_order(local_order_id, order)
 
-            order["status"] = "paid"
-            order["paid_at"] = int(datetime.now(timezone.utc).timestamp())
-            save_order(order_id, order)
+        try:
+            await bot.delete_message(order["chat_id"], order.get("message_id"))
+        except:
+            pass
 
-            try:
-                await bot.delete_message(order["chat_id"], order.get("message_id"))
-            except:
-                pass
+        # --- начисляем подписку
+        now_ts = datetime.now(timezone.utc).timestamp()
+        current_until = float(RAM_DATA.get(chat_id, {}).get("subscription_until", 0))
+        base = max(current_until, now_ts)
+        new_until = base + 30 * 24 * 60 * 60
 
-            chat_id = order["chat_id"]
-            now_ts = datetime.now(timezone.utc).timestamp()
-            current_until = float(RAM_DATA.get(chat_id, {}).get("subscription_until", 0))
-            base = max(current_until, now_ts)
+        RAM_DATA.setdefault(chat_id, {})
+        RAM_DATA[chat_id]["subscription_until"] = new_until
+        RAM_DATA[chat_id]["suspended"] = False
+        _save_to_redis_partial(chat_id, {"subscription_until": new_until, "suspended": False})
 
-            new_until = base + 30 * 24 * 60 * 60
+        until_text = datetime.fromtimestamp(new_until, tz=MSK).strftime("%d.%m.%Y %H:%M")
+        await send_message_to_user(bot, chat_id, f"✅ Подписка активна до {until_text}. Заказ #{local_order_id}")
 
-            RAM_DATA.setdefault(chat_id, {})
-            RAM_DATA[chat_id]["subscription_until"] = new_until
-            RAM_DATA[chat_id]["suspended"] = False
-            _save_to_redis_partial(chat_id, {"subscription_until": new_until, "suspended": False})
-
-            until_text = datetime.fromtimestamp(new_until, tz=MSK).strftime("%d.%m.%Y %H:%M")
-
-            await bot.send_message(chat_id, f"✅ Подписка активна до {until_text}. Заказ #{order_id}")
-
-            await bot.send_message(
-                ADMIN_CHAT_ID,
-                f"💰 Оплата получена\nЗаказ #{order_id}\nПользователь {chat_id}"
-            )
+        await bot.send_message(
+            ADMIN_CHAT_ID,
+            f"💰 Оплата получена\nПользователь: {chat_id}\nЗаказ: #{local_order_id}\nСумма: {price_amount}"
+        )
 
     finally:
         order["processing"] = False
-        save_order(order_id, order)
+        save_order(local_order_id, order)
 
     return {"status": "ok"}
-
-
-# ----------------------- ИСТОРИЯ ПЛАТЕЖЕЙ
-def get_last_orders(chat_id, count=5):
-    orders = [(oid, o) for oid, o in ORDERS.items() if o["chat_id"] == chat_id]
-    orders.sort(key=lambda x: x[1]["created_at"], reverse=True)
-    return orders[:count]
