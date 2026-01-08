@@ -27,7 +27,7 @@
             <th>Сумма</th>
             <th>Статус</th>
             <th>Создано</th>
-            <th>ID платежа YooMoney</th>
+            <th>ID платежа</th>
         </tr>
     </thead>
     <tbody id="transactions-table">
@@ -38,7 +38,7 @@
             <td>{{ t.amount }}/{{ t.paid_amount if t.paid_amount is not none else '-' }} ₽</td>
             <td data-status="{{ t.status }}"></td>
             <td>{{ t.created_at }}</td>
-            <td>{{ t.operation_id if t.operation_id else '-' }}</td>
+            <td>{{ t.payment_id if t.payment_id else '-' }}</td>
         </tr>
         {% endfor %}
     </tbody>
@@ -84,7 +84,7 @@ async function updateTable() {
         // поиск по chat_id, operation_id и order_id
         if (search &&
             !String(t.chat_id).toLowerCase().includes(search) &&
-            !(t.operation_id && t.operation_id.toLowerCase().includes(search)) &&
+            !(t.payment_id && t.payment_id.toLowerCase().includes(search)) &&
             !String(t.order_id).toLowerCase().includes(search)
         ) {
             return;
@@ -96,7 +96,7 @@ async function updateTable() {
                         <td>${t.amount}/${t.paid_amount ?? '-'} ₽</td>
                         <td class="${statusClass(t.status)}">${humanStatus(t.status)}</td>
                         <td>${formatTimestamp(t.created_at)}</td>
-                        <td>${t.operation_id ? t.operation_id : '-'}</td>`;
+                        <td>${t.payment_id ? t.payment_id : '-'}</td>`;
         tableBody.appendChild(tr);
     });
 }
