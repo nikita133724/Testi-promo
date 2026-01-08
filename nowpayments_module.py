@@ -130,7 +130,7 @@ async def send_payment_link(bot, chat_id, amount, currency="USDT", network=None)
         display_amount = round(pay_amount, 3)  # до 3 знаков после запятой
 
     text = (
-        f"💳 Оплата: {display_amount} {pay_currency}{network_text}\n"
+        f"💳 Оплата: {display_amount} {pay_currency}\n"
         f"🧾 Заказ: #{order_id}\n"
         f"⏳ Время на оплату: 20 минут"
     )
