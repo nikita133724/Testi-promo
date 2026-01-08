@@ -710,7 +710,7 @@ async def settings_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
             from nowpayments_module import send_payment_link as send_crypto_payment_link
         
             network_map = {
-                "usdt_trc": "trc",
+                "usdt_trc": "trc20",
                 "usdt_bsc": "bsc",
                 "usdt_ton": "ton"
             }
