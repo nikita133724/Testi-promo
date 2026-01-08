@@ -71,14 +71,18 @@ async def create_invoice(chat_id, amount, currency="USDT", network=None):
     async with aiohttp.ClientSession() as session:
         async with session.post(NOWPAYMENTS_API_URL, headers=headers, json=payload) as resp:
             data = await resp.json()
-
+    
     if "invoice_url" not in data:
         raise Exception(f"NOWPayments error: {data}")
-
+    
+    # берем сумму и валюту для отображения пользователю
+    pay_amount = float(data.get("pay_amount", price_amount))
+    pay_currency = data.get("pay_currency", pay_currency)
+    
     # --- сохраняем заказ в нашей системе
     order = {
         "chat_id": chat_id,
-        "amount": float(amount),  # сумма, которую мы хотим получить
+        "amount": float(amount),  # сумма в рублях, которую мы хотим получить
         "currency": currency,
         "network": network,
         "status": "pending",
@@ -89,12 +93,13 @@ async def create_invoice(chat_id, amount, currency="USDT", network=None):
         "processing": False,
         "paid_at": None
     }
-
+    
     save_order(local_order_id, order)
     asyncio.create_task(pending_order_timeout(local_order_id))
-
-    return data["invoice_url"], local_order_id, price_amount, pay_currency
-
+    
+    # возвращаем именно крипто-сумму для отображения
+    return data["invoice_url"], local_order_id, pay_amount, pay_currency
+    
 # ----------------------- SEND PAYMENT LINK
 async def send_payment_link(bot, chat_id, amount, currency="USDT", network=None):
     url, order_id, pay_amount, pay_currency = await create_invoice(chat_id, amount, currency, network)
