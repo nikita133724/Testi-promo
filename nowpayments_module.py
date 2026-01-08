@@ -98,13 +98,11 @@ async def create_invoice(chat_id, amount, currency="USDT", network=None):
 
 # ----------------------- SEND PAYMENT LINK
 async def send_payment_link(bot, chat_id, amount, currency="USDT", network=None):
-
-    url, order_id = await create_invoice(chat_id, amount, currency, network)
+    url, order_id, pay_amount, pay_currency = await create_invoice(chat_id, amount, currency, network)
 
     network_text = f" {network.upper()}" if network else ""
-
     text = (
-        f"💳 Оплата: {amount} {currency}{network_text}\n"
+        f"💳 Оплата: {pay_amount} {pay_currency}{network_text}\n"
         f"🧾 Заказ: #{order_id}\n"
         f"⏳ Время на оплату: 20 минут"
     )
