@@ -12,64 +12,46 @@ NOWPAYMENTS_API_KEY = "8HFD9KZ-ST94FV1-J32B132-WBJ0S9N"
 NOWPAYMENTS_API_URL = "https://api.nowpayments.io/v1/invoice"
 MSK = timezone(timedelta(hours=3))
 
-async def rub_to_usd(amount_rub: float) -> float:
-    url = "https://open.er-api.com/v6/latest/RUB"
+    
+async def rub_to_crypto(amount_rub: float, crypto_currency: str) -> tuple[float, float]:
+    # получаем курс USD
     async with aiohttp.ClientSession() as session:
-        async with session.get(url) as resp:
+        async with session.get("https://open.er-api.com/v6/latest/RUB") as resp:
             data = await resp.json()
-
-    if "rates" not in data or "USD" not in data["rates"]:
-        raise Exception(f"Не удалось получить курс RUB → USD: {data}")
 
     rate = float(data["rates"]["USD"])
-    return round(amount_rub * rate, 2)
-    
-async def get_crypto_amount(price_amount: float, crypto_currency: str) -> float:
-    """Возвращает точную сумму крипты для оплаты."""
-    url = f"https://api.nowpayments.io/v1/estimate?amount={price_amount}&currency_from=usd&currency_to={crypto_currency.lower()}"
+    usd_amount = round(amount_rub * rate, 2)
+
+    # получаем количество крипты
+    url = f"https://api.nowpayments.io/v1/estimate?amount={usd_amount}&currency_from=usd&currency_to={crypto_currency}"
     headers = {"x-api-key": NOWPAYMENTS_API_KEY}
+
     async with aiohttp.ClientSession() as session:
         async with session.get(url, headers=headers) as resp:
-            data = await resp.json()
-            if "estimated_amount" not in data:
-                raise Exception(f"Не удалось получить estimate: {data}")
-            return float(data["estimated_amount"])
-            
+            est = await resp.json()
+
+    crypto_amount = float(est["estimated_amount"])
+    return usd_amount, crypto_amount
+    
 # ----------------------- CREATE INVOICE
-async def create_invoice(chat_id, amount, currency="USDT", network=None):
+async def create_invoice(chat_id, amount_rub, currency="USDT", network=None):
 
     local_order_id = next_order_id()
 
     callback_url = "https://tg-bot-test-gkbp.onrender.com/payment/nowpayments/ipn"
     description = f"Подписка 30 дней, заказ #{local_order_id}"
 
-    currency = currency.upper()
     if currency == "USDT":
-        if not network:
-            raise Exception("Для USDT необходимо выбрать сеть")
-        price_currency = f"usdt{network.lower()}"
-        pay_currency = price_currency
-    elif currency == "TRX":
-        price_currency = "trx"
-        pay_currency = "trx"
-    elif currency == "TON":
-        price_currency = "ton"
-        pay_currency = "ton"
+        crypto_currency = f"usdt{network}"
     else:
-        raise Exception("Недоступная валюта")
+        crypto_currency = currency.lower()
 
-    price_amount = await rub_to_usd(amount)
-    
-    # pay_currency — выбранная крипта (USDT с сетью, TRX или TON)
-    if currency == "USDT":
-        pay_currency = f"usdt{network.lower()}"  # TRC20 → usdttrc
-    else:
-        pay_currency = currency.lower()  # trx или ton
-    
+    usd_amount, crypto_amount = await rub_to_crypto(amount_rub, crypto_currency)
+
     payload = {
-        "price_amount": price_amount,
-        "price_currency": "usd",       # сумма в долларах
-        "pay_currency": pay_currency,  # выбранная крипта с сетью для USDT
+        "price_amount": usd_amount,
+        "price_currency": "usd",
+        "pay_currency": crypto_currency,
         "order_description": description,
         "ipn_callback_url": callback_url
     }
@@ -82,24 +64,15 @@ async def create_invoice(chat_id, amount, currency="USDT", network=None):
     async with aiohttp.ClientSession() as session:
         async with session.post(NOWPAYMENTS_API_URL, headers=headers, json=payload) as resp:
             data = await resp.json()
-    
+
     if "invoice_url" not in data:
         raise Exception(f"NOWPayments error: {data}")
-    
-    # Определяем код крипты для estimate
-    if currency == "USDT":
-        crypto_currency = f"usdt{network.lower()}"  # пример: usdttrc
-    else:
-        crypto_currency = currency.lower()  # trx или ton
-    
-    # Получаем точную сумму для крипты
-    pay_amount = await get_crypto_amount(price_amount, crypto_currency)
-    pay_currency = crypto_currency  # для отображения пользователю
-    
-    # --- сохраняем заказ в нашей системе
+
     order = {
         "chat_id": chat_id,
-        "amount": float(amount),  # сумма в рублях, которую мы хотим получить
+        "amount": float(amount_rub),
+        "pay_amount": crypto_amount,
+        "pay_currency": crypto_currency,
         "currency": currency,
         "network": network,
         "status": "pending",
@@ -110,13 +83,11 @@ async def create_invoice(chat_id, amount, currency="USDT", network=None):
         "processing": False,
         "paid_at": None
     }
-    
+
     save_order(local_order_id, order)
     asyncio.create_task(pending_order_timeout(local_order_id))
-    
-    # возвращаем именно крипто-сумму для отображения
-    return data["invoice_url"], local_order_id, pay_amount, pay_currency
-    
+
+    return data["invoice_url"], local_order_id, crypto_amount, crypto_currency
 # ----------------------- SEND PAYMENT LINK
 async def send_payment_link(bot, chat_id, amount, currency="USDT", network=None):
     url, order_id, pay_amount, pay_currency = await create_invoice(chat_id, amount, currency, network)
@@ -200,7 +171,7 @@ async def nowpayments_ipn(ipn_data: dict):
         return {"status": "ok"}
         
     # --- проверка суммы
-    if actually_paid < order["pay_amount"] or ipn_data.get("pay_currency") != order["pay_currency"]:
+    if actually_paid < order["pay_amount"] * 0.995 or ipn_data.get("pay_currency") != order["pay_currency"]:
         print(f"Не хватает суммы или неверная валюта: {actually_paid} {ipn_data.get('pay_currency')} vs {order['pay_amount']} {order['pay_currency']}")
         return {"status": "ok"}
 
