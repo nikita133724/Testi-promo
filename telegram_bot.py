@@ -699,7 +699,7 @@ async def settings_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
                 "crypto_ton": "TON"
             }
             currency = crypto_map[query.data]
-            await send_crypto_payment_link(bot, chat_id, price_rub, currency=currency)
+            await send_crypto_payment_link(bot, chat_id, price_rub, currency=currency.upper())
             await query.message.delete()
             return
         
@@ -710,7 +710,7 @@ async def settings_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
             from nowpayments_module import send_payment_link as send_crypto_payment_link
         
             network_map = {
-                "usdt_trc": "trc20",
+                "usdt_trc": "trc",
                 "usdt_bsc": "bsc",
                 "usdt_ton": "ton"
             }
