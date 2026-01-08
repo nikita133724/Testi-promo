@@ -78,10 +78,12 @@ async def create_invoice(chat_id, amount_rub, currency="USDT", network=None):
         "status": "pending",
         "created_at": int(datetime.now(timezone.utc).timestamp()),
         "invoice_id": str(data["id"]),
+        "payment_id": None,
         "invoice_url": data["invoice_url"],
         "provider": "crypto",
         "processing": False,
-        "paid_at": None
+        "paid_at": None,
+        "payment_id": None
     }
 
     save_order(local_order_id, order)
@@ -220,6 +222,7 @@ async def nowpayments_ipn(ipn_data: dict):
         )
 
     finally:
+        order["payment_id"] = ipn_data.get("payment_id")
         order["processing"] = False
         save_order(local_order_id, order)
 
