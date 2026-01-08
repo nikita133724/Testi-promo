@@ -24,28 +24,6 @@ async def rub_to_usd(amount_rub: float) -> float:
     rate = float(data["rates"]["USD"])
     return round(amount_rub * rate, 2)
     
-async def usd_to_crypto(amount_usd: float, crypto: str) -> float:
-    url = "https://api.nowpayments.io/v1/estimate"
-    payload = {
-        "price_amount": amount_usd,
-        "price_currency": "usd",
-        "pay_currency": crypto.lower()  # trx, ton, usdttrc
-    }
-    headers = {
-        "x-api-key": NOWPAYMENTS_API_KEY,
-        "Content-Type": "application/json"
-    }
-    async with aiohttp.ClientSession() as session:
-        async with session.post(url, headers=headers, json=payload) as resp:
-            if resp.status != 200:
-                text = await resp.text()
-                raise Exception(f"NowPayments estimate failed: {resp.status}, {text}")
-            data = await resp.json()
-
-    # NowPayments возвращает:
-    # { "estimated_amount": 123.456, "pay_currency": "trx", ... }
-    return float(data.get("estimated_amount", amount_usd))
-    
 # ----------------------- CREATE INVOICE
 async def create_invoice(chat_id, amount, currency="USDT", network=None):
 
@@ -98,10 +76,9 @@ async def create_invoice(chat_id, amount, currency="USDT", network=None):
         raise Exception(f"NOWPayments error: {data}")
     
     # берем сумму и валюту для отображения пользователю
-    crypto_currency = pay_currency.lower()  # trx, ton, usdttrc
-    pay_amount = await usd_to_crypto(price_amount, crypto_currency)
-    pay_currency = data.get("pay_currency", pay_currency)
-    
+    pay_amount = float(data.get("pay_amount") or 0)
+    pay_currency = data.get("pay_currency") or pay_currency
+
     # --- сохраняем заказ в нашей системе
     order = {
         "chat_id": chat_id,
