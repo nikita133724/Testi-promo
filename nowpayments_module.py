@@ -93,8 +93,7 @@ async def create_invoice(chat_id, amount, currency="USDT", network=None):
     save_order(local_order_id, order)
     asyncio.create_task(pending_order_timeout(local_order_id))
 
-    return data["invoice_url"], local_order_id
-
+    return data["invoice_url"], local_order_id, price_amount, pay_currency
 
 # ----------------------- SEND PAYMENT LINK
 async def send_payment_link(bot, chat_id, amount, currency="USDT", network=None):
