@@ -24,6 +24,17 @@ async def rub_to_usd(amount_rub: float) -> float:
     rate = float(data["rates"]["USD"])
     return round(amount_rub * rate, 2)
     
+async def get_crypto_amount(price_amount: float, crypto_currency: str) -> float:
+    """Возвращает точную сумму крипты для оплаты."""
+    url = f"https://api.nowpayments.io/v1/estimate?amount={price_amount}&currency_from=usd&currency_to={crypto_currency.lower()}"
+    headers = {"x-api-key": NOWPAYMENTS_API_KEY}
+    async with aiohttp.ClientSession() as session:
+        async with session.get(url, headers=headers) as resp:
+            data = await resp.json()
+            if "estimated_amount" not in data:
+                raise Exception(f"Не удалось получить estimate: {data}")
+            return float(data["estimated_amount"])
+            
 # ----------------------- CREATE INVOICE
 async def create_invoice(chat_id, amount, currency="USDT", network=None):
 
@@ -75,10 +86,16 @@ async def create_invoice(chat_id, amount, currency="USDT", network=None):
     if "invoice_url" not in data:
         raise Exception(f"NOWPayments error: {data}")
     
-    # берем сумму и валюту для отображения пользователю
-    pay_amount = float(data.get("pay_amount") or 0)
-    pay_currency = data.get("pay_currency") or pay_currency
-
+    # Определяем код крипты для estimate
+    if currency == "USDT":
+        crypto_currency = f"usdt{network.lower()}"  # пример: usdttrc
+    else:
+        crypto_currency = currency.lower()  # trx или ton
+    
+    # Получаем точную сумму для крипты
+    pay_amount = await get_crypto_amount(price_amount, crypto_currency)
+    pay_currency = crypto_currency  # для отображения пользователю
+    
     # --- сохраняем заказ в нашей системе
     order = {
         "chat_id": chat_id,
@@ -183,8 +200,8 @@ async def nowpayments_ipn(ipn_data: dict):
         return {"status": "ok"}
         
     # --- проверка суммы
-    if actually_paid <= 0:
-        print(f"Не хватает суммы: поступило {actually_paid}, ожидаем {order['amount']}")
+    if actually_paid < order["pay_amount"] or ipn_data.get("pay_currency") != order["pay_currency"]:
+        print(f"Не хватает суммы или неверная валюта: {actually_paid} {ipn_data.get('pay_currency')} vs {order['pay_amount']} {order['pay_currency']}")
         return {"status": "ok"}
 
     # --- отмечаем обработку
