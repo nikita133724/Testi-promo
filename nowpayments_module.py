@@ -12,6 +12,32 @@ NOWPAYMENTS_API_KEY = "8HFD9KZ-ST94FV1-J32B132-WBJ0S9N"
 NOWPAYMENTS_API_URL = "https://api.nowpayments.io/v1/invoice"
 MSK = timezone(timedelta(hours=3))
 
+import hmac
+import hashlib
+import json
+
+async def verify_nowpayments_signature(request: Request, ipn_secret: str) -> bool:
+    """
+    Проверяет HMAC SHA512 подпись от NowPayments.
+    """
+    body_bytes = await request.body()  # сырое тело запроса
+    signature = request.headers.get("x-nowpayments-sig")
+    if not signature:
+        return False
+
+    # JSON нужно сериализовать с сортировкой ключей
+    body_dict = json.loads(body_bytes.decode())
+    sorted_body = json.dumps(body_dict, separators=(",", ":"), sort_keys=True)
+
+    # Вычисляем HMAC SHA512
+    hmac_calculated = hmac.new(
+        ipn_secret.encode("utf-8"),
+        sorted_body.encode("utf-8"),
+        hashlib.sha512
+    ).hexdigest()
+
+    # Сравниваем безопасно
+    return hmac.compare_digest(hmac_calculated, signature)
     
 async def rub_to_crypto(amount_rub: float, crypto_currency: str) -> tuple[float, float]:
     # получаем курс USD
@@ -132,11 +158,18 @@ async def pending_order_timeout(order_id, timeout=1200):
 
 
 # ----------------------- IPN ENDPOINT
+NOWPAYMENTS_IPN_SECRET = "r1W2RgyK3klYcumcW8RfRs5ygb2mkroz"
+
 @router.post("/payment/nowpayments/ipn")
 async def nowpayments_ipn_endpoint(request: Request):
+    # Проверяем подпись
+    if not await verify_nowpayments_signature(request, NOWPAYMENTS_IPN_SECRET):
+        print("Invalid NOWPayments IPN signature")
+        return {"status": "error", "reason": "invalid_signature"}
+
+    # Парсим JSON только после проверки
     data = await request.json()
     return await nowpayments_ipn(data)
-
 
 # ----------------------- ОБРАБОТКА IPN
 async def nowpayments_ipn(ipn_data: dict):
