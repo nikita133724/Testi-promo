@@ -25,8 +25,14 @@ def safe_telegram_call(coro):
     tg_app.create_task(coro)
 
 def verify_yoomoney_signature(data: dict) -> bool:
+    """
+    Проверка SHA1 подписи YooMoney по официальной схеме.
+    """
+    # Составляем список полей в нужном порядке
+    # Все поля UTF-8, пустые остаются пустыми, разделитель "&"
     notification_type = data.get("notification_type", "")
-
+    
+    # Для card-incoming поле sender всегда пустое
     if notification_type == "card-incoming":
         parts = [
             data.get("notification_type", ""),
@@ -34,6 +40,7 @@ def verify_yoomoney_signature(data: dict) -> bool:
             data.get("amount", ""),
             data.get("currency", ""),
             data.get("datetime", ""),
+            "",  # sender пустой
             data.get("codepro", ""),
             YOOMONEY_NOTIFICATION_SECRET,
             data.get("label", "")
@@ -51,17 +58,20 @@ def verify_yoomoney_signature(data: dict) -> bool:
             data.get("label", "")
         ]
 
-    check_string = "".join(parts)
+    # Собираем строку с '&'
+    check_string = "&".join(parts)
+
     local_sha1 = hashlib.sha1(check_string.encode("utf-8")).hexdigest()
 
+    # 🔍 Для отладки
     print("🧾 SIGNATURE DEBUG")
     for i, p in enumerate(parts, 1):
         print(f"{i}: [{p}]")
+    print("CHECK STRING:", check_string)
     print("LOCAL SHA1 :", local_sha1)
     print("REMOTE SHA1:", data.get("sha1_hash"))
 
     return local_sha1 == data.get("sha1_hash")
-    
 
 # ----------------------- LABEL
 def make_label(chat_id, order_id, amount):
