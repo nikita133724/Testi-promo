@@ -425,20 +425,21 @@ async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
     
     # Кнопка "Активировать доступ"
     if text == "Активировать доступ":
-        from yoomoney_module import ORDERS, send_payment_link
+        keyboard = InlineKeyboardMarkup([
+            [
+                InlineKeyboardButton("✅ Да", callback_data="profile_buy_yes"),
+                InlineKeyboardButton("❌ Нет", callback_data="profile_buy_no")
+            ]
+        ])
+    
         from subscription_config import get_price
-    
-        # Проверяем, есть ли уже заказ в статусе pending
-        pending_orders = [o for o in ORDERS.values() if o["chat_id"] == chat_id and o["status"] == "pending"]
-        if pending_orders:
-            await update.message.reply_text(
-                "⏳ У вас уже есть активный заказ. Подождите 5 минут или завершите текущую оплату."
-            )
-            return
-    
-        # Создаём новый заказ
         amount = get_price("basic")
-        await send_payment_link(bot, chat_id, amount)
+    
+        await update.message.reply_text(
+            f"Вы уверены, что хотите приобрести подписку на 30 дней?\n\n"
+            f"💰 Стоимость подписки: {amount}₽",
+            reply_markup=keyboard
+        )
         return
         
     # Ввод ключа активации
