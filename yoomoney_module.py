@@ -25,19 +25,27 @@ def safe_telegram_call(coro):
     tg_app.create_task(coro)
 
 def verify_yoomoney_signature(data: dict) -> bool:
-    check_string = (
-        data.get("notification_type", "") +
-        data.get("operation_id", "") +
-        data.get("amount", "") +
-        data.get("currency", "") +
-        data.get("datetime", "") +
-        data.get("sender", "") +
-        data.get("codepro", "") +
-        YOOMONEY_NOTIFICATION_SECRET +
+    parts = [
+        data.get("notification_type", ""),
+        data.get("operation_id", ""),
+        data.get("amount", ""),
+        data.get("currency", ""),
+        data.get("datetime", ""),
+        data.get("sender", ""),
+        data.get("codepro", ""),
+        YOOMONEY_NOTIFICATION_SECRET,
         data.get("label", "")
-    )
+    ]
 
-    sha1 = hashlib.sha1(check_string.encode()).hexdigest()
+    check_string = "".join(parts)
+    sha1 = hashlib.sha1(check_string.encode("utf-8")).hexdigest()
+
+    print("🧾 SIGNATURE DEBUG")
+    for i, p in enumerate(parts, 1):
+        print(f"{i}: [{p}]")
+    print("LOCAL SHA1 :", sha1)
+    print("REMOTE SHA1:", data.get("sha1_hash"))
+
     return sha1 == data.get("sha1_hash")
     
 
