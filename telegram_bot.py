@@ -617,8 +617,11 @@ async def settings_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
                     InlineKeyboardButton("❌ Нет", callback_data="profile_buy_no")
                 ]
             ])
+            from subscription_config import get_price
+            amount = get_price("basic")
             await query.message.edit_text(
-                "Вы уверены, что хотите приобрести подписку на 30 дней?",
+                f"Вы уверены, что хотите приобрести подписку на 30 дней?\n\n"
+                f"💰 Стоимость подписки: {amount}₽",
                 reply_markup=keyboard
             )
             return
