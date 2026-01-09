@@ -140,7 +140,9 @@ async def nowpayments_ipn_endpoint(request: Request):
 
 # ----------------------- ОБРАБОТКА IPN
 async def nowpayments_ipn(ipn_data: dict):
-
+    """
+    Обработка IPN уведомлений от NowPayments.
+    """
     print("NOWPayments IPN:", ipn_data)
 
     invoice_id = str(ipn_data.get("invoice_id"))
@@ -150,100 +152,98 @@ async def nowpayments_ipn(ipn_data: dict):
     if not invoice_id:
         return {"status": "error", "reason": "missing_invoice_id"}
 
+    # Если оплата ещё не завершена, просто ждём
     if status != "finished":
-        return {"status": "ok"}  # ждём оплаты
+        return {"status": "ok"}
 
+    # Находим локальный заказ по invoice_id
     local_order_id, order = find_order_by_invoice(invoice_id)
-
     if not order:
         print("Order not found for invoice:", invoice_id)
         return {"status": "ok"}
 
+    chat_id = int(order["chat_id"])
+    order_amount = order["amount"]
+
+    # Если заказ уже оплачен или в обработке — ничего не делаем
     if order.get("status") == "paid" or order.get("processing"):
         return {"status": "ok"}
 
-    # --- если заказ просрочен — не принимаем платёж
+    # Если заказ просрочен — не принимаем платёж
     if order.get("status") == "expired":
         print(f"Платёж по просроченному заказу #{local_order_id}")
         return {"status": "ok"}
-        
-    # --- проверка суммы
-    if actually_paid < order["pay_amount"] * 0.995 or ipn_data.get("pay_currency") != order["pay_currency"]:
+
+    # Проверяем валюту и сумму
+    if actually_paid < order["pay_amount"] * 0.995 or ipn_data.get("pay_currency", "").lower() != order["pay_currency"].lower():
         print(f"Не хватает суммы или неверная валюта: {actually_paid} {ipn_data.get('pay_currency')} vs {order['pay_amount']} {order['pay_currency']}")
         return {"status": "ok"}
 
-    # --- отмечаем обработку
+    # Отмечаем, что заказ в обработке
     order["processing"] = True
     save_order(local_order_id, order)
 
     try:
+        # Помечаем заказ как оплаченный
         order["status"] = "paid"
         save_order(local_order_id, order)
 
+        # Удаляем сообщение с ссылкой на оплату
         try:
-            await bot.delete_message(order["chat_id"], order.get("message_id"))
+            await bot.delete_message(chat_id, order.get("message_id"))
         except:
             pass
 
-        chat_id = int(chat_id)
+        # Продление подписки
         now = datetime.now(timezone.utc).timestamp()
-        
         raw_subscription_until = RAM_DATA.get(chat_id, {}).get("subscription_until")
         current_until = float(raw_subscription_until) if isinstance(raw_subscription_until, (int, float)) else 0
         raw_suspended = RAM_DATA.get(chat_id, {}).get("suspended")
         suspended = bool(raw_suspended) if raw_suspended is not None else False
-        
+
         was_active = current_until > now and not suspended
         was_suspended = not was_active
-        
-        # Продление подписки
+
         base = max(current_until, now)
         new_until = base + 30 * 24 * 60 * 60
-        
+
         RAM_DATA.setdefault(chat_id, {})
         RAM_DATA[chat_id]["subscription_until"] = new_until
         RAM_DATA[chat_id]["suspended"] = False
         _save_to_redis_partial(chat_id, {"subscription_until": new_until, "suspended": False})
-        
+
         until_text = datetime.fromtimestamp(new_until, tz=MSK).strftime("%d.%m.%Y %H:%M")
-        
+
+        # Сообщение пользователю
+        from telegram import InlineKeyboardMarkup, InlineKeyboardButton
+        from telegram_bot import build_reply_keyboard, send_message_to_user
+
         if was_suspended:
-            from telegram import InlineKeyboardMarkup, InlineKeyboardButton
-            from telegram_bot import build_reply_keyboard
-            
-            inline = InlineKeyboardMarkup([
-                [InlineKeyboardButton("📘 Инструкция", url=INSTRUCTION_URL)]
-            ])
-            
+            inline = InlineKeyboardMarkup([[InlineKeyboardButton("📘 Инструкция", url=INSTRUCTION_URL)]])
             await send_message_to_user(
                 bot,
                 chat_id,
-                f"✅ Подписка активна до {until_text}. Заказ: #{order_id}",
+                f"✅ Подписка активна до {until_text}. Заказ: #{local_order_id}",
                 reply_markup=inline
             )
-            
-            # затем отправляем основную клавиатуру отдельно
-            await bot.send_message(
-                chat_id,
-                "Выберите действие:",
-                reply_markup=build_reply_keyboard(chat_id)
-            )
+            await bot.send_message(chat_id, "Выберите действие:", reply_markup=build_reply_keyboard(chat_id))
         else:
-            await bot.send_message(chat_id, f"✅ Подписка активна до {until_text}. Заказ: #{order_id}")
-        print(f"[YOOMONEY IPN] заказ {order_id} оплачен для  chat {chat_id}, подписка до {until_text}")
+            await bot.send_message(chat_id, f"✅ Подписка активна до {until_text}. Заказ: #{local_order_id}")
+
+        # Логирование
+        print(f"[NOWPayments IPN] заказ {local_order_id} оплачен для chat {chat_id}, подписка до {until_text}")
+
+        # Уведомление админа
         try:
             await bot.send_message(
                 ADMIN_CHAT_ID,
-                f"💰 Новая покупка подписки\n\n"
-                f"Пользователь: {chat_id}\n"
-                f"Заказ: #{order_id}\n"
-                f"Сумма: {amount}₽\n"
-                f"Активна до: {until_text}"
+                f"💰 Новая покупка подписки\n\nПользователь: {chat_id}\nЗаказ: #{local_order_id}\nСумма: {order_amount}₽\nАктивна до: {until_text}"
             )
         except Exception as e:
             print(f"[ADMIN NOTIFY ERROR] {e}")
 
     finally:
+        # Сохраняем payment_id и снимаем флаг обработки
         order["payment_id"] = ipn_data.get("payment_id")
         order["processing"] = False
         save_order(local_order_id, order)
