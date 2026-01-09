@@ -77,7 +77,6 @@ def create_payment_link(chat_id, amount):
         "provider": "yoomoney",
         "status": "pending",
         "created_at": int(datetime.now(timezone.utc).timestamp()),
-        "paid_at": None,
         "payment_id": None,
         "processing": False
     }
@@ -142,7 +141,6 @@ async def yoomoney_ipn(operation_id, amount, currency, datetime_str, label, sha1
 
     try:
         order["status"] = "paid"
-        order["paid_at"] = int(datetime.fromisoformat(datetime_str.replace("Z", "+00:00")).timestamp())
         order["payment_id"] = operation_id
         save_order(order_id, order)
 
