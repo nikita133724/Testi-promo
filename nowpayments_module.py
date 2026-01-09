@@ -178,7 +178,6 @@ async def nowpayments_ipn(ipn_data: dict):
 
     try:
         order["status"] = "paid"
-        order["paid_at"] = int(datetime.now(timezone.utc).timestamp())
         save_order(local_order_id, order)
 
         try:
