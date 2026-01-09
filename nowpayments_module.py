@@ -189,7 +189,7 @@ async def nowpayments_ipn(ipn_data: dict):
 
         # --- НАЧИСЛЕНИЕ ПОДПИСКИ ---
         now_ts = datetime.now(timezone.utc).timestamp()
-        current_until = float(RAM_DATA.get(chat_id, {}).get("subscription_until", 0))
+        current_until = float(RAM_DATA.get(chat_id, {}).get("subscription_until") or 0)
         base = max(current_until, now_ts)
         new_until = base + 30 * 24 * 60 * 60
 
