@@ -7,7 +7,7 @@ from orders_store import next_order_id, save_order, get_order, find_order_by_inv
 from fastapi import APIRouter, Request
 
 router = APIRouter()
-
+INSTRUCTION_URL = "https://telegra.ph/Instrukciya-po-ispolzovaniyu-tg-bota-01-06"
 NOWPAYMENTS_API_KEY = "8HFD9KZ-ST94FV1-J32B132-WBJ0S9N"
 NOWPAYMENTS_API_URL = "https://api.nowpayments.io/v1/invoice"
 MSK = timezone(timedelta(hours=3))
