@@ -165,12 +165,41 @@ async def yoomoney_ipn(operation_id, amount, currency, datetime_str, label, sha1
 
         until_text = datetime.fromtimestamp(new_until, tz=MSK).strftime("%d.%m.%Y %H:%M")
 
-        await send_message_to_user(bot, chat_id, f"✅ Подписка активна до {until_text}. Заказ #{order_id}")
-
-        await bot.send_message(
-            ADMIN_CHAT_ID,
-            f"💰 Новая покупка\nПользователь: {chat_id}\nЗаказ: #{order_id}\nСумма: {amount}₽\nДо: {until_text}"
-        )
+        if was_suspended:
+            from telegram import InlineKeyboardMarkup, InlineKeyboardButton
+            from telegram_bot import build_reply_keyboard
+            
+            inline = InlineKeyboardMarkup([
+                [InlineKeyboardButton("📘 Инструкция", url=INSTRUCTION_URL)]
+            ])
+            
+            await send_message_to_user(
+                bot,
+                int(chat_id),
+                f"✅ Подписка активна до {until_text}. Заказ: #{order_id}",
+                reply_markup=inline
+            )
+            
+            # затем отправляем обычную клавиатуру отдельно
+            await bot.send_message(
+                int(chat_id),
+                "Выберите действие:",
+                reply_markup=build_reply_keyboard(int(chat_id))
+            )
+        else:
+            await bot.send_message(int(chat_id), f"✅ Подписка активна до {until_text}. Заказ: #{order_id}")
+        print(f"[YOOMONEY IPN] заказ {order_id} оплачен для  chat {chat_id}, подписка до {until_text}")
+        try:
+            await bot.send_message(
+                ADMIN_CHAT_ID,
+                f"💰 Новая покупка подписки\n\n"
+                f"Пользователь: {chat_id}\n"
+                f"Заказ: #{order_id}\n"
+                f"Сумма: {amount}₽\n"
+                f"Активна до: {until_text}"
+            )
+        except Exception as e:
+            print(f"[ADMIN NOTIFY ERROR] {e}")
 
     finally:
         order["processing"] = False
