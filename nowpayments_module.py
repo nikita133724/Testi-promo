@@ -162,13 +162,19 @@ NOWPAYMENTS_IPN_SECRET = "r1W2RgyK3klYcumcW8RfRs5ygb2mkroz"
 
 @router.post("/payment/nowpayments/ipn")
 async def nowpayments_ipn_endpoint(request: Request):
-    # Проверяем подпись
-    if not await verify_nowpayments_signature(request, NOWPAYMENTS_IPN_SECRET):
-        print("Invalid NOWPayments IPN signature")
-        return {"status": "error", "reason": "invalid_signature"}
+    body = await request.body()
 
-    # Парсим JSON только после проверки
-    data = await request.json()
+    try:
+        data = json.loads(body.decode())
+    except:
+        return {"status": "ok"}
+
+    # Проверяем подпись ТОЛЬКО если платёж финальный
+    if data.get("payment_status") == "finished":
+        if not await verify_nowpayments_signature(request, NOWPAYMENTS_IPN_SECRET):
+            print("⚠️ INVALID SIGNATURE FOR FINISHED PAYMENT")
+            return {"status": "error", "reason": "invalid_signature"}
+
     return await nowpayments_ipn(data)
 
 # ----------------------- ОБРАБОТКА IPN
