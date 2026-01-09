@@ -12,6 +12,7 @@ from orders_store import next_order_id, save_order, get_order, ORDERS
 INSTRUCTION_URL = "https://telegra.ph/Instrukciya-po-ispolzovaniyu-tg-bota-01-06"
 YOOMONEY_WALLET = "4100117872411525"
 SUCCESS_REDIRECT_URI = "https://t.me/promo_run_bot"
+YOOMONEY_NOTIFICATION_SECRET = "ТВОЙ_СЕКРЕТ_ИЗ_КАБИНЕТА"
 
 MSK = timezone(timedelta(hours=3))
 SECRET_LABEL_KEY = "superqownsnms18191wnwnw181991wnsnsm199192nwnnsjs292992snnejsjs"
@@ -23,6 +24,22 @@ MIN_HASH_LEN = 25
 def safe_telegram_call(coro):
     tg_app.create_task(coro)
 
+def verify_yoomoney_signature(data: dict) -> bool:
+    check_string = (
+        data.get("notification_type", "") +
+        data.get("operation_id", "") +
+        data.get("amount", "") +
+        data.get("currency", "") +
+        data.get("datetime", "") +
+        data.get("sender", "") +
+        data.get("codepro", "") +
+        YOOMONEY_NOTIFICATION_SECRET +
+        data.get("label", "")
+    )
+
+    sha1 = hashlib.sha1(check_string.encode()).hexdigest()
+    return sha1 == data.get("sha1_hash")
+    
 
 # ----------------------- LABEL
 def make_label(chat_id, order_id, amount):
