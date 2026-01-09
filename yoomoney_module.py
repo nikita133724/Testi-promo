@@ -47,7 +47,6 @@ async def pending_order_timeout(order_id, timeout=300):
 
     if order["status"] == "pending":
         order["status"] = "expired"
-        order["processing"] = False
         save_order(order_id, order)
         safe_telegram_call(bot.send_message(order["chat_id"], f"⏳ Время оплаты истекло. Заказ #{order_id}"))
 
@@ -109,59 +108,56 @@ async def send_payment_link(bot, chat_id, amount):
 
 # ----------------------- IPN
 async def yoomoney_ipn(operation_id, amount, currency, datetime_str, label, sha1_hash):
+
     try:
         chat_id, order_id, expected_amount_str, provided_hash = label.split("|")
         order_id = int(order_id)
         expected_amount = float(expected_amount_str)
 
-        # Проверка хэша
         plain = f"{chat_id}|{order_id}|{expected_amount_str}"
         expected_hash = hashlib.sha256((plain + SECRET_LABEL_KEY).encode()).hexdigest()
+
         if len(provided_hash) < MIN_HASH_LEN or not expected_hash.startswith(provided_hash):
             return {"status": "error", "reason": "invalid_label_hash"}
 
-        # Проверка суммы
         if amount < expected_amount * (1 - MAX_DIFF_PERCENT):
             return {"status": "error", "reason": "wrong_amount"}
 
     except:
         return {"status": "error", "reason": "invalid_label"}
 
-    # Проверка валюты
     if currency != "643":
         return {"status": "error", "reason": "wrong_currency"}
 
-    # Получаем заказ
     order = get_order(order_id)
-    if not order:
-        return {"status": "error", "reason": "order_not_found"}
-
-    # Если уже оплачено — ничего не делаем
+    if not order or order.get("processing"):
+        return {"status": "ok"}
+    
+    if order["status"] == "expired":
+        return {"status": "ok"}
+    
     if order["status"] == "paid":
         return {"status": "ok"}
 
-    # Ставим флаг, что обрабатываем платеж
     order["processing"] = True
     save_order(order_id, order)
 
     try:
-        # Меняем статус на оплачено
         order["status"] = "paid"
         order["payment_id"] = operation_id
         save_order(order_id, order)
 
-        # Удаляем сообщение с кнопкой оплаты
         try:
             await bot.delete_message(order["chat_id"], order.get("message_id"))
         except:
             pass
 
-        # Продлеваем подписку
         chat_id = int(chat_id)
         now = datetime.now(timezone.utc).timestamp()
         current = float(RAM_DATA.get(chat_id, {}).get("subscription_until", 0))
+
         base = max(current, now)
-        new_until = base + 30 * 24 * 60 * 60  # +30 дней
+        new_until = base + 30 * 24 * 60 * 60
 
         RAM_DATA.setdefault(chat_id, {})
         RAM_DATA[chat_id]["subscription_until"] = new_until
@@ -169,20 +165,20 @@ async def yoomoney_ipn(operation_id, amount, currency, datetime_str, label, sha1
         _save_to_redis_partial(chat_id, {"subscription_until": new_until, "suspended": False})
 
         until_text = datetime.fromtimestamp(new_until, tz=MSK).strftime("%d.%m.%Y %H:%M")
+
         await send_message_to_user(bot, chat_id, f"✅ Подписка активна до {until_text}. Заказ #{order_id}")
 
-        # Уведомление админу
         await bot.send_message(
             ADMIN_CHAT_ID,
             f"💰 Новая покупка\nПользователь: {chat_id}\nЗаказ: #{order_id}\nСумма: {amount}₽\nДо: {until_text}"
         )
 
     finally:
-        # Снимаем флаг обработки
         order["processing"] = False
         save_order(order_id, order)
 
     return {"status": "ok"}
+
 
 # ----------------------- HISTORY
 def get_last_orders(chat_id, count=4):
