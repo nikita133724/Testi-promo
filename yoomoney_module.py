@@ -154,7 +154,7 @@ async def yoomoney_ipn(operation_id, amount, currency, datetime_str, label, sha1
         chat_id = int(chat_id)
         now = datetime.now(timezone.utc).timestamp()
         current = float(RAM_DATA.get(chat_id, {}).get("subscription_until") or 0)
-
+        was_suspended = RAM_DATA.get(chat_id, {}).get("suspended", False)
         base = max(current, now)
         new_until = base + 30 * 24 * 60 * 60
 
