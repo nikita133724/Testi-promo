@@ -435,11 +435,16 @@ async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
         from subscription_config import get_price
         amount = get_price("basic")
     
-        await update.message.reply_text(
+        msg = await update.message.reply_text(
             f"Вы уверены, что хотите приобрести подписку на 30 дней?\n\n"
             f"💰 Стоимость подписки: {amount}₽",
             reply_markup=keyboard
         )
+        
+        OPEN_SETTINGS_MESSAGES[chat_id] = {
+            "message_id": msg.message_id,
+            "menu_type": "profile"
+        }
         return
         
     # Ввод ключа активации
