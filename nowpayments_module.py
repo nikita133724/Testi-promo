@@ -127,6 +127,7 @@ async def send_payment_link(bot, chat_id, amount, currency="USDT", network=None)
         f"💳 Оплата: {display_amount} {pay_currency}\n"
         f"🧾 Заказ: #{order_id}\n"
         f"⏳ Время на оплату: 20 минут"
+        f"сумма меньше указаной не будет принята"
     )
 
     keyboard = InlineKeyboardMarkup([[InlineKeyboardButton("Оплатить", url=url)]])
