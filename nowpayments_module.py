@@ -73,17 +73,12 @@ async def create_invoice(chat_id, amount_rub, currency="USDT", network=None):
         "amount": float(amount_rub),
         "pay_amount": crypto_amount,
         "pay_currency": crypto_currency,
-        "currency": currency,
-        "network": network,
         "status": "pending",
         "created_at": int(datetime.now(timezone.utc).timestamp()),
         "invoice_id": str(data["id"]),
         "payment_id": None,
-        "invoice_url": data["invoice_url"],
         "provider": "crypto",
         "processing": False,
-        "paid_at": None,
-        "payment_id": None
     }
 
     save_order(local_order_id, order)
