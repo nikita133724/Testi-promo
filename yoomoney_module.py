@@ -153,18 +153,26 @@ async def yoomoney_ipn(operation_id, amount, currency, datetime_str, label, sha1
 
         chat_id = int(chat_id)
         now = datetime.now(timezone.utc).timestamp()
-        current = float(RAM_DATA.get(chat_id, {}).get("subscription_until") or 0)
-        was_suspended = RAM_DATA.get(chat_id, {}).get("suspended", False)
-        base = max(current, now)
+        
+        raw_subscription_until = RAM_DATA.get(chat_id, {}).get("subscription_until")
+        current_until = float(raw_subscription_until) if isinstance(raw_subscription_until, (int, float)) else 0
+        raw_suspended = RAM_DATA.get(chat_id, {}).get("suspended")
+        suspended = bool(raw_suspended) if raw_suspended is not None else False
+        
+        was_active = current_until > now and not suspended
+        was_suspended = not was_active
+        
+        # Продление подписки
+        base = max(current_until, now)
         new_until = base + 30 * 24 * 60 * 60
-
+        
         RAM_DATA.setdefault(chat_id, {})
         RAM_DATA[chat_id]["subscription_until"] = new_until
         RAM_DATA[chat_id]["suspended"] = False
         _save_to_redis_partial(chat_id, {"subscription_until": new_until, "suspended": False})
-
+        
         until_text = datetime.fromtimestamp(new_until, tz=MSK).strftime("%d.%m.%Y %H:%M")
-
+        
         if was_suspended:
             from telegram import InlineKeyboardMarkup, InlineKeyboardButton
             from telegram_bot import build_reply_keyboard
@@ -175,19 +183,19 @@ async def yoomoney_ipn(operation_id, amount, currency, datetime_str, label, sha1
             
             await send_message_to_user(
                 bot,
-                int(chat_id),
+                chat_id,
                 f"✅ Подписка активна до {until_text}. Заказ: #{order_id}",
                 reply_markup=inline
             )
             
-            # затем отправляем обычную клавиатуру отдельно
+            # затем отправляем основную клавиатуру отдельно
             await bot.send_message(
-                int(chat_id),
+                chat_id,
                 "Выберите действие:",
-                reply_markup=build_reply_keyboard(int(chat_id))
+                reply_markup=build_reply_keyboard(chat_id)
             )
         else:
-            await bot.send_message(int(chat_id), f"✅ Подписка активна до {until_text}. Заказ: #{order_id}")
+            await bot.send_message(chat_id, f"✅ Подписка активна до {until_text}. Заказ: #{order_id}")
         print(f"[YOOMONEY IPN] заказ {order_id} оплачен для  chat {chat_id}, подписка до {until_text}")
         try:
             await bot.send_message(
