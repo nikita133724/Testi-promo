@@ -12,7 +12,7 @@ from orders_store import next_order_id, save_order, get_order, ORDERS
 INSTRUCTION_URL = "https://telegra.ph/Instrukciya-po-ispolzovaniyu-tg-bota-01-06"
 YOOMONEY_WALLET = "4100117872411525"
 SUCCESS_REDIRECT_URI = "https://t.me/promo_run_bot"
-YOOMONEY_NOTIFICATION_SECRET = "ТВОЙ_СЕКРЕТ_ИЗ_КАБИНЕТА"
+YOOMONEY_NOTIFICATION_SECRET = "7MkJEHOhk+g+z9RRNl4wCqEr"
 
 MSK = timezone(timedelta(hours=3))
 SECRET_LABEL_KEY = "superqownsnms18191wnwnw181991wnsnsm199192nwnnsjs292992snnejsjs"
