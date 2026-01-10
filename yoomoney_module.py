@@ -4,7 +4,8 @@ import json
 from datetime import datetime, timedelta, timezone
 import hashlib
 import urllib.parse
-
+import secrets
+import time
 from telegram_bot import RAM_DATA, _save_to_redis_partial, bot, send_message_to_user, ADMIN_CHAT_ID, app as tg_app
 from orders_store import next_order_id, save_order, get_order, ORDERS
 
@@ -24,6 +25,14 @@ MIN_HASH_LEN = 25
 def safe_telegram_call(coro):
     tg_app.create_task(coro)
 
+def create_temp_redirect(real_url, ttl=300):
+    token = secrets.token_urlsafe(24)
+    REDIRECTS[token] = {
+        "url": real_url,
+        "expires": time.time() + ttl
+    }
+    return token
+    
 def verify_yoomoney_signature(data: dict) -> bool:
     """
     Проверка SHA1 подписи YooMoney по официальной схеме.
@@ -148,7 +157,9 @@ async def send_payment_link(bot, chat_id, amount):
         f"⏳ Время на оплату: 5 минут"
     )
 
-    keyboard = InlineKeyboardMarkup([[InlineKeyboardButton("Оплатить", url=url)]])
+    token = create_temp_redirect(url)
+    public_url = f"https://tg-bot-test-gkbp.onrender.com/p/{token}"
+    keyboard = InlineKeyboardMarkup([[InlineKeyboardButton("Оплатить", url=public_url)]])
     msg = await bot.send_message(chat_id, text, reply_markup=keyboard)
 
     order = get_order(order_id)
