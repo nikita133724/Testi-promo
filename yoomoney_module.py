@@ -6,7 +6,7 @@ import hashlib
 import urllib.parse
 import secrets
 from fastapi import APIRouter, Request
-from fastapi.responses import RedirectResponse, PlainTextResponse
+from fastapi.responses import RedirectResponse, PlainTextResponse, FileResponse
 import time
 from telegram_bot import RAM_DATA, _save_to_redis_partial, bot, send_message_to_user, ADMIN_CHAT_ID, app as tg_app
 from orders_store import next_order_id, save_order, get_order, ORDERS
@@ -303,12 +303,15 @@ async def temp_redirect(token: str):
     data = REDIRECTS.get(token)
 
     if not data:
-        return PlainTextResponse("⛔ Ссылка недействительна", status_code=404)
+        # Ссылка вообще не найдена — показываем "потерялся" JPEG
+        return FileResponse("static/Миньоны.jpeg", media_type="image/jpeg", status_code=404)
 
     if time.time() > data["expires"]:
         del REDIRECTS[token]
-        return PlainTextResponse("⏳ Срок действия ссылки истёк", status_code=410)
+        # Срок действия истек — тоже картинка
+        return FileResponse("static/Миньоны.jpeg", media_type="image/jpeg", status_code=410)
 
+    # Всё ок — редиректим
     return RedirectResponse(data["url"])
 
 
