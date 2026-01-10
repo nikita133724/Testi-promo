@@ -5,10 +5,14 @@ from datetime import datetime, timedelta, timezone
 import hashlib
 import urllib.parse
 import secrets
+from fastapi import APIRouter, Request
+from fastapi.responses import RedirectResponse, PlainTextResponse
 import time
 from telegram_bot import RAM_DATA, _save_to_redis_partial, bot, send_message_to_user, ADMIN_CHAT_ID, app as tg_app
 from orders_store import next_order_id, save_order, get_order, ORDERS
 
+router = APIRouter()
+REDIRECTS: dict[str, dict] = {}
 
 INSTRUCTION_URL = "https://telegra.ph/Instrukciya-po-ispolzovaniyu-tg-bota-01-06"
 YOOMONEY_WALLET = "4100117872411525"
@@ -281,3 +285,43 @@ def get_last_orders(chat_id, count=4):
     orders = [(oid, o) for oid, o in ORDERS.items() if o["chat_id"] == chat_id]
     orders.sort(key=lambda x: x[1]["created_at"], reverse=True)
     return orders[:count]
+    
+@router.get("/p/{token}")
+async def temp_redirect(token: str):
+    data = REDIRECTS.get(token)
+
+    if not data:
+        return PlainTextResponse("⛔ Ссылка недействительна", status_code=404)
+
+    if time.time() > data["expires"]:
+        del REDIRECTS[token]
+        return PlainTextResponse("⏳ Срок действия ссылки истёк", status_code=410)
+
+    return RedirectResponse(data["url"])
+
+
+@router.post("/yoomoney_ipn")
+async def yoomoney_ipn_endpoint(request: Request):
+    form = await request.form()
+    data = dict(form)
+
+    if not verify_yoomoney_signature(data):
+        print("❌ INVALID YOOMONEY SIGNATURE")
+        return {"status": "error", "reason": "invalid_signature"}
+
+    try:
+        amount_float = float(data["amount"].replace(",", "."))
+    except Exception as e:
+        print(f"[YOOMONEY IPN] amount error: {e}")
+        return {"status": "error", "reason": "invalid_amount"}
+
+    print("✅ YOOMONEY IPN VERIFIED:", data)
+
+    return await yoomoney_ipn(
+        operation_id=data["operation_id"],
+        amount=amount_float,
+        currency=data["currency"],
+        datetime_str=data["datetime"],
+        label=data["label"],
+        sha1_hash=data["sha1_hash"]
+    )
