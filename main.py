@@ -2,7 +2,7 @@ import asyncio
 import random
 import os
 from fastapi import FastAPI, Request, Form, Depends, HTTPException
-from fastapi.responses import HTMLResponse, RedirectResponse, JSONResponse
+from fastapi.responses import HTMLResponse, RedirectResponse, JSONResponse, PlainTextResponse
 from fastapi.templating import Jinja2Templates
 from starlette.middleware.sessions import SessionMiddleware
 from datetime import timezone, timedelta, datetime
@@ -560,6 +560,20 @@ async def startup_event():
 # -----------------------
 from yoomoney_module import verify_yoomoney_signature
 
+@app_fastapi.get("/p/{token}")
+async def temp_redirect(token: str):
+    data = REDIRECTS.get(token)
+
+    if not data:
+        return PlainTextResponse("⛔ Ссылка недействительна", status_code=404)
+
+    if time.time() > data["expires"]:
+        del REDIRECTS[token]
+        return PlainTextResponse("⏳ Срок действия ссылки истёк", status_code=410)
+
+    return RedirectResponse(data["url"])
+    
+    
 @app_fastapi.post("/yoomoney_ipn")
 async def yoomoney_ipn_endpoint(request: Request):
     form = await request.form()
