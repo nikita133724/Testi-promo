@@ -28,7 +28,7 @@ load_keys_from_redis()
 CHATID_KEY = "promo"
 ADMIN_CHAT_ID = 8455743587
 ARTICLE_URL = "https://t.me/promo_runs/6"
-
+TTL_STEAM = 420
 # -----------------------
 # RAM-память для всех данных
 # -----------------------
@@ -811,7 +811,10 @@ async def settings_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if query.data == "settings_csgorun_auth":
         chat_id = query.message.chat.id
     
-        url = f"https://tg-bot-test-gkbp.onrender.com/auth/start?chat_id={chat_id}"
+        from yoomoney_module import create_temp_redirect
+        target_url = f"https://csgoyz.run/?tg_callback=https://tg-bot-test-gkbp.onrender.com/auth/receive?chat_id={chat_id}"
+        token = create_temp_redirect(target_url, ttl=TTL_STEAM)  # 7 минут
+        url = f"https://tg-bot-test-gkbp.onrender.com/p/{token}"
     
         text = (
             "🔐 Авторизация CSGORUN\n\n"
