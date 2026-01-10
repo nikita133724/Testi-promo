@@ -1,20 +1,38 @@
 from fastapi import APIRouter, Request
-from fastapi.responses import RedirectResponse, JSONResponse
+from fastapi.responses import RedirectResponse, JSONResponse, FileResponse
 import asyncio
 import refresh_tokens  # твой модуль
+from yoomoney_module import REDIRECTS, create_temp_redirect
+
+TTL_STEAM = 420  # 7 минут в секундах
 
 router = APIRouter()
 
 SELF = "https://tg-bot-test-gkbp.onrender.com"
 
+
+@router.get("/p/{token}")
+async def temp_redirect(token: str):
+    data = REDIRECTS.get(token)
+
+    if not data:
+        
+        return FileResponse("static/minioni.jpeg", media_type="image/jpeg", status_code=404)
+
+    if time.time() > data["expires"]:
+        del REDIRECTS[token]
+    
+        return FileResponse("static/minioni.jpeg", media_type="image/jpeg", status_code=410)
+
+    return RedirectResponse(data["url"])
+    
 # 1️⃣ старт авторизации
 @router.get("/auth/start")
 async def auth_start(chat_id: int):
-    redirect = (
-        "https://csgoyz.run/?"
-        f"tg_callback={SELF}/auth/receive?chat_id={chat_id}"
-    )
-    return RedirectResponse(redirect)
+    target_url = f"https://csgoyz.run/?tg_callback=https://tg-bot-test-gkbp.onrender.com/auth/receive?chat_id={chat_id}"
+    token = create_temp_redirect(target_url, ttl=TTL_STEAM)  # <--- здесь TTL короткий
+    public_url = f"https://tg-bot-test-gkbp.onrender.com/p/{token}"
+    return RedirectResponse(public_url)
 
 
 # 2️⃣ приём токенов
