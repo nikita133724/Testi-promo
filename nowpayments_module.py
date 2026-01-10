@@ -126,7 +126,7 @@ async def send_payment_link(bot, chat_id, amount, currency="USDT", network=None)
     text = (
         f"💳 Оплата: {display_amount} {pay_currency}\n"
         f"🧾 Заказ: #{order_id}\n"
-        f"⏳ Время на оплату: 20 минут"
+        f"⏳ Время на оплату: 20 минут\n"
         f"сумма меньше указаной не будет принята"
     )
 
