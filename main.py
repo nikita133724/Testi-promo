@@ -83,7 +83,7 @@ async def logout(request: Request):
 from orders_store import load_orders, ORDERS
 from steam_auth import router
 app_fastapi.include_router(router)
-from yoomoney_module import router as yoomoney_router
+from yoomoney_module import cleanup_redirects, router as yoomoney_router
 app_fastapi.include_router(yoomoney_router)
 from nowpayments_module import router as nowpayments_router
 app_fastapi.include_router(nowpayments_router)
@@ -556,6 +556,7 @@ async def startup_event():
     asyncio.create_task(start_telegram())
     asyncio.create_task(monitor_presence())
     asyncio.create_task(connection_watcher())
+    asyncio.create_task(cleanup_redirects())
 # -----------------------
     
 @app_fastapi.get("/admin/transactions", response_class=HTMLResponse)
