@@ -304,12 +304,12 @@ async def temp_redirect(token: str):
 
     if not data:
         # Ссылка вообще не найдена — показываем "потерялся" JPEG
-        return FileResponse("static/Миньоны.jpeg", media_type="image/jpeg", status_code=404)
+        return FileResponse("static/minioni.jpeg", media_type="image/jpeg", status_code=404)
 
     if time.time() > data["expires"]:
         del REDIRECTS[token]
         # Срок действия истек — тоже картинка
-        return FileResponse("static/Миньоны.jpeg", media_type="image/jpeg", status_code=410)
+        return FileResponse("static/minioni.jpeg", media_type="image/jpeg", status_code=410)
 
     # Всё ок — редиректим
     return RedirectResponse(data["url"])
