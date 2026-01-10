@@ -37,6 +37,14 @@ def create_temp_redirect(real_url, ttl=300):
     }
     return token
     
+async def cleanup_redirects():
+    while True:
+        now = time.time()
+        for k in list(REDIRECTS.keys()):
+            if REDIRECTS[k]["expires"] < now:
+                del REDIRECTS[k]
+        await asyncio.sleep(60)
+        
 def verify_yoomoney_signature(data: dict) -> bool:
     """
     Проверка SHA1 подписи YooMoney по официальной схеме.
@@ -198,6 +206,10 @@ async def yoomoney_ipn(operation_id, amount, currency, datetime_str, label, sha1
     if not order or order.get("processing"):
         return {"status": "ok"}
 
+    if order["status"] == "expired":
+        print(f"[YOOMONEY IPN] оплата по просроченному заказу {order_id}")
+        return {"status": "error", "reason": "order_expired"}
+        
     if order["status"] == "paid":
         return {"status": "ok"}
 
