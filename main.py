@@ -80,8 +80,13 @@ async def logout(request: Request):
     return RedirectResponse("/login", status_code=303)
 
 # -----------------------
+from orders_store import load_orders, ORDERS
 from steam_auth import router
 app_fastapi.include_router(router)
+from yoomoney_module import router as yoomoney_router
+app_fastapi.include_router(yoomoney_router)
+from nowpayments_module import router as nowpayments_router
+app_fastapi.include_router(nowpayments_router)
 
 
 # Admin Users
@@ -539,12 +544,6 @@ async def start_telegram():
     await client.run_until_disconnected()
 
 # -----------------------
-from yoomoney_module import yoomoney_ipn as yoomoney_ipn_handler
-from nowpayments_module import router as nowpayments_router
-from orders_store import load_orders, ORDERS
-
-app_fastapi.include_router(nowpayments_router)
-
 @app_fastapi.on_event("startup")
 async def startup_event():
     # Загружаем ORDERS из Redis
@@ -558,50 +557,6 @@ async def startup_event():
     asyncio.create_task(monitor_presence())
     asyncio.create_task(connection_watcher())
 # -----------------------
-from yoomoney_module import verify_yoomoney_signature
-
-@app_fastapi.get("/p/{token}")
-async def temp_redirect(token: str):
-    data = REDIRECTS.get(token)
-
-    if not data:
-        return PlainTextResponse("⛔ Ссылка недействительна", status_code=404)
-
-    if time.time() > data["expires"]:
-        del REDIRECTS[token]
-        return PlainTextResponse("⏳ Срок действия ссылки истёк", status_code=410)
-
-    return RedirectResponse(data["url"])
-    
-    
-@app_fastapi.post("/yoomoney_ipn")
-async def yoomoney_ipn_endpoint(request: Request):
-    form = await request.form()
-    data = dict(form)
-
-    # 🔐 1. Проверка подписи YooMoney
-    if not verify_yoomoney_signature(data):
-        print("❌ INVALID YOOMONEY SIGNATURE")
-        return {"status": "error", "reason": "invalid_signature"}
-
-    # 🧮 2. Конвертация суммы
-    try:
-        amount_float = float(data["amount"].replace(",", "."))
-    except Exception as e:
-        print(f"[YOOMONEY IPN] amount error: {e}")
-        return {"status": "error", "reason": "invalid_amount"}
-
-    print("✅ YOOMONEY IPN VERIFIED:", data)
-
-    # 🚀 3. Передаём в бизнес-логику
-    return await yoomoney_ipn_handler(
-        operation_id=data["operation_id"],
-        amount=amount_float,
-        currency=data["currency"],
-        datetime_str=data["datetime"],
-        label=data["label"],
-        sha1_hash=data["sha1_hash"]
-    )
     
 @app_fastapi.get("/admin/transactions", response_class=HTMLResponse)
 async def admin_transactions_page(request: Request, _: None = Depends(admin_required)):
