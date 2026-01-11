@@ -5,7 +5,7 @@ import refresh_tokens  # твой модуль
 
 router = APIRouter()
 
-SELF = "https://tg-bot-test-gkbp.onrender.com"
+SELF = "https://testi-promo-x6tp.onrender.com"
 
 # 1️⃣ старт авторизации
 @router.get("/auth/start")
