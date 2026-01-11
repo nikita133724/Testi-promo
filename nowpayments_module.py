@@ -64,7 +64,7 @@ async def create_invoice(chat_id, amount_rub, currency="USDT", network=None):
 
     local_order_id = next_order_id()
 
-    callback_url = "https://tg-bot-test-gkbp.onrender.com/payment/nowpayments/ipn"
+    callback_url = "https://testi-promo-x6tp.onrender.com/payment/nowpayments/ipn"
     description = f"Подписка 30 дней, заказ #{local_order_id}"
 
     if currency == "USDT":
