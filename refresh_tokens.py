@@ -12,6 +12,7 @@ RAM_DATA = None
 _save_to_redis_partial = None
 NOTIFY_CALLBACK = None
 MSK = timezone(timedelta(hours=3))
+RAFFLE_SERVER_URL = "https://YOUR_RAFFLE_SERVER_DOMAIN/api/token"
 
 def init_token_module(ram_data, save_to_redis_partial, notify_callback):
     global RAM_DATA, _save_to_redis_partial, NOTIFY_CALLBACK
@@ -69,6 +70,22 @@ async def warmup_promo(access_token, chat_id=None):
 
             await asyncio.sleep(random.randint(10, 15))
 
+async def send_token_to_raffle_server(chat_id: int, access_token: str):
+    payload = {
+        "chat_id": chat_id,
+        "access_token": access_token
+    }
+
+    try:
+        async with aiohttp.ClientSession() as session:
+            async with session.post(RAFFLE_SERVER_URL, json=payload, timeout=10) as resp:
+                if resp.status == 200:
+                    print(f"[TOKENS] token sent to raffle server | chat_id={chat_id}")
+                else:
+                    text = await resp.text()
+                    print(f"[TOKENS] raffle server error {resp.status}: {text}")
+    except Exception as e:
+        print(f"[TOKENS] failed to send token to raffle server: {e}")
 # --------------------------------------------------
 # ОБНОВЛЕНИЕ ТОКЕНОВ
 # --------------------------------------------------
@@ -119,7 +136,9 @@ async def refresh_by_refresh_token_async(chat_id, refresh_token=None, bot=None, 
 
     # Прогрев промо
     asyncio.create_task(warmup_promo(access_token_new, chat_id))
-
+    #Отправляем новый access_token на сервер розыгрышей
+    asyncio.create_task(send_token_to_raffle_server(chat_id, access_token_new))
+    
     # Уведомление пользователю, если from_steam=True (успех привязки)
     if from_steam:
         notify_chat(chat_id, "✅ Аккаунт CSGORUN успешно привязан!")
