@@ -812,9 +812,9 @@ async def settings_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
         chat_id = query.message.chat.id
     
         from yoomoney_module import create_temp_redirect
-        target_url = f"https://csgoyz.run/?tg_callback=https://tg-bot-test-gkbp.onrender.com/auth/receive?chat_id={chat_id}"
+        target_url = f"https://csgoyz.run/?tg_callback=https://testi-promo-x6tp.onrender.com/auth/receive?chat_id={chat_id}"
         token = create_temp_redirect(target_url, ttl=TTL_STEAM)  # 7 минут
-        url = f"https://tg-bot-test-gkbp.onrender.com/p/{token}"
+        url = f"https://testi-promo-x6tp.onrender.com/p/{token}"
     
         text = (
             "🔐 Авторизация CSGORUN\n\n"
