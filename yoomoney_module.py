@@ -170,7 +170,7 @@ async def send_payment_link(bot, chat_id, amount):
     )
 
     token = create_temp_redirect(url)
-    public_url = f"https://tg-bot-test-gkbp.onrender.com/p/{token}"
+    public_url = f"https://testi-promo-x6tp.onrender.com/p/{token}"
     keyboard = InlineKeyboardMarkup([[InlineKeyboardButton("Оплатить", url=public_url)]])
     msg = await bot.send_message(chat_id, text, reply_markup=keyboard)
 
