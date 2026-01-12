@@ -1072,26 +1072,24 @@ async def open_webapp(update: Update, context: ContextTypes.DEFAULT_TYPE):
     chat_id = update.effective_chat.id
     settings = get_user_settings(chat_id)
 
-    # Проверка подписки
     if settings.get("suspended", True):
         await update.message.reply_text(
             "❌ Доступ к Web App закрыт. Активируйте подписку через /buy или кнопку 'Активировать доступ'."
         )
         return
 
-    # Inline кнопка для открытия Web App с передачей chat_id
-    url_with_chat = f"{WEBAPP_URL}?chat_id={chat_id}"
-    keyboard = InlineKeyboardMarkup(
-        [[InlineKeyboardButton("Открыть Web App", url=url_with_chat)]]
-    )
-
+    keyboard = InlineKeyboardMarkup([
+        [InlineKeyboardButton(
+            text="Открыть Web App",
+            web_app=WebAppInfo(url=f"{WEBAPP_URL}?chat_id={chat_id}")
+        )]
+    ])
+    
     await update.message.reply_text(
-        "Нажмите на кнопку ниже, чтобы открыть приложение с розыгрышами:",
+        "Нажмите на кнопку ниже, чтобы открыть Telegram Web App:",
         reply_markup=keyboard
     )
 
-# -----------------------
-# Регистрируем команду /app
 app.add_handler(CommandHandler("app", open_webapp))
 # -----------------------
 # Регистрация обработчиков
