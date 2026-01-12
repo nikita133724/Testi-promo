@@ -3,7 +3,7 @@ import asyncio
 from decimal import Decimal
 from datetime import timezone, timedelta, datetime
 MSK = timezone(timedelta(hours=3))
-from telegram import Update, ReplyKeyboardMarkup, InlineKeyboardButton, InlineKeyboardMarkup
+from telegram import Update, ReplyKeyboardMarkup, InlineKeyboardButton, InlineKeyboardMarkup, WebAppInfo
 from telegram.ext import (
     ApplicationBuilder,
     CommandHandler,
