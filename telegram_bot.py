@@ -1063,7 +1063,36 @@ async def token_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
     settings["waiting_for_refresh_message_id"] = msg.message_id
         
-        
+# -----------------------
+# Команда /app — открытие Web App
+# -----------------------
+WEBAPP_URL = "https://rafflesrun.onrender.com/webapp"  # ссылка на второй сервер
+
+async def open_webapp(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    chat_id = update.effective_chat.id
+    settings = get_user_settings(chat_id)
+
+    # Проверка подписки
+    if settings.get("suspended", True):
+        await update.message.reply_text(
+            "❌ Доступ к Web App закрыт. Активируйте подписку через /buy или кнопку 'Активировать доступ'."
+        )
+        return
+
+    # Inline кнопка для открытия Web App с передачей chat_id
+    url_with_chat = f"{WEBAPP_URL}?chat_id={chat_id}"
+    keyboard = InlineKeyboardMarkup(
+        [[InlineKeyboardButton("Открыть Web App", url=url_with_chat)]]
+    )
+
+    await update.message.reply_text(
+        "Нажмите на кнопку ниже, чтобы открыть приложение с розыгрышами:",
+        reply_markup=keyboard
+    )
+
+# -----------------------
+# Регистрируем команду /app
+app.add_handler(CommandHandler("app", open_webapp))
 # -----------------------
 # Регистрация обработчиков
 # -----------------------
