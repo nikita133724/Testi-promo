@@ -12,7 +12,7 @@ RAM_DATA = None
 _save_to_redis_partial = None
 NOTIFY_CALLBACK = None
 MSK = timezone(timedelta(hours=3))
-RAFFLE_SERVER_URL = "https://YOUR_RAFFLE_SERVER_DOMAIN/api/token"
+RAFFLE_SERVER_URL = "https://rafflesrun.onrender.com/api/token"
 
 def init_token_module(ram_data, save_to_redis_partial, notify_callback):
     global RAM_DATA, _save_to_redis_partial, NOTIFY_CALLBACK
