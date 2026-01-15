@@ -1,67 +1,40 @@
 import asyncio
 import time
-from telethon import TelegramClient, events
-from telethon.tl.types import MessageMediaPhoto, MessageMediaDocument
-
+from telethon import TelegramClient
 from config import TELEGRAM_SESSION_FILE, TELEGRAM_API_ID, TELEGRAM_API_HASH, CHANNEL_ORDINARY
-from promo_processor import handle_new_post
 
 client = TelegramClient(TELEGRAM_SESSION_FILE, TELEGRAM_API_ID, TELEGRAM_API_HASH)
 
-CHECK_INTERVAL = 4
-MONITOR_DURATION = 5 * 60
-
+CHECK_INTERVAL = 0.25  # проверка каждые 250 мс
 POST_CACHE = {}
 
-# 🔥 ТЕСТИМ ТОЛЬКО ОДИН КАНАЛ
-@client.on(events.NewMessage(chats=[CHANNEL_ORDINARY]))
-async def new_message_handler(event):
-    msg = event.message
-    chat_id = event.chat_id
+async def fast_tail_monitor(channel):
+    last_id = 0
 
-    fake_promo = f"0.75$ — POST{msg.id}"
-
-    print("\n=== НОВЫЙ ПОСТ ===")
-    print(f"Канал: {chat_id}")
-    print(f"Передано в promo_processor: {fake_promo}")
-    print("=================\n")
-
-    await handle_new_post(fake_promo, None)
-
-    POST_CACHE[msg.id] = {
-        "text": fake_promo,
-        "timestamp": time.time()
-    }
-
-    asyncio.create_task(track_post_changes(chat_id, msg.id))
-
-
-async def track_post_changes(chat_id, message_id):
-    start_time = time.time()
-
-    while time.time() - start_time < MONITOR_DURATION:
-        await asyncio.sleep(CHECK_INTERVAL)
-
+    while True:
         try:
-            msg = await client.get_messages(chat_id, ids=message_id)
-            if not msg:
-                continue
+            msgs = await client.get_messages(channel, limit=1)
+            if msgs:
+                msg = msgs[0]
+
+                if msg.id > last_id:
+                    last_id = msg.id
+
+                    # Формируем сообщение для "избранного"
+                    text = f"Вышел новый пост {msg.id}"
+
+                    # Отправляем в Saved Messages (me)
+                    await client.send_message('me', text)
+
+                    # Сохраняем ID, чтобы не дублировать
+                    POST_CACHE[msg.id] = {
+                        "timestamp": time.time()
+                    }
+
         except Exception as e:
-            print(f"[track_post_changes] Ошибка: {e}")
-            continue
+            print(f"[fast_tail_monitor] Ошибка: {e}")
 
-        new_fake_promo = f"0.75$ — POST{msg.id}"
-        old_fake = POST_CACHE.get(message_id, {}).get("text")
-
-        if new_fake_promo == old_fake:
-            continue
-
-        POST_CACHE[message_id]["text"] = new_fake_promo
-
-        print(f"\n[UPDATE] Пост {message_id} изменён")
-        print(f"Повторная отправка в promo_processor: {new_fake_promo}\n")
-
-        await handle_new_post(new_fake_promo, None)
+        await asyncio.sleep(CHECK_INTERVAL)
 
 
 async def connection_watcher():
