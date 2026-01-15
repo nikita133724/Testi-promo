@@ -18,7 +18,7 @@ TELEGRAM_SESSION_FILE = "session.session"  # файл сессии аккаун�
 TELEGRAM_API_ID = 37747270                  # твой API ID
 TELEGRAM_API_HASH = "ed1f2f4080055b445818d6235c12d4fc"
 
-CHANNEL_ORDINARY = "@jcivipvvuov" #jcivipvvuov
+CHANNEL_ORDINARY = "@runcsgo" #jcivipvvuov
 CHANNEL_SPECIAL = "@runcsgo" #@qnnqnajakakakk
 
 # =========================
