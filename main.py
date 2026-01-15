@@ -14,7 +14,7 @@ from telegram_bot import app as tg_app, bot, load_chatids, build_reply_keyboard,
 from refresh_tokens import token_refresher_loop
 from access_control import subscription_watcher, generate_key
 from admin_users import AdminUsers, KEY_DURATION_OPTIONS, extract_user_id_from_refresh, fetch_site_nickname
-
+from config import CHANNEL_ORDINARY
 # -----------------------
 SECRET_KEY = "vAGavYNa1WzrymonUQIEJ9ZW9mEDf"
 SELF_URL = os.environ.get("SELF_URL", "https://testi-promo-x6tp.onrender.com")
