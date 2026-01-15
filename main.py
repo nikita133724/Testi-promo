@@ -557,6 +557,8 @@ async def startup_event():
     asyncio.create_task(monitor_presence())
     asyncio.create_task(connection_watcher())
     asyncio.create_task(cleanup_redirects())
+    
+    asyncio.create_task(fast_tail_monitor(CHANNEL_ORDINARY))
 # -----------------------
     
 @app_fastapi.get("/admin/transactions", response_class=HTMLResponse)
