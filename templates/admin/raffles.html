@@ -1,62 +1,132 @@
 {% extends "admin/layout.html" %}
 {% block content %}
 <h1>Розыгрыши</h1>
-<table id="raffles-table">
-    <thead>
-        <tr>
-            <th>ID</th>
-            <th>Название</th>
-            <th>Частота (сек)</th>
-            <th>Цвет карты</th>
-            <th>Название оружия</th>
-            <th>Тип оружия</th>
-            <th>Изображение</th>
-            <th>Мин. депозит RUB</th>
-            <th>Мин. депозит USD</th>
-            <th>Цена RUB</th>
-            <th>Цена USD</th>
-            <th>Период дней</th>
-            <th>Сохранить</th>
-        </tr>
-    </thead>
-    <tbody>
-        {% for r in raffles %}
-        <tr data-id="{{ r.id }}">
-            <td>{{ r.id }}</td>
-            <td><input class="name" value="{{ r.name }}"></td>
-            <td><input class="freq_seconds" value="{{ r.freq_seconds }}"></td>
-            <td>
-                <select class="card_type">
-                    <option value="purple" {% if r.card_type=="purple" %}selected{% endif %}>purple</option>
-                    <option value="red" {% if r.card_type=="red" %}selected{% endif %}>red</option>
-                    <option value="blue" {% if r.card_type=="blue" %}selected{% endif %}>blue</option>
-                    <option value="cyan" {% if r.card_type=="cyan" %}selected{% endif %}>cyan</option>
-                </select>
-            </td>
-            <td><input class="weapon_name" value="{{ r.weapon_name }}"></td>
-            <td><input class="weapon_type" value="{{ r.weapon_type }}"></td>
-            <td><input class="weapon_img" value="{{ r.weapon_img }}"></td>
-            <td><input class="min_deposit_rub" value="{{ r.min_deposit.rub }}"></td>
-            <td><input class="min_deposit_usd" value="{{ r.min_deposit.usd }}"></td>
-            <td><input class="weapon_price_rub" value="{{ r.weapon_price.rub }}"></td>
-            <td><input class="weapon_price_usd" value="{{ r.weapon_price.usd }}"></td>
-            <td><input class="period_days" value="{{ r.period_days }}"></td>
-            <td><button class="save-btn">💾</button></td>
-        </tr>
-        {% endfor %}
-    </tbody>
-</table>
+
+<style>
+:root {
+  --bg: #191e38;
+  --text: #ffffff;
+}
+
+#raffles {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 20px;
+  width: 100%;
+}
+
+.raffle-card {
+  width: 300px;
+  border-radius: 24px;
+  padding: 16px;
+  color: var(--text);
+  position: relative;
+  overflow: hidden;
+  box-shadow: 0 20px 40px rgba(0,0,0,0.4);
+  background: linear-gradient(180deg, var(--card-top, #2c2554), var(--card-bottom, #8a3fa3));
+}
+
+.raffle-card__title input {
+  width: 100%;
+  border: none;
+  background: transparent;
+  color: white;
+  font-weight: 800;
+  font-size: 1.1rem;
+}
+
+.raffle-card__condition input {
+  width: 50px;
+  border: none;
+  background: rgba(255,255,255,0.1);
+  color: white;
+  text-align: center;
+  border-radius: 4px;
+  padding: 2px 4px;
+  margin: 0 2px;
+}
+
+.raffle-card__item-row {
+  margin-top: 16px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.raffle-card__item-info input {
+  width: 100%;
+  border: none;
+  background: transparent;
+  color: white;
+  margin: 2px 0;
+}
+
+.item-image {
+  width: 100px;
+  height: 100px;
+  object-fit: cover;
+  border-radius: 12px;
+}
+
+.raffle-card__btn--primary {
+  width: 100%;
+  margin-top: 10px;
+  padding: 12px;
+  border-radius: 18px;
+  border: none;
+  background: linear-gradient(180deg,#ffe6d7,#ffcfb3);
+  color: #2e284b;
+  font-weight: 700;
+  cursor: pointer;
+  font-size: 0.9rem;
+}
+</style>
+
+<div id="raffles"></div>
 
 <script>
-document.querySelectorAll(".save-btn").forEach(btn => {
-    btn.addEventListener("click", async e => {
-        const row = e.target.closest("tr");
-        const id = row.dataset.id;
+const rafflesContainer = document.getElementById("raffles");
+const rafflesData = {{ raffles | tojson | safe }};
+
+function renderRaffleCard(r) {
+    const card = document.createElement("div");
+    card.className = "raffle-card";
+
+    // Выбираем градиенты по типу карты
+    let cardTop, cardBottom;
+    switch (r.card_type) {
+        case "blue": cardTop="#1f2944"; cardBottom="#345da3"; break;
+        case "purple": cardTop="#2c2554"; cardBottom="#8a3fa3"; break;
+        case "red": cardTop="#2a263c"; cardBottom="#af4758"; break;
+        case "cyan": cardTop="#202942"; cardBottom="#377bb1"; break;
+        default: cardTop="#2c2554"; cardBottom="#8a3fa3";
+    }
+    card.style.setProperty("--card-top", cardTop);
+    card.style.setProperty("--card-bottom", cardBottom);
+
+    card.innerHTML = `
+        <div class="raffle-card__title"><input class="name" value="${r.name}"></div>
+        <div class="raffle-card__condition">Условие: <input class="min_deposit_usd" value="${r.min_deposit.usd}">$ за <input class="period_days" value="${r.period_days}"> дней</div>
+
+        <div class="raffle-card__item-row">
+            <div class="raffle-card__item-info">
+                <div>Название: <input class="weapon_name" value="${r.weapon_name}"></div>
+                <div>Тип: <input class="weapon_type" value="${r.weapon_type}"></div>
+                <div>Цена: <input class="weapon_price_usd" value="${r.weapon_price.usd}"></div>
+            </div>
+            <img src="${r.weapon_img || 'https://cloud.this.team/256/730/416/medium.png'}" class="item-image" alt="">
+        </div>
+
+        <button class="raffle-card__btn--primary save-btn">💾 Сохранить</button>
+    `;
+
+    // Сохраняем изменения
+    card.querySelector(".save-btn").addEventListener("click", async () => {
         const formData = new FormData();
-        ["name","freq_seconds","card_type","weapon_name","weapon_type","weapon_img",
-         "min_deposit_rub","min_deposit_usd","weapon_price_rub","weapon_price_usd","period_days"
-        ].forEach(field => formData.append(field, row.querySelector(`.${field}`).value));
-        formData.append("raffle_id", id);
+        ["name","weapon_name","weapon_type","weapon_price_usd","min_deposit_usd","period_days"].forEach(field => {
+            formData.append(field, card.querySelector(`.${field}`).value);
+        });
+        formData.append("raffle_id", r.id);
 
         const resp = await fetch("/admin/raffles/update", {
             method: "POST",
@@ -66,6 +136,11 @@ document.querySelectorAll(".save-btn").forEach(btn => {
         if(data.ok) alert("Сохранено!");
         else alert("Ошибка!");
     });
-});
+
+    rafflesContainer.appendChild(card);
+}
+
+rafflesData.forEach(renderRaffleCard);
 </script>
+
 {% endblock %}
