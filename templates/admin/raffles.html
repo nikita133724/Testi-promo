@@ -108,6 +108,7 @@ function renderRaffleCard(r) {
 
         <div class="raffle-card__item-row">
             <div class="raffle-card__item-info">
+                <input type="hidden" name="weapon_img" value="${r.weapon_img}">
                 Название оружия: <input name="weapon_name" value="${r.weapon_name}"><br>
                 Тип оружия: <input name="weapon_type" value="${r.weapon_type}"><br>
                 Цена RUB: <input type="number" name="weapon_price_rub" value="${r.weapon_price.rub}"><br>
