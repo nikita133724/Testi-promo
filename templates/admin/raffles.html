@@ -26,24 +26,16 @@
   background: linear-gradient(180deg, var(--card-top, #2c2554), var(--card-bottom, #8a3fa3));
 }
 
-.raffle-card__title input {
+.raffle-card__title input,
+.raffle-card__condition input,
+.raffle-card__item-info input {
   width: 100%;
-  border: none;
-  background: transparent;
-  color: white;
-  font-weight: 800;
-  font-size: 1.1rem;
-}
-
-.raffle-card__condition input {
-  width: 50px;
   border: none;
   background: rgba(255,255,255,0.1);
   color: white;
-  text-align: center;
-  border-radius: 4px;
   padding: 2px 4px;
-  margin: 0 2px;
+  margin: 2px 0;
+  border-radius: 4px;
 }
 
 .raffle-card__item-row {
@@ -51,14 +43,6 @@
   display: flex;
   justify-content: space-between;
   align-items: center;
-}
-
-.raffle-card__item-info input {
-  width: 100%;
-  border: none;
-  background: transparent;
-  color: white;
-  margin: 2px 0;
 }
 
 .item-image {
@@ -92,7 +76,7 @@ function renderRaffleCard(r) {
     const card = document.createElement("div");
     card.className = "raffle-card";
 
-    // Выбираем градиенты по типу карты
+    // Цвет градиента по типу карты
     let cardTop, cardBottom;
     switch (r.card_type) {
         case "blue": cardTop="#1f2944"; cardBottom="#345da3"; break;
@@ -105,14 +89,22 @@ function renderRaffleCard(r) {
     card.style.setProperty("--card-bottom", cardBottom);
 
     card.innerHTML = `
-        <div class="raffle-card__title"><input class="name" value="${r.name}"></div>
-        <div class="raffle-card__condition">Условие: <input class="min_deposit_usd" value="${r.min_deposit.usd}">$ за <input class="period_days" value="${r.period_days}"> дней</div>
+        <div class="raffle-card__title">
+            Название: <input class="name" value="${r.name}">
+        </div>
+
+        <div class="raffle-card__condition">
+            Мин. депозит RUB: <input class="min_deposit_rub" value="${r.min_deposit.rub}"><br>
+            Мин. депозит USD: <input class="min_deposit_usd" value="${r.min_deposit.usd}"><br>
+            Период дней: <input class="period_days" value="${r.period_days}">
+        </div>
 
         <div class="raffle-card__item-row">
             <div class="raffle-card__item-info">
-                <div>Название: <input class="weapon_name" value="${r.weapon_name}"></div>
-                <div>Тип: <input class="weapon_type" value="${r.weapon_type}"></div>
-                <div>Цена: <input class="weapon_price_usd" value="${r.weapon_price.usd}"></div>
+                Название оружия: <input class="weapon_name" value="${r.weapon_name}"><br>
+                Тип оружия: <input class="weapon_type" value="${r.weapon_type}"><br>
+                Цена RUB: <input class="weapon_price_rub" value="${r.weapon_price.rub}"><br>
+                Цена USD: <input class="weapon_price_usd" value="${r.weapon_price.usd}">
             </div>
             <img src="${r.weapon_img || 'https://cloud.this.team/256/730/416/medium.png'}" class="item-image" alt="">
         </div>
@@ -123,18 +115,31 @@ function renderRaffleCard(r) {
     // Сохраняем изменения
     card.querySelector(".save-btn").addEventListener("click", async () => {
         const formData = new FormData();
-        ["name","weapon_name","weapon_type","weapon_price_usd","min_deposit_usd","period_days"].forEach(field => {
+        [
+            "name",
+            "weapon_name",
+            "weapon_type",
+            "weapon_price_rub",
+            "weapon_price_usd",
+            "min_deposit_rub",
+            "min_deposit_usd",
+            "period_days"
+        ].forEach(field => {
             formData.append(field, card.querySelector(`.${field}`).value);
         });
         formData.append("raffle_id", r.id);
 
-        const resp = await fetch("/admin/raffles/update", {
-            method: "POST",
-            body: formData
-        });
-        const data = await resp.json();
-        if(data.ok) alert("Сохранено!");
-        else alert("Ошибка!");
+        try {
+            const resp = await fetch("/admin/raffles/update", {
+                method: "POST",
+                body: formData
+            });
+            const data = await resp.json();
+            if(data.ok) alert("Сохранено!");
+            else alert("Ошибка!");
+        } catch (err) {
+            alert("Ошибка при сохранении: " + err);
+        }
     });
 
     rafflesContainer.appendChild(card);
