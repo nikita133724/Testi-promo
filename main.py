@@ -87,7 +87,8 @@ from yoomoney_module import cleanup_redirects, router as yoomoney_router
 app_fastapi.include_router(yoomoney_router)
 from nowpayments_module import router as nowpayments_router
 app_fastapi.include_router(nowpayments_router)
-
+from routes.raffles import router as raffles_router
+app_fastapi.include_router(raffles_router)
 
 # Admin Users
 @app_fastapi.get("/admin/users", response_class=HTMLResponse)
