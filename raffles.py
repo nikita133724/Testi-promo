@@ -21,6 +21,8 @@ async def admin_raffles_page(request: Request, _: None = Depends(admin_required)
 
 # ----------------------
 # Обновление розыгрыша
+from typing import Optional
+
 @router.post("/admin/raffles/update")
 async def admin_raffle_update(
     raffle_id: int = Form(...),
@@ -29,7 +31,7 @@ async def admin_raffle_update(
     card_type: str = Form(...),
     weapon_name: str = Form(...),
     weapon_type: str = Form(...),
-    weapon_img: str = Form(...),
+    weapon_img: Optional[str] = Form(None),
     min_deposit_rub: int = Form(...),
     min_deposit_usd: int = Form(...),
     weapon_price_rub: int = Form(...),
@@ -37,21 +39,22 @@ async def admin_raffle_update(
     period_days: int = Form(...),
     _: None = Depends(admin_required)
 ):
-    resp = requests.post(
-        f"{RAFFLES_SERVER_URL}/api/raffles/update",
-        data={
-            "raffle_id": raffle_id,
-            "name": name,
-            "freq_seconds": freq_seconds,
-            "card_type": card_type,
-            "weapon_name": weapon_name,
-            "weapon_type": weapon_type,
-            "weapon_img": weapon_img,
-            "min_deposit_rub": min_deposit_rub,
-            "min_deposit_usd": min_deposit_usd,
-            "weapon_price_rub": weapon_price_rub,
-            "weapon_price_usd": weapon_price_usd,
-            "period_days": period_days
-        }
-    )
+    data = {
+        "raffle_id": raffle_id,
+        "name": name,
+        "freq_seconds": freq_seconds,
+        "card_type": card_type,
+        "weapon_name": weapon_name,
+        "weapon_type": weapon_type,
+        "min_deposit_rub": min_deposit_rub,
+        "min_deposit_usd": min_deposit_usd,
+        "weapon_price_rub": weapon_price_rub,
+        "weapon_price_usd": weapon_price_usd,
+        "period_days": period_days
+    }
+
+    if weapon_img is not None:
+        data["weapon_img"] = weapon_img
+
+    resp = requests.post(f"{RAFFLES_SERVER_URL}/api/raffles/update", data=data)
     return JSONResponse(resp.json())
