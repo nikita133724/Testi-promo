@@ -199,16 +199,19 @@ document.addEventListener("DOMContentLoaded", () => {
 
     document.body.addEventListener("click", event => {
         const anchor = event.target.closest("a");
-        if (!anchor || anchor.target === "_blank" || anchor.href.startsWith("javascript:")) {
-            return;
-        }
+        if (!anchor || anchor.target === "_blank" || anchor.href.startsWith("javascript:")) return;
+    
         const url = new URL(anchor.href, window.location.href);
-        if (url.origin !== window.location.origin) {
+    
+        // === ИСКЛЮЧЕНИЕ админских страниц (GET на backend без SPA)
+        if (url.pathname.startsWith("/admin/")) {
+            // обычная навигация без SPA
             return;
         }
-        if (!anchor.closest(".sidebar") && !anchor.closest(".content")) {
-            return;
-        }
+    
+        if (url.origin !== window.location.origin) return;
+        if (!anchor.closest(".sidebar") && !anchor.closest(".content")) return;
+    
         event.preventDefault();
         load(url.href, { replace: false });
     });
