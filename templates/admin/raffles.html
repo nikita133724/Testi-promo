@@ -28,7 +28,9 @@
 
 .raffle-card__title input,
 .raffle-card__condition input,
-.raffle-card__item-info input {
+.raffle-card__item-info input,
+.raffle-card__freq,
+.raffle-card__card-type {
   width: 100%;
   border: none;
   background: rgba(255,255,255,0.1);
@@ -104,7 +106,15 @@ function renderRaffleCard(r) {
                 Название оружия: <input class="weapon_name" value="${r.weapon_name}"><br>
                 Тип оружия: <input class="weapon_type" value="${r.weapon_type}"><br>
                 Цена RUB: <input class="weapon_price_rub" value="${r.weapon_price.rub}"><br>
-                Цена USD: <input class="weapon_price_usd" value="${r.weapon_price.usd}">
+                Цена USD: <input class="weapon_price_usd" value="${r.weapon_price.usd}"><br>
+                Частота (сек): <input type="number" class="freq_seconds" value="${r.freq_seconds}"><br>
+                Цвет карты: 
+                <select class="card_type">
+                    <option value="purple" ${r.card_type === "purple" ? "selected" : ""}>purple</option>
+                    <option value="red" ${r.card_type === "red" ? "selected" : ""}>red</option>
+                    <option value="blue" ${r.card_type === "blue" ? "selected" : ""}>blue</option>
+                    <option value="cyan" ${r.card_type === "cyan" ? "selected" : ""}>cyan</option>
+                </select>
             </div>
             <img src="${r.weapon_img || 'https://cloud.this.team/256/730/416/medium.png'}" class="item-image" alt="">
         </div>
@@ -123,7 +133,9 @@ function renderRaffleCard(r) {
             "weapon_price_usd",
             "min_deposit_rub",
             "min_deposit_usd",
-            "period_days"
+            "period_days",
+            "freq_seconds",
+            "card_type"
         ].forEach(field => {
             formData.append(field, card.querySelector(`.${field}`).value);
         });
