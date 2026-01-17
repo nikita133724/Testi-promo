@@ -1,0 +1,71 @@
+{% extends "admin/layout.html" %}
+{% block content %}
+<h1>Розыгрыши</h1>
+<table id="raffles-table">
+    <thead>
+        <tr>
+            <th>ID</th>
+            <th>Название</th>
+            <th>Частота (сек)</th>
+            <th>Цвет карты</th>
+            <th>Название оружия</th>
+            <th>Тип оружия</th>
+            <th>Изображение</th>
+            <th>Мин. депозит RUB</th>
+            <th>Мин. депозит USD</th>
+            <th>Цена RUB</th>
+            <th>Цена USD</th>
+            <th>Период дней</th>
+            <th>Сохранить</th>
+        </tr>
+    </thead>
+    <tbody>
+        {% for r in raffles %}
+        <tr data-id="{{ r.id }}">
+            <td>{{ r.id }}</td>
+            <td><input class="name" value="{{ r.name }}"></td>
+            <td><input class="freq_seconds" value="{{ r.freq_seconds }}"></td>
+            <td>
+                <select class="card_type">
+                    <option value="purple" {% if r.card_type=="purple" %}selected{% endif %}>purple</option>
+                    <option value="red" {% if r.card_type=="red" %}selected{% endif %}>red</option>
+                    <option value="blue" {% if r.card_type=="blue" %}selected{% endif %}>blue</option>
+                    <option value="cyan" {% if r.card_type=="cyan" %}selected{% endif %}>cyan</option>
+                </select>
+            </td>
+            <td><input class="weapon_name" value="{{ r.weapon_name }}"></td>
+            <td><input class="weapon_type" value="{{ r.weapon_type }}"></td>
+            <td><input class="weapon_img" value="{{ r.weapon_img }}"></td>
+            <td><input class="min_deposit_rub" value="{{ r.min_deposit.rub }}"></td>
+            <td><input class="min_deposit_usd" value="{{ r.min_deposit.usd }}"></td>
+            <td><input class="weapon_price_rub" value="{{ r.weapon_price.rub }}"></td>
+            <td><input class="weapon_price_usd" value="{{ r.weapon_price.usd }}"></td>
+            <td><input class="period_days" value="{{ r.period_days }}"></td>
+            <td><button class="save-btn">💾</button></td>
+        </tr>
+        {% endfor %}
+    </tbody>
+</table>
+
+<script>
+document.querySelectorAll(".save-btn").forEach(btn => {
+    btn.addEventListener("click", async e => {
+        const row = e.target.closest("tr");
+        const id = row.dataset.id;
+        const formData = new FormData();
+        ["name","freq_seconds","card_type","weapon_name","weapon_type","weapon_img",
+         "min_deposit_rub","min_deposit_usd","weapon_price_rub","weapon_price_usd","period_days"
+        ].forEach(field => formData.append(field, row.querySelector(`.${field}`).value));
+        formData.append("raffle_id", id);
+
+        const resp = await fetch("/admin/raffles/update", {
+            method: "POST",
+            body: formData
+        });
+        const data = await resp.json();
+        if(data.ok) alert("Сохранено!");
+        else alert("Ошибка!");
+    });
+});
+</script>
+{% endblock %}
