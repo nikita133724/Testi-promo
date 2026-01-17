@@ -1,10 +1,9 @@
 import requests
 from fastapi import APIRouter, Request, Form, Depends
 from fastapi.responses import HTMLResponse, JSONResponse
-from fastapi.templating import Jinja2Templates
 
 router = APIRouter()
-templates = Jinja2Templates(directory="templates")
+
 RAFFLES_SERVER_URL = "https://rafflesrun.onrender.com"
 
 def admin_required(request):
