@@ -1,14 +1,12 @@
 import requests
 from fastapi import APIRouter, Request, Form, Depends
 from fastapi.responses import HTMLResponse, JSONResponse
+from main import admin_required  # <-- используем корректную зависимость из main.py
+from main import templates       # <-- чтобы TemplateResponse работала
 
 router = APIRouter()
 
 RAFFLES_SERVER_URL = "https://rafflesrun.onrender.com"
-
-def admin_required(request):
-    if not request.session.get("is_admin"):
-        raise HTTPException(status_code=403, detail="Admin only")
 
 # ----------------------
 # Страница розыгрышей
@@ -16,7 +14,10 @@ def admin_required(request):
 async def admin_raffles_page(request: Request, _: None = Depends(admin_required)):
     resp = requests.get(f"{RAFFLES_SERVER_URL}/api/raffles", timeout=10)
     raffles = resp.json()
-    return templates.TemplateResponse("admin/raffles.html", {"request": request, "raffles": raffles, "is_admin": True})
+    return templates.TemplateResponse(
+        "admin/raffles.html",
+        {"request": request, "raffles": raffles, "is_admin": True}
+    )
 
 # ----------------------
 # Обновление розыгрыша
